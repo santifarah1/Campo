@@ -8,16 +8,16 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
-  --tierra:#6B4A2E;      /* marrón tierra */
+  --tierra:#6B4A2E;
   --tierra-claro:#8A6B4A;
-  --campo:#5C7A3D;       /* verde campo apagado */
+  --campo:#5C7A3D;
   --campo-claro:#7B9C56;
-  --trigo:#C9A24B;       /* dorado trigo */
-  --cielo:#4A6B8A;       /* azul apagado */
-  --ladrillo:#A6533A;    /* egresos */
-  --papel:#F5F1E8;       /* fondo papel */
+  --trigo:#C9A24B;
+  --cielo:#4A6B8A;
+  --ladrillo:#A6533A;
+  --papel:#F5F1E8;
   --papel-hondo:#EBE5D6;
-  --tinta:#2E2820;       /* texto */
+  --tinta:#2E2820;
   --tinta-suave:#6E6656;
   --linea:#D8D0BE;
   --blanco:#FDFBF6;
@@ -38,7 +38,6 @@ h1,h2,h3{font-weight:700;letter-spacing:-.01em}
 button{font-family:inherit;cursor:pointer;border:none}
 input,select{font-family:inherit}
 
-/* ---- Encabezado ---- */
 header{
   background:linear-gradient(135deg,var(--campo),var(--tierra));
   color:var(--blanco);
@@ -63,13 +62,11 @@ header .top-btns button{
 }
 header .top-btns button:hover{background:rgba(255,255,255,.28)}
 
-/* ---- Layout ---- */
 main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 @media(min-width:1000px){
   .kpis{grid-template-columns:repeat(4,1fr)}
 }
 
-/* ---- Tarjetas KPI ---- */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
 .kpi{
   background:var(--blanco);border:1px solid var(--linea);
@@ -86,7 +83,6 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 .kpi.saldo .franja{background:var(--trigo)}
 .kpi.proj .franja{background:var(--cielo)}
 
-/* ---- Secciones ---- */
 .panel{
   background:var(--blanco);border:1px solid var(--linea);
   border-radius:14px;padding:18px;margin-bottom:18px;
@@ -97,12 +93,10 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 .chart-box.chico{height:230px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:720px){.grid-2{grid-template-columns:1fr}}
-/* En pantallas grandes (PC), grilla de 3 para más densidad */
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 @media(max-width:980px){.grid-3{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){.grid-3{grid-template-columns:1fr}}
 
-/* ---- Filtros ---- */
 .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
 .filtros select,.filtros input{
   background:var(--blanco);border:1px solid var(--linea);color:var(--tinta);
@@ -110,7 +104,6 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 }
 .filtros .lbl{font-size:13px;color:var(--tinta-suave);font-weight:600}
 
-/* ---- Botones acción ---- */
 .btn{
   padding:11px 16px;border-radius:10px;font-size:14px;font-weight:600;
   display:inline-flex;align-items:center;gap:7px;transition:.15s;
@@ -120,7 +113,6 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 .btn-sec{background:var(--papel-hondo);color:var(--tinta);border:1px solid var(--linea)}
 .btn-sec:hover{background:var(--linea)}
 
-/* ---- FAB ---- */
 .fab{
   position:fixed;right:20px;bottom:20px;z-index:40;
   width:60px;height:60px;border-radius:18px;
@@ -131,7 +123,6 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 }
 .fab:hover{transform:translateY(-2px)}
 
-/* ---- Tabla ---- */
 .tabla-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;padding:10px 12px;color:var(--tinta-suave);font-size:12px;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--linea)}
@@ -140,13 +131,14 @@ tr:hover td{background:var(--papel-hondo)}
 .pill{padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block}
 .pill.ing{background:rgba(92,122,61,.15);color:var(--campo)}
 .pill.egr{background:rgba(166,83,58,.15);color:var(--ladrillo)}
+.pill.tra{background:rgba(74,107,138,.15);color:var(--cielo)}
 .monto-ing{color:var(--campo);font-weight:700}
 .monto-egr{color:var(--ladrillo);font-weight:700}
+.monto-tra{color:var(--cielo);font-weight:700}
 .act-tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--papel-hondo);color:var(--tinta-suave)}
 .borrar{background:none;color:var(--ladrillo);font-size:16px;padding:2px 6px;border-radius:6px}
 .borrar:hover{background:rgba(166,83,58,.12)}
 
-/* ---- Modal ---- */
 .modal-bg{
   position:fixed;inset:0;background:rgba(20,18,14,.55);z-index:100;
   display:none;align-items:flex-end;justify-content:center;
@@ -175,23 +167,14 @@ tr:hover td{background:var(--papel-hondo)}
 }
 .tipo-toggle button.on-ing{border-color:var(--campo);background:rgba(92,122,61,.12);color:var(--campo)}
 .tipo-toggle button.on-egr{border-color:var(--ladrillo);background:rgba(166,83,58,.12);color:var(--ladrillo)}
+.tipo-toggle button.on-tra{border-color:var(--cielo);background:rgba(74,107,138,.12);color:var(--cielo)}
 .modal-btns{display:flex;gap:10px;margin-top:8px}
 .modal-btns .btn{flex:1;justify-content:center}
 
-/* ---- Asistente (placeholder etapa 3) ---- */
-.asistente-nota{
-  background:linear-gradient(135deg,rgba(74,107,138,.1),rgba(92,122,61,.08));
-  border:1px dashed var(--cielo);border-radius:12px;padding:14px 16px;
-  font-size:13px;color:var(--tinta-suave);display:flex;gap:12px;align-items:flex-start;
-}
-.asistente-nota .ico{font-size:22px}
-
-/* ---- Vacío ---- */
 .vacio{text-align:center;padding:50px 20px;color:var(--tinta-suave)}
 .vacio .ico{font-size:44px;margin-bottom:12px}
 .vacio h3{color:var(--tinta);margin-bottom:6px}
 
-/* ---- Tabs ---- */
 .tabs{display:flex;gap:6px;margin-bottom:18px;background:var(--papel-hondo);padding:5px;border-radius:12px}
 .tabs button{
   flex:1;padding:10px;border-radius:9px;font-size:14px;font-weight:600;
@@ -203,7 +186,6 @@ tr:hover td{background:var(--papel-hondo)}
 
 .mini-nota{font-size:12px;color:var(--tinta-suave);margin-top:6px}
 
-/* ---- Chat asesor ---- */
 .msg{margin-bottom:16px;display:flex;gap:10px;animation:aparece .3s ease}
 @keyframes aparece{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .msg .av{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
@@ -227,7 +209,6 @@ tr:hover td{background:var(--papel-hondo)}
 .pensando span:nth-child(3){animation-delay:.4s}
 @keyframes latir{0%,60%,100%{opacity:.3}30%{opacity:1}}
 
-/* ---- Gestión ---- */
 .g-fila{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--linea)}
 .g-fila:last-child{border-bottom:none}
 .g-act{display:flex;align-items:center;gap:9px;font-weight:600}
@@ -270,6 +251,14 @@ tr:hover td{background:var(--papel-hondo)}
 </header>
 
 <main>
+  <!-- Recordatorio de backup (30 días) -->
+  <div class="alerta amar" id="banner-backup" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span class="ai">💾</span>
+    <div style="flex:1;min-width:200px">Hace más de 30 días que no exportás un backup. Los datos viven solo en este navegador: si se limpia el historial, se pierden.</div>
+    <button class="btn btn-primario" style="padding:8px 12px;font-size:13px" onclick="exportar()">Exportar ahora</button>
+    <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="posponerBackup()">Después</button>
+  </div>
+
   <div class="tabs">
     <button class="on" onclick="verTab('dash',this)">📊 Análisis</button>
     <button onclick="verTab('mov',this)">📋 Movimientos</button>
@@ -293,9 +282,16 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="Cebolla">Alquiler cebolla</option>
         <option value="General">General / estructura</option>
       </select>
+      <span class="lbl">Moneda:</span>
+      <select id="f-moneda" onchange="cambiarMoneda()">
+        <option value="corriente">$ corrientes</option>
+        <option value="hoy">$ de hoy (IPC)</option>
+        <option value="usd">US$ oficial</option>
+      </select>
       <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
         <input type="checkbox" id="f-internos" onchange="render()"> Incluir internos (retiros, ajustes)
       </label>
+      <span class="mini-nota" id="nota-moneda" style="margin-top:0;flex-basis:100%"></span>
     </div>
 
     <div class="kpis">
@@ -341,6 +337,7 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="">Todos</option>
         <option value="ingreso">Ingresos</option>
         <option value="egreso">Egresos</option>
+        <option value="transfer">Transferencias</option>
       </select>
     </div>
     <div class="panel" style="padding:0;overflow:hidden">
@@ -358,7 +355,7 @@ tr:hover td{background:var(--papel-hondo)}
     </div>
   </div>
 
-  <!-- ===== GESTIÓN (funciones de contador) ===== -->
+  <!-- ===== GESTIÓN ===== -->
   <div class="vista" id="v-gestion">
     <div class="filtros">
       <span class="lbl">Ejercicio:</span>
@@ -367,8 +364,14 @@ tr:hover td{background:var(--papel-hondo)}
 
     <div class="panel">
       <h2><span class="pin"></span>Margen por actividad</h2>
-      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Ingresos menos costos directos de cada actividad. Los costos de estructura (sueldos, combustible, bancarios) van aparte porque no son de una sola actividad — así ves la rentabilidad real de cada negocio.</p>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Ingresos menos costos directos de cada actividad, incluyendo transferencias internas (ej: maíz propio que consume la hacienda cuenta como ingreso de Agricultura y costo de Ganadería). Los costos de estructura van aparte.</p>
       <div id="g-margen"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Precios promedio (rubros con cantidad)</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Monto dividido por las cantidades cargadas (cabezas, kg, qq). Sirve para comparar contra el mercado de esa época — preguntale al asesor.</p>
+      <div id="g-precios"></div>
     </div>
 
     <div class="panel">
@@ -459,17 +462,23 @@ tr:hover td{background:var(--papel-hondo)}
       <div class="tipo-toggle">
         <button id="tg-ing" onclick="setTipo('ingreso')">Ingreso</button>
         <button id="tg-egr" onclick="setTipo('egreso')">Egreso</button>
+        <button id="tg-tra" onclick="setTipo('transfer')" title="Consumo interno / pase entre actividades">Transf.</button>
       </div>
+      <p class="mini-nota" id="nota-transfer" style="display:none">Transferencia entre actividades (ej: maíz propio que come la hacienda). No mueve plata: suma como ingreso de la que entrega y como costo de la que recibe.</p>
     </div>
     <div class="campo">
       <label>Fecha</label>
       <input type="date" id="m-fecha">
     </div>
     <div class="campo">
-      <label>Monto ($)</label>
+      <label>Monto ($ corrientes)</label>
       <input type="number" id="m-monto" placeholder="0" inputmode="decimal">
     </div>
     <div class="campo">
+      <label>Cantidad (opcional — cabezas, kg, qq)</label>
+      <input type="number" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
+    </div>
+    <div class="campo" id="wrap-act-normal">
       <label>Actividad</label>
       <select id="m-act">
         <option value="Ganadería">Cría / invernada</option>
@@ -477,6 +486,24 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="Cebolla">Alquiler cebolla</option>
         <option value="General">General / sin actividad</option>
       </select>
+    </div>
+    <div id="wrap-act-transfer" style="display:none">
+      <div class="campo">
+        <label>Actividad que entrega</label>
+        <select id="m-origen">
+          <option value="Agricultura">Agricultura</option>
+          <option value="Ganadería">Cría / invernada</option>
+          <option value="Cebolla">Alquiler cebolla</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Actividad que recibe / consume</label>
+        <select id="m-destino">
+          <option value="Ganadería">Cría / invernada</option>
+          <option value="Agricultura">Agricultura</option>
+          <option value="Cebolla">Alquiler cebolla</option>
+        </select>
+      </div>
     </div>
     <div class="campo">
       <label>Categoría</label>
@@ -487,7 +514,7 @@ tr:hover td{background:var(--papel-hondo)}
       <label>Detalle (opcional)</label>
       <textarea id="m-det" placeholder="Nota libre..."></textarea>
     </div>
-    <div class="campo">
+    <div class="campo" id="wrap-interno">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
         <input type="checkbox" id="m-interno"> Es movimiento interno (retiro, ajuste, pase entre cajas)
       </label>
@@ -506,7 +533,7 @@ tr:hover td{background:var(--papel-hondo)}
     <h3>Importar Excel</h3>
     <div style="background:var(--papel-hondo);border-radius:12px;padding:14px;margin-bottom:16px">
       <p style="font-size:14px;font-weight:600;margin-bottom:6px">📗 Tu planilla "Gestión"</p>
-      <p style="font-size:13px;color:var(--tinta-suave);margin-bottom:10px">Si es el Excel de siempre (hoja "Base de Datos", con columnas Fecha / Cuenta / Ingresos / Egresos / Rubro), subilo acá y se importa solo, sin emparejar nada.</p>
+      <p style="font-size:13px;color:var(--tinta-suave);margin-bottom:10px">Si es el Excel de siempre (hoja "Base de Datos", con columnas Fecha / Cuenta / Cantidades / Ingresos / Egresos / Rubro), subilo acá y se importa solo. Los movimientos que ya estén cargados se saltean automáticamente.</p>
       <input type="file" id="file-directo" accept=".xlsx,.xls,.xlsm,.csv" onchange="importarDirecto(event)" style="font-size:13px">
     </div>
     <details>
@@ -532,6 +559,7 @@ tr:hover td{background:var(--papel-hondo)}
       </div>
       <div class="campo" id="wrap-tipo"><label>Columna de tipo</label><select id="map-tipo"></select></div>
       <div class="campo" id="wrap-egrcol" style="display:none"><label>Columna de egresos</label><select id="map-egrcol"></select></div>
+      <div class="campo"><label>Cantidad (opcional)</label><select id="map-cant"></select></div>
       <div class="campo"><label>Actividad (opcional)</label><select id="map-act"></select></div>
       <div class="campo"><label>Categoría (opcional)</label><select id="map-cat"></select></div>
       <div class="campo"><label>Detalle (opcional)</label><select id="map-det"></select></div>
@@ -553,17 +581,101 @@ let editandoId=null;
 let charts={};
 let rawImport=null, colsImport=[];
 
+// moneda e índices (lote: inflación + dólar histórico)
+let moneda=localStorage.getItem('campo_moneda')||'corriente';
+let ipcIdx=null, ipcUltimoMes=null;   // {'YYYY-MM': índice acumulado}
+let dolarMes=null, dolarUltimo=null;  // {'YYYY-MM': venta oficial fin de mes}
+
+// caché liviano de filtrados (lote: performance con muchos años)
+let dataVersion=0, cacheFilt={};
+
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','General':'#4A6B8A'};
 
-function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos))}
-function fmt(n){return '$'+Math.round(n).toLocaleString('es-AR')}
+function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
+function pref(){return moneda==='usd'?'US$':'$'}
+function fmt(n){return pref()+Math.round(n).toLocaleString('es-AR')}
 function fmtK(n){
   const a=Math.abs(n);
-  if(a>=1e6)return '$'+(n/1e6).toFixed(1)+'M';
-  if(a>=1e3)return '$'+(n/1e3).toFixed(0)+'k';
-  return '$'+Math.round(n);
+  if(a>=1e6)return pref()+(n/1e6).toFixed(1)+'M';
+  if(a>=1e3)return pref()+(n/1e3).toFixed(0)+'k';
+  return pref()+Math.round(n);
 }
+function norm(s){return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
+
+// ============ MONEDA / ÍNDICES ============
+function buscarMes(map,m){
+  if(map[m]!=null)return map[m];
+  const ks=Object.keys(map).sort();
+  let ant=null;
+  for(const k of ks){if(k<=m)ant=k;else break}
+  return ant?map[ant]:(ks.length?map[ks[0]]:null);
+}
+function conv(monto,fecha){
+  if(moneda==='corriente')return monto;
+  const m=fecha.slice(0,7);
+  if(moneda==='hoy'){
+    if(!ipcIdx)return monto;
+    const b=buscarMes(ipcIdx,m);
+    return b?monto*ipcIdx[ipcUltimoMes]/b:monto;
+  }
+  if(moneda==='usd'){
+    if(!dolarMes)return monto;
+    const tc=buscarMes(dolarMes,m)||dolarUltimo;
+    return tc?monto/tc:monto;
+  }
+  return monto;
+}
+function mv(x){return conv(x.monto,x.fecha)}
+
+async function cargarIndices(){
+  // IPC mensual (ArgentinaDatos, fuente INDEC) — caché 24 h en localStorage
+  try{
+    let cache=JSON.parse(localStorage.getItem('campo_ipc')||'null');
+    if(!cache||Date.now()-cache.t>864e5){
+      const r=await fetch('https://api.argentinadatos.com/v1/finanzas/indices/inflacion');
+      const arr=await r.json();
+      cache={t:Date.now(),arr};
+      localStorage.setItem('campo_ipc',JSON.stringify(cache));
+    }
+    ipcIdx={};let acc=1;
+    [...cache.arr].sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(o=>{
+      acc*=(1+o.valor/100);
+      ipcIdx[o.fecha.slice(0,7)]=acc;
+    });
+    ipcUltimoMes=Object.keys(ipcIdx).sort().pop();
+  }catch(e){/* sin internet: queda lo cacheado o nada */}
+  // Dólar oficial histórico — se reduce a un valor por mes y se cachea
+  try{
+    let cache=JSON.parse(localStorage.getItem('campo_tc')||'null');
+    if(!cache||Date.now()-cache.t>864e5){
+      const r=await fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial');
+      const arr=await r.json();
+      const mes={};
+      arr.forEach(o=>{if(o.venta)mes[o.fecha.slice(0,7)]=o.venta}); // queda el último del mes
+      cache={t:Date.now(),mes};
+      localStorage.setItem('campo_tc',JSON.stringify(cache));
+    }
+    dolarMes=cache.mes;
+    dolarUltimo=dolarMes[Object.keys(dolarMes).sort().pop()];
+  }catch(e){}
+  notaMoneda();
+  if(moneda!=='corriente')renderTodo();
+}
+function notaMoneda(){
+  const el=document.getElementById('nota-moneda');if(!el)return;
+  if(moneda==='hoy')el.textContent=ipcIdx?('Montos ajustados por IPC (INDEC vía ArgentinaDatos) hasta '+ipcUltimoMes+'. Meses posteriores quedan sin ajustar.'):'⚠️ No pude bajar el IPC (¿sin internet?). Se muestran $ corrientes.';
+  else if(moneda==='usd')el.textContent=dolarMes?('Cada movimiento convertido al oficial de su mes (último: $'+Math.round(dolarUltimo).toLocaleString('es-AR')+').'):'⚠️ No pude bajar el histórico del dólar. Se muestran $ corrientes.';
+  else el.textContent='';
+}
+function cambiarMoneda(){
+  moneda=document.getElementById('f-moneda').value;
+  localStorage.setItem('campo_moneda',moneda);
+  notaMoneda();
+  if(moneda!=='corriente'&&((moneda==='hoy'&&!ipcIdx)||(moneda==='usd'&&!dolarMes)))cargarIndices();
+  renderTodo();
+}
+function renderTodo(){render();renderTabla();renderGestion();renderProj()}
 
 // ============ TABS ============
 function verTab(t,btn){
@@ -593,6 +705,12 @@ function setTipo(t){
   tipoActual=t;
   document.getElementById('tg-ing').className=t==='ingreso'?'on-ing':'';
   document.getElementById('tg-egr').className=t==='egreso'?'on-egr':'';
+  document.getElementById('tg-tra').className=t==='transfer'?'on-tra':'';
+  const esT=t==='transfer';
+  document.getElementById('wrap-act-normal').style.display=esT?'none':'block';
+  document.getElementById('wrap-act-transfer').style.display=esT?'block':'none';
+  document.getElementById('wrap-interno').style.display=esT?'none':'block';
+  document.getElementById('nota-transfer').style.display=esT?'block':'none';
 }
 function abrirModal(id){
   editandoId=id||null;
@@ -602,7 +720,13 @@ function abrirModal(id){
     setTipo(m.tipo);
     document.getElementById('m-fecha').value=m.fecha;
     document.getElementById('m-monto').value=m.monto;
-    document.getElementById('m-act').value=m.act;
+    document.getElementById('m-cant').value=m.cant||'';
+    if(m.tipo==='transfer'){
+      document.getElementById('m-origen').value=m.actOrigen;
+      document.getElementById('m-destino').value=m.actDestino;
+    }else{
+      document.getElementById('m-act').value=m.act;
+    }
     document.getElementById('m-cat').value=m.cat;
     document.getElementById('m-det').value=m.det||'';
     document.getElementById('m-interno').checked=!!m.interno;
@@ -610,6 +734,7 @@ function abrirModal(id){
     setTipo('egreso');
     document.getElementById('m-fecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-monto').value='';
+    document.getElementById('m-cant').value='';
     document.getElementById('m-cat').value='';
     document.getElementById('m-det').value='';
     document.getElementById('m-interno').checked=false;
@@ -622,14 +747,29 @@ function guardar(){
   const monto=parseFloat(document.getElementById('m-monto').value);
   const fecha=document.getElementById('m-fecha').value;
   if(!monto||!fecha){alert('Falta la fecha o el monto');return}
-  const obj={
-    id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
-    tipo:tipoActual,fecha,monto:Math.abs(monto),
-    act:document.getElementById('m-act').value,
-    cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
-    det:document.getElementById('m-det').value.trim(),
-    interno:document.getElementById('m-interno').checked
-  };
+  const cant=parseFloat(document.getElementById('m-cant').value)||null;
+  let obj;
+  if(tipoActual==='transfer'){
+    const o=document.getElementById('m-origen').value, de=document.getElementById('m-destino').value;
+    if(o===de){alert('La actividad que entrega y la que recibe no pueden ser la misma');return}
+    obj={
+      id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
+      tipo:'transfer',fecha,monto:Math.abs(monto),cant,
+      actOrigen:o,actDestino:de,
+      cat:document.getElementById('m-cat').value.trim()||'Consumo interno',
+      det:document.getElementById('m-det').value.trim(),
+      interno:false
+    };
+  }else{
+    obj={
+      id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
+      tipo:tipoActual,fecha,monto:Math.abs(monto),cant,
+      act:document.getElementById('m-act').value,
+      cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
+      det:document.getElementById('m-det').value.trim(),
+      interno:document.getElementById('m-interno').checked
+    };
+  }
   if(editandoId){datos=datos.map(d=>d.id===editandoId?obj:d)}
   else{datos.push(obj)}
   guardarLS();cerrarModal();
@@ -657,11 +797,33 @@ function filtrados(){
   const anio=document.getElementById('f-anio').value;
   const act=document.getElementById('f-act').value;
   const incInt=document.getElementById('f-internos').checked;
-  return datos.filter(d=>
+  const key=anio+'|'+act+'|'+incInt+'|'+dataVersion;
+  if(cacheFilt[key])return cacheFilt[key];
+  const res=datos.filter(d=>
     (!anio||d.fecha.slice(0,4)===anio)&&
-    (!act||d.act===act)&&
+    (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))&&
     (incInt||!d.interno)
   );
+  cacheFilt[key]=res;
+  return res;
+}
+
+// Agrega por actividad, repartiendo transferencias: origen suma ingreso, destino suma egreso.
+function actAgg(lista){
+  const acts={};
+  lista.forEach(x=>{
+    const v=mv(x);
+    if(x.tipo==='transfer'){
+      if(!acts[x.actOrigen])acts[x.actOrigen]={ing:0,egr:0,n:0};
+      if(!acts[x.actDestino])acts[x.actDestino]={ing:0,egr:0,n:0};
+      acts[x.actOrigen].ing+=v;acts[x.actOrigen].n++;
+      acts[x.actDestino].egr+=v;acts[x.actDestino].n++;
+    }else{
+      if(!acts[x.act])acts[x.act]={ing:0,egr:0,n:0};
+      acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=v;acts[x.act].n++;
+    }
+  });
+  return acts;
 }
 
 // ============ RENDER DASHBOARD ============
@@ -670,8 +832,8 @@ function destruir(k){if(charts[k]){charts[k].destroy();delete charts[k]}}
 
 function render(){
   const d=filtrados();
-  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
-  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+x.monto,0);
+  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
+  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   document.getElementById('k-ing').textContent=fmtK(ing);
   document.getElementById('k-egr').textContent=fmtK(egr);
   document.getElementById('k-res').textContent=fmtK(ing-egr);
@@ -689,7 +851,11 @@ function render(){
 function chartMes(d){
   destruir('mes');
   const ing=Array(12).fill(0),egr=Array(12).fill(0);
-  d.forEach(x=>{const m=parseInt(x.fecha.slice(5,7))-1;if(x.tipo==='ingreso')ing[m]+=x.monto;else egr[m]+=x.monto});
+  d.forEach(x=>{
+    const m=parseInt(x.fecha.slice(5,7))-1;
+    if(x.tipo==='ingreso')ing[m]+=mv(x);
+    else if(x.tipo==='egreso')egr[m]+=mv(x);
+  });
   charts.mes=new Chart(document.getElementById('ch-mes'),{
     type:'bar',
     data:{labels:MESES,datasets:[
@@ -701,10 +867,13 @@ function chartMes(d){
 }
 function chartSaldo(d){
   destruir('saldo');
-  const orden=[...d].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   let ac=0;const labels=[],vals=[];
   const porMes={};
-  orden.forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  d.forEach(x=>{
+    if(x.tipo==='transfer')return;
+    const k=x.fecha.slice(0,7);
+    porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?mv(x):-mv(x));
+  });
   Object.keys(porMes).sort().forEach(k=>{ac+=porMes[k];labels.push(k);vals.push(ac)});
   charts.saldo=new Chart(document.getElementById('ch-saldo'),{
     type:'line',
@@ -714,8 +883,9 @@ function chartSaldo(d){
 }
 function chartAct(d){
   destruir('act');
+  const agg=actAgg(d);
   const acts={};
-  d.forEach(x=>{acts[x.act]=(acts[x.act]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  Object.entries(agg).forEach(([a,v])=>acts[a]=v.ing-v.egr);
   const labels=Object.keys(acts);
   charts.act=new Chart(document.getElementById('ch-act'),{
     type:'bar',
@@ -726,7 +896,7 @@ function chartAct(d){
 function chartCat(d){
   destruir('cat');
   const cats={};
-  d.filter(x=>x.tipo==='egreso').forEach(x=>{cats[x.cat]=(cats[x.cat]||0)+x.monto});
+  d.filter(x=>x.tipo==='egreso').forEach(x=>{cats[x.cat]=(cats[x.cat]||0)+mv(x)});
   const orden=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const paleta=['#A6533A','#6B4A2E','#C9A24B','#5C7A3D','#4A6B8A','#8A6B4A','#7B9C56','#B08968'];
   charts.cat=new Chart(document.getElementById('ch-cat'),{
@@ -739,9 +909,17 @@ function chartAnios(){
   destruir('anios');
   const act=document.getElementById('f-act').value;
   const incInt=document.getElementById('f-internos').checked;
-  const base=datos.filter(d=>(!act||d.act===act)&&(incInt||!d.interno));
+  const base=datos.filter(d=>
+    (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))&&
+    (incInt||!d.interno)
+  );
   const anios={};
-  base.forEach(x=>{const a=x.fecha.slice(0,4);if(!anios[a])anios[a]={ing:0,egr:0};if(x.tipo==='ingreso')anios[a].ing+=x.monto;else anios[a].egr+=x.monto});
+  base.forEach(x=>{
+    const a=x.fecha.slice(0,4);
+    if(!anios[a])anios[a]={ing:0,egr:0};
+    if(x.tipo==='ingreso')anios[a].ing+=mv(x);
+    else if(x.tipo==='egreso')anios[a].egr+=mv(x);
+  });
   const labels=Object.keys(anios).sort();
   charts.anios=new Chart(document.getElementById('ch-anios'),{
     type:'bar',
@@ -770,20 +948,29 @@ function renderTabla(){
   const ft=document.getElementById('f-tipo').value;
   let d=[...datos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(ft)d=d.filter(x=>x.tipo===ft);
-  if(q)d=d.filter(x=>(x.cat+x.det+x.act).toLowerCase().includes(q));
+  if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
   const body=document.getElementById('tabla-body');
   document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
   document.getElementById('tabla').style.display=datos.length?'table':'none';
-  body.innerHTML=d.map(x=>`
-    <tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
+  body.innerHTML=d.map(x=>{
+    const esT=x.tipo==='transfer';
+    const actCell=esT
+      ?`<span class="act-tag">${nombreAct(x.actOrigen)} → ${nombreAct(x.actDestino)}</span>`
+      :`<span class="act-tag">${nombreAct(x.act)}</span>`;
+    const pill=esT?'<span class="pill tra">Transf.</span>':`<span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span>`;
+    const monto=esT
+      ?`<td style="text-align:right" class="monto-tra">${fmt(mv(x))}</td>`
+      :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
+    return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
       <td>${x.fecha}</td>
-      <td>${x.det||'<span style="color:var(--tinta-suave)">—</span>'}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}</td>
-      <td><span class="act-tag">${nombreAct(x.act)}</span></td>
+      <td>${x.det||'<span style="color:var(--tinta-suave)">—</span>'}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}</td>
+      <td>${actCell}</td>
       <td>${x.cat}</td>
-      <td><span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
-      <td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(x.monto)}</td>
+      <td>${pill}</td>
+      ${monto}
       <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','Cebolla':'Cebolla','General':'General'}[a]||a}
 
@@ -792,14 +979,21 @@ function renderProj(){
   chartProj();mesesFlojos();rentActividad();
 }
 function datosReales(){return datos.filter(d=>!d.interno)}
+function cajaMensual(lista){
+  const porMes={};
+  lista.forEach(x=>{
+    if(x.tipo==='transfer')return; // las transferencias no mueven plata
+    const k=x.fecha.slice(0,7);
+    porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?mv(x):-mv(x));
+  });
+  return porMes;
+}
 function chartProj(){
   destruir('proj');
-  const porMes={};
-  datosReales().forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const porMes=cajaMensual(datosReales());
   const keys=Object.keys(porMes).sort();
   if(keys.length<2){document.getElementById('ch-proj').parentElement.innerHTML='<p style="color:var(--tinta-suave);text-align:center;padding:40px">Cargá al menos 2 meses de datos para ver la proyección.</p>';return}
   let ac=0;const reales=keys.map(k=>{ac+=porMes[k];return ac});
-  // promedio de variación de últimos 3 meses
   const ult=keys.slice(-3).map(k=>porMes[k]);
   const prom=ult.reduce((s,v)=>s+v,0)/ult.length;
   const labels=[...keys];const dataReal=[...reales];const dataProj=Array(reales.length).fill(null);
@@ -815,20 +1009,23 @@ function chartProj(){
   });
 }
 function mesesFlojos(){
-  const prom=Array(12).fill(0),cont=Array(12).fill(0);
-  datosReales().forEach(x=>{const m=parseInt(x.fecha.slice(5,7))-1;prom[m]+=(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const prom=Array(12).fill(0);
+  datosReales().forEach(x=>{
+    if(x.tipo==='transfer')return;
+    const m=parseInt(x.fecha.slice(5,7))-1;
+    prom[m]+=(x.tipo==='ingreso'?mv(x):-mv(x));
+  });
   const flojos=prom.map((v,i)=>({m:MESES[i],v})).filter(o=>o.v!==0).sort((a,b)=>a.v-b.v).slice(0,4);
   const el=document.getElementById('meses-flojos');
   if(!flojos.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos suficientes.</p>';return}
   el.innerHTML=flojos.map(o=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--linea)"><span>${o.m}</span><b style="color:${o.v<0?'var(--ladrillo)':'var(--campo)'}">${fmt(o.v)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto acumulado por mes (todos los años). Los de arriba son donde más apretás la caja.</p>';
 }
 function rentActividad(){
-  const acts={};
-  datosReales().forEach(x=>{if(!acts[x.act])acts[x.act]={ing:0,egr:0};if(x.tipo==='ingreso')acts[x.act].ing+=x.monto;else acts[x.act].egr+=x.monto});
+  const agg=actAgg(datosReales());
   const el=document.getElementById('rent-act');
-  const filas=Object.entries(acts).map(([a,v])=>({a,res:v.ing-v.egr,ing:v.ing})).sort((x,y)=>y.res-x.res);
+  const filas=Object.entries(agg).map(([a,v])=>({a,res:v.ing-v.egr})).sort((x,y)=>y.res-x.res);
   if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos.</p>';return}
-  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${COL_ACT[f.a]||'#888'};margin-right:7px"></span>${nombreAct(f.a)}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad. Acá ves de una cuál te deja plata y cuál te la come.</p>';
+  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${COL_ACT[f.a]||'#888'};margin-right:7px"></span>${nombreAct(f.a)}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad, con transferencias internas incluidas. Acá ves de una cuál te deja plata y cuál te la come.</p>';
 }
 
 // ============ IMPORT ============
@@ -844,11 +1041,11 @@ function leerArchivo(e){
     if(!rawImport.length){alert('El archivo parece vacío');return}
     colsImport=Object.keys(rawImport[0]);
     const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${c}">${c}</option>`).join('');
-    ['map-fecha','map-monto','map-tipo','map-egrcol','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
-    // adivinar
+    ['map-fecha','map-monto','map-tipo','map-egrcol','map-cant','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
     adivinar('map-fecha',['fecha','date','dia']);
     adivinar('map-monto',['monto','importe','valor','total','pesos','$']);
     adivinar('map-tipo',['tipo','concepto','clase']);
+    adivinar('map-cant',['cantidad','kg','cabez','qq']);
     adivinar('map-act',['actividad','rubro','sector']);
     adivinar('map-cat',['categoria','categoría','detalle','concepto','descripcion']);
     document.getElementById('mapeo').style.display='block';
@@ -869,10 +1066,8 @@ function cambiarModo(){
 function parseFecha(v){
   if(v instanceof Date&&!isNaN(v))return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
   const s=(''+v).trim();
-  // ISO primero: 2025-03-15
   let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
   if(m){let[_,y,mo,d]=m;return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`}
-  // dd/mm/aaaa (formato argentino)
   m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if(m){let[_,d,mo,y]=m;if(y.length===2)y='20'+y;return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`}
   return null;
@@ -883,28 +1078,54 @@ function parseMonto(v){
   let s=(''+v).replace(/[^0-9,\.]/g,'');
   if(!s)return 0;
   if(s.includes(',')&&s.includes('.')){
-    // el último separador es el decimal
     if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');
     else s=s.replace(/,/g,'');
   }else if(s.includes(',')){
-    // coma = decimal si hay 1-2 dígitos después; si no, es separador de miles
     const p=s.split(',');
     if(p[p.length-1].length<=2&&p.length===2)s=s.replace(',','.');
     else s=s.replace(/,/g,'');
   }else if(s.includes('.')){
-    // punto: decimal solo si hay exactamente 1-2 dígitos después y un solo punto
     const p=s.split('.');
     if(!(p.length===2&&p[1].length<=2))s=s.replace(/\./g,'');
   }
   let n=parseFloat(s)||0;
   return neg?-Math.abs(n):n;
 }
+
+// --- lote: detección de duplicados + unificación de rubros ---
+function claveDup(x){return x.fecha+'|'+x.tipo+'|'+Math.round(x.monto)+'|'+norm(x.cat)+'|'+norm(x.det||'')}
+function filtrarDuplicados(nuevos){
+  const existentes=new Set(datos.map(claveDup));
+  let dupes=0;
+  const limpios=nuevos.filter(n=>{
+    const k=claveDup(n);
+    if(existentes.has(k)){dupes++;return false}
+    existentes.add(k);
+    return true;
+  });
+  return {limpios,dupes};
+}
+function unificarRubros(){
+  const grupos={};
+  datos.forEach(d=>{const k=norm(d.cat);(grupos[k]=grupos[k]||[]).push(d.cat)});
+  let cambios=0;
+  Object.entries(grupos).forEach(([k,lista])=>{
+    const conteo={};lista.forEach(c=>conteo[c]=(conteo[c]||0)+1);
+    const formas=Object.keys(conteo);
+    if(formas.length<2)return;
+    const canon=formas.sort((a,b)=>conteo[b]-conteo[a])[0];
+    datos.forEach(d=>{if(norm(d.cat)===k&&d.cat!==canon){d.cat=canon;cambios++}});
+  });
+  return cambios;
+}
+
 function confirmarImport(){
   const cFecha=document.getElementById('map-fecha').value;
   const cMonto=document.getElementById('map-monto').value;
   const modo=document.getElementById('map-modo').value;
   const cTipo=document.getElementById('map-tipo').value;
   const cEgr=document.getElementById('map-egrcol').value;
+  const cCant=document.getElementById('map-cant').value;
   const cAct=document.getElementById('map-act').value;
   const cCat=document.getElementById('map-cat').value;
   const cDet=document.getElementById('map-det').value;
@@ -928,24 +1149,30 @@ function confirmarImport(){
     nuevos.push({
       id:Date.now()+''+Math.random().toString(36).slice(2,8),
       fecha,tipo,monto,
+      cant:cCant&&fila[cCant]?(Math.abs(parseMonto(fila[cCant]))||null):null,
       act:mapAct(cAct?fila[cAct]:''),
       cat:cCat&&fila[cCat]?(''+fila[cCat]).trim():'Sin categoría',
       det:cDet&&fila[cDet]?(''+fila[cDet]).trim():''
     });
   });
   if(!nuevos.length){alert('No se pudo importar ninguna fila. Revisá el mapeo de columnas.');return}
-  datos=datos.concat(nuevos);guardarLS();
+  const {limpios,dupes}=filtrarDuplicados(nuevos);
+  if(!limpios.length){alert('Todas las filas ya estaban cargadas (duplicados detectados). No se importó nada.');return}
+  datos=datos.concat(limpios);
+  const unif=unificarRubros();
+  guardarLS();
   cerrarImport();actualizarAnios();render();renderTabla();
-  alert(`Importados ${nuevos.length} movimientos.`+(errores?` (${errores} filas sin fecha válida se saltearon)`:''));
+  alert(`Importados ${limpios.length} movimientos.`
+    +(dupes?`\n${dupes} duplicados salteados (misma fecha, monto, rubro y detalle).`:'')
+    +(unif?`\n${unif} movimientos con rubros escritos distinto (mayúsculas/acentos) se unificaron.`:'')
+    +(errores?`\n${errores} filas sin fecha válida se saltearon.`:''));
 }
 function mapAct(v){
   return clasificarRubro(v).act;
 }
 
-// Clasificador de rubros del campo -> actividad + si es movimiento interno
 function clasificarRubro(rubro){
   const r=(''+(rubro||'')).toLowerCase();
-  // movimientos que NO son resultado real del campo
   if(/movimiento interno|retiro|saldo inicial|ajuste|inversion|prestamo|credito|movimiento entre/.test(r))
     return {act:'General',interno:true};
   if(/cebolla/.test(r))return {act:'Cebolla',interno:false};
@@ -955,7 +1182,7 @@ function clasificarRubro(rubro){
   return {act:'General',interno:false};
 }
 
-// ===== IMPORT DIRECTO del formato "Gestión" de tu viejo =====
+// ===== IMPORT DIRECTO del formato "Gestión" =====
 function importarDirecto(e){
   const f=e.target.files[0];if(!f)return;
   const reader=new FileReader();
@@ -963,11 +1190,9 @@ function importarDirecto(e){
     let wb;
     try{wb=XLSX.read(ev.target.result,{type:'binary',cellDates:true})}
     catch(err){alert('No pude leer el archivo. ¿Es un Excel válido?');return}
-    // buscar hoja "Base de Datos" (o la primera)
     let hoja=wb.SheetNames.find(n=>/base de datos/i.test(n))||wb.SheetNames[0];
     const ws=wb.Sheets[hoja];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false,cellDates:true});
-    // encontrar fila de encabezado (la que tiene "Fecha" e "Ingresos")
     let hIdx=-1;
     for(let i=0;i<Math.min(rows.length,15);i++){
       const fila=(rows[i]||[]).map(c=>(''+c).toLowerCase());
@@ -991,19 +1216,29 @@ function importarDirecto(e){
       const clas=clasificarRubro(rubro);
       const obs=iObs>=0&&fila[iObs]?(''+fila[iObs]).trim():'';
       const cuenta=iCuenta>=0&&fila[iCuenta]?(''+fila[iCuenta]).trim():'';
+      const cant=iCant>=0&&fila[iCant]?(Math.abs(parseMonto(fila[iCant]))||null):null;
       nuevos.push({
         id:Date.now()+''+Math.random().toString(36).slice(2,8),
-        fecha,tipo,monto,act:clas.act,interno:clas.interno,
+        fecha,tipo,monto,cant,act:clas.act,interno:clas.interno,
         cat:rubro,
         det:[obs,cuenta?('['+cuenta+']'):''].filter(Boolean).join(' ')
       });
     }
     if(!nuevos.length){alert('No se importó ninguna fila. Revisá que sea la planilla correcta.');return}
-    if(datos.length&&!confirm(`Ya hay ${datos.length} movimientos cargados. ¿Agregar ${nuevos.length} más? (Si es la misma planilla que ya importaste, van a quedar duplicados — mejor cancelá y borrá primero.)`))return;
-    datos=datos.concat(nuevos);guardarLS();
+    const {limpios,dupes}=filtrarDuplicados(nuevos);
+    if(!limpios.length){alert('Todas las filas de esta planilla ya estaban cargadas. No se importó nada nuevo (duplicados detectados).');return}
+    datos=datos.concat(limpios);
+    const unif=unificarRubros();
+    guardarLS();
     cerrarImport();actualizarAnios();render();renderTabla();
-    const internos=nuevos.filter(n=>n.interno).length;
-    alert(`✓ Importados ${nuevos.length} movimientos.\n${internos} son movimientos internos (retiros, ajustes, saldos) — se guardan pero no cuentan en el resultado del campo.${saltadas?'\n'+saltadas+' filas sin fecha válida se saltearon.':''}`);
+    const internos=limpios.filter(n=>n.interno).length;
+    const conCant=limpios.filter(n=>n.cant).length;
+    alert(`✓ Importados ${limpios.length} movimientos.`
+      +(dupes?`\n${dupes} ya estaban cargados y se saltearon (anti-duplicados).`:'')
+      +(conCant?`\n${conCant} traen cantidades (cabezas/kg) de la columna Cantidades.`:'')
+      +(internos?`\n${internos} son movimientos internos (retiros, ajustes, saldos) — no cuentan en el resultado.`:'')
+      +(unif?`\n${unif} rubros escritos distinto se unificaron.`:'')
+      +(saltadas?`\n${saltadas} filas sin fecha válida se saltearon.`:''));
   };
   reader.readAsBinaryString(f);
 }
@@ -1012,14 +1247,43 @@ function importarDirecto(e){
 function exportar(){
   if(!datos.length){alert('No hay datos para exportar');return}
   const ws=XLSX.utils.json_to_sheet(datos.map(d=>({
-    Fecha:d.fecha,Tipo:d.tipo,Monto:d.monto,Actividad:d.act,Categoría:d.cat,Interno:d.interno?'Sí':'No',Detalle:d.det
+    Fecha:d.fecha,
+    Tipo:d.tipo==='transfer'?'transferencia':d.tipo,
+    Monto:d.monto,
+    Cantidad:d.cant||'',
+    Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):d.act,
+    Categoría:d.cat,
+    Interno:d.interno?'Sí':'No',
+    Detalle:d.det
   })));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Movimientos');
   XLSX.writeFile(wb,'gestion-campo-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  localStorage.setItem('campo_backup',''+Date.now());
+  document.getElementById('banner-backup').style.display='none';
 }
 
-// ============ COTIZACIONES (dolarapi.com - API pública argentina) ============
+// ============ RECORDATORIO DE BACKUP ============
+function chequearBackup(){
+  if(datos.length<10)return;
+  const ult=parseInt(localStorage.getItem('campo_backup')||'0');
+  const snooze=parseInt(localStorage.getItem('campo_backup_snooze')||'0');
+  if(ult&&Date.now()-ult<30*864e5)return;
+  if(!ult&&!localStorage.getItem('campo_backup_primera')){
+    // primera vez que hay datos y nunca se exportó: arrancamos a contar desde hoy
+    localStorage.setItem('campo_backup_primera',''+Date.now());
+    return;
+  }
+  if(!ult&&Date.now()-parseInt(localStorage.getItem('campo_backup_primera'))<30*864e5)return;
+  if(snooze&&Date.now()-snooze<7*864e5)return;
+  document.getElementById('banner-backup').style.display='flex';
+}
+function posponerBackup(){
+  localStorage.setItem('campo_backup_snooze',''+Date.now());
+  document.getElementById('banner-backup').style.display='none';
+}
+
+// ============ COTIZACIONES (dolarapi.com) ============
 let dolarCache=null;
 async function cargarDolar(){
   try{
@@ -1035,7 +1299,7 @@ async function cargarDolar(){
       ).join('')+
       `<span style="font-size:11px;color:var(--tinta-suave);margin-left:auto">dolarapi.com</span>`;
     barra.style.display='flex';
-  }catch(e){/* sin internet, no mostramos la barra */}
+  }catch(e){}
 }
 
 // ============ ASESOR IA (Gemini) ============
@@ -1069,12 +1333,22 @@ function cambiarKey(){
 function saludoIA(){
   const d=datosReales();
   const txt=d.length
-    ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos y puedo ayudarte a entender los números, ver qué conviene y proyectar a futuro. Preguntame lo que quieras, en criollo nomás.'
+    ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos y puedo ayudarte a entender los números, ver qué conviene y proyectar a futuro. También puedo buscar precios de mercado actuales e históricos (ternero, maíz, cebolla) y compararlos con lo que vendiste. Preguntame lo que quieras, en criollo nomás.'
     : 'Hola! Todavía no hay datos cargados. Importá el Excel o cargá algunos movimientos y ya te puedo ayudar a analizarlos.';
   agregarMsg('bot',txt);
 }
+
+// --- lote: sugerencias dinámicas según alertas ---
+function sugerenciasDeAlertas(){
+  const anios=[...new Set(datosReales().map(d=>d.fecha.slice(0,4)))].sort();
+  if(!anios.length)return [];
+  const ult=anios[anios.length-1];
+  return calcularAlertas(ult).filter(a=>a.preg).map(a=>a.preg).slice(0,3);
+}
 function renderSugerencias(){
-  const sugs=['¿A cuánto está el ternero hoy en Cañuelas?','¿Vendimos el maíz a buen precio vs el mercado?','¿Por qué la agricultura da negativo?','¿Cómo viene la caja para los próximos meses?'];
+  const base=['¿A cuánto está el ternero hoy en Cañuelas?','¿Vendimos a buen precio comparado con el mercado de ese momento?','¿Cómo viene la caja para los próximos meses?'];
+  const din=sugerenciasDeAlertas();
+  const sugs=[...new Set([...din,...base])].slice(0,4);
   document.getElementById('ia-sugerencias').innerHTML=sugs.map(s=>`<button class="sug" onclick="preguntarIA('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
 }
 function agregarMsg(rol,txt,html){
@@ -1101,62 +1375,82 @@ async function llamarGemini(sistema,conBusqueda){
   return await resp.json();
 }
 
-// Convierte respuesta de Gemini (markdown simple) a HTML
 function fmtRespuesta(t){
   let h=esc(t);
   h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
-  // procesar por bloques separados por líneas en blanco
   return h.split(/\n\n+/).map(bloque=>{
     const lineas=bloque.split('\n');
-    // ¿es lista?
     if(lineas.every(l=>/^[\*\-] /.test(l.trim())||l.trim()==='')){
       const items=lineas.filter(l=>l.trim()).map(l=>'<li>'+l.trim().replace(/^[\*\-] /,'')+'</li>').join('');
       return '<ul>'+items+'</ul>';
     }
-    // ¿es título?
     if(/^### /.test(bloque))return '<h4>'+bloque.replace(/^### /,'')+'</h4>';
-    // párrafo normal
     return '<p>'+bloque.replace(/^### (.+)$/gm,'<h4>$1</h4>').replace(/\n/g,'<br>')+'</p>';
   }).join('');
 }
 
 // ===== EL RESUMEN QUE VE LA IA =====
-// En vez de mandar 4000 movimientos, precalculamos los números clave.
+function descMoneda(){
+  if(moneda==='hoy')return 'PESOS DE HOY (ajustados por inflación IPC — comparables entre años)';
+  if(moneda==='usd')return 'DÓLARES (cada movimiento convertido al oficial de su mes — comparables entre años)';
+  return 'PESOS CORRIENTES (SIN ajustar por inflación: ojo al comparar entre años, los montos viejos están licuados)';
+}
 function resumenParaIA(){
   const d=datosReales();
   if(!d.length)return 'No hay datos cargados.';
-  const R={};
-  // por actividad
-  const acts={};
-  d.forEach(x=>{if(!acts[x.act])acts[x.act]={ing:0,egr:0,n:0};acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=x.monto;acts[x.act].n++});
-  // por año
+  const M=n=>pref()+Math.round(n).toLocaleString('es-AR');
+  // por actividad (con transferencias repartidas)
+  const acts=actAgg(d);
+  // transferencias
+  const trans={};
+  d.filter(x=>x.tipo==='transfer').forEach(x=>{
+    const k=x.actOrigen+' → '+x.actDestino;
+    trans[k]=(trans[k]||0)+mv(x);
+  });
+  // por año (solo plata real)
   const anios={};
-  d.forEach(x=>{const a=x.fecha.slice(0,4);if(!anios[a])anios[a]={ing:0,egr:0};anios[a][x.tipo==='ingreso'?'ing':'egr']+=x.monto});
-  // por rubro (egresos, top)
+  d.forEach(x=>{
+    if(x.tipo==='transfer')return;
+    const a=x.fecha.slice(0,4);
+    if(!anios[a])anios[a]={ing:0,egr:0};
+    anios[a][x.tipo==='ingreso'?'ing':'egr']+=mv(x);
+  });
+  // rubros
   const rubros={};
-  d.filter(x=>x.tipo==='egreso').forEach(x=>{rubros[x.cat]=(rubros[x.cat]||0)+x.monto});
+  d.filter(x=>x.tipo==='egreso').forEach(x=>{rubros[x.cat]=(rubros[x.cat]||0)+mv(x)});
   const topEgr=Object.entries(rubros).sort((a,b)=>b[1]-a[1]).slice(0,15);
-  // por rubro ingresos
   const rubrosI={};
-  d.filter(x=>x.tipo==='ingreso').forEach(x=>{rubrosI[x.cat]=(rubrosI[x.cat]||0)+x.monto});
+  d.filter(x=>x.tipo==='ingreso').forEach(x=>{rubrosI[x.cat]=(rubrosI[x.cat]||0)+mv(x)});
   const topIng=Object.entries(rubrosI).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  // caja mensual (para proyección)
-  const porMes={};
-  d.forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  // caja mensual
+  const porMes=cajaMensual(d);
   const meses=Object.keys(porMes).sort();
   const ult6=meses.slice(-6).map(m=>`${m}: ${Math.round(porMes[m]).toLocaleString('es-AR')}`);
+  // cantidades: precio promedio por unidad por rubro y año
+  const cantAnio={};
+  d.filter(x=>x.cant>0&&x.tipo!=='transfer').forEach(x=>{
+    const a=x.fecha.slice(0,4);
+    const k=x.cat+'|'+a+'|'+x.tipo;
+    if(!cantAnio[k])cantAnio[k]={cant:0,monto:0};
+    cantAnio[k].cant+=x.cant;
+    cantAnio[k].monto+=mv(x);
+  });
 
-  const M=n=>'$'+Math.round(n).toLocaleString('es-AR');
-  const rango=`${d[0]?meses[0]:''} a ${meses[meses.length-1]||''}`;
+  const rango=`${meses[0]||''} a ${meses[meses.length-1]||''}`;
   let txt=`RESUMEN FINANCIERO DEL CAMPO (datos reales, sin movimientos internos como retiros/ajustes)\n`;
+  txt+=`MONEDA DE TODOS LOS MONTOS: ${descMoneda()}\n`;
   txt+=`Período: ${rango}. Total movimientos: ${d.length}.\n\n`;
-  txt+=`RESULTADO POR ACTIVIDAD:\n`;
+  txt+=`RESULTADO POR ACTIVIDAD (incluye transferencias internas: ej. maíz propio consumido por la hacienda suma como ingreso de Agricultura y costo de Ganadería):\n`;
   Object.entries(acts).sort((a,b)=>(b[1].ing-b[1].egr)-(a[1].ing-a[1].egr)).forEach(([a,v])=>{
     txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)} (${v.n} movs)\n`;
   });
+  const kTrans=Object.keys(trans);
+  if(kTrans.length){
+    txt+=`\nTRANSFERENCIAS INTERNAS ENTRE ACTIVIDADES (no mueven plata, solo reparten resultado):\n`;
+    kTrans.forEach(k=>txt+=`- ${k}: ${M(trans[k])}\n`);
+  }
   txt+=`\nNOTA IMPORTANTE: "General" son gastos de estructura (sueldos, combustible, bancarios, impuestos) que NO están repartidos entre las actividades. Por eso una actividad puede verse negativa si sus costos reales están cayendo en General. Tenelo en cuenta al analizar rentabilidad.\n`;
-  // margen por actividad (sin estructura) - lo que mira un gestor
-  txt+=`\nMARGEN POR ACTIVIDAD (ingresos - costos directos de esa actividad, SIN estructura):\n`;
+  txt+=`\nMARGEN POR ACTIVIDAD (ingresos - costos directos, SIN estructura):\n`;
   Object.entries(acts).filter(([a])=>a!=='General').sort((x,y)=>(y[1].ing-y[1].egr)-(x[1].ing-x[1].egr)).forEach(([a,v])=>{
     const mg=v.ing>0?Math.round((v.ing-v.egr)/v.ing*100):0;
     txt+=`- ${a}: margen ${M(v.ing-v.egr)}${v.ing>0?' ('+mg+'% sobre ingresos)':''}\n`;
@@ -1167,12 +1461,11 @@ function resumenParaIA(){
   Object.keys(anios).sort().forEach(a=>{const v=anios[a];txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)}\n`});
   txt+=`\nMAYORES EGRESOS ACUMULADOS TODO EL PERÍODO (por rubro):\n`;
   topEgr.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
-  // Egresos por rubro DESGLOSADO POR AÑO (para preguntas tipo "este año")
   const egrAnioRubro={};
   d.filter(x=>x.tipo==='egreso').forEach(x=>{
     const a=x.fecha.slice(0,4);
     if(!egrAnioRubro[a])egrAnioRubro[a]={};
-    egrAnioRubro[a][x.cat]=(egrAnioRubro[a][x.cat]||0)+x.monto;
+    egrAnioRubro[a][x.cat]=(egrAnioRubro[a][x.cat]||0)+mv(x);
   });
   txt+=`\nMAYORES EGRESOS POR AÑO (top 8 de cada año):\n`;
   Object.keys(egrAnioRubro).sort().forEach(a=>{
@@ -1181,6 +1474,15 @@ function resumenParaIA(){
   });
   txt+=`\nMAYORES INGRESOS (por rubro):\n`;
   topIng.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
+  const kCant=Object.keys(cantAnio);
+  if(kCant.length){
+    txt+=`\nVENTAS Y COMPRAS CON CANTIDADES CARGADAS (para comparar contra precios de mercado de esa época):\n`;
+    kCant.sort().forEach(k=>{
+      const [cat,a,tipo]=k.split('|');
+      const v=cantAnio[k];
+      txt+=`- ${a} · ${cat} (${tipo}): ${v.cant} unidades por ${M(v.monto)} → promedio ${M(v.monto/v.cant)} por unidad (cabezas/kg según el rubro)\n`;
+    });
+  }
   txt+=`\nCAJA NETA ÚLTIMOS MESES (ingreso - egreso por mes):\n${ult6.join('\n')}\n`;
   return txt;
 }
@@ -1200,7 +1502,9 @@ async function preguntarIA(pregunta){
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
 
-PRECIOS DE MERCADO: Tenés acceso a búsqueda en Google. Si te preguntan precios actuales de mercado (hacienda/ternero/novillo en Cañuelas o MAG, maíz pizarra Rosario, cebolla, insumos, dólar), BUSCÁ el dato real de hoy en Google y respondé con el precio encontrado citando la fuente y fecha. NUNCA inventes ni estimes un precio de memoria: si no encontrás el dato, decilo. Podés combinar precios de mercado con los datos del campo (ej: comparar a cuánto vendió terneros vs el mercado hoy).
+PRECIOS DE MERCADO ACTUALES: Tenés acceso a búsqueda en Google. Si te preguntan precios actuales de mercado (hacienda/ternero/novillo en Cañuelas o MAG, maíz pizarra Rosario, cebolla, insumos, dólar), BUSCÁ el dato real de hoy en Google y respondé con el precio encontrado citando la fuente y fecha. NUNCA inventes ni estimes un precio de memoria: si no encontrás el dato, decilo.
+
+PRECIOS DE MERCADO HISTÓRICOS: Si te preguntan a cuánto estaba algo en una fecha pasada (ej: "el ternero en marzo 2024", "el maíz cuando lo vendimos"), buscá en Google el precio de ESE período (fuentes útiles: Mercado Agroganadero de Cañuelas, entresurcosycorrales.com, Bolsa de Comercio de Rosario, revista Márgenes Agropecuarios) y aclarár fuente y fecha del dato. Si el campo tiene cantidades cargadas (sección VENTAS Y COMPRAS CON CANTIDADES), compará el precio promedio por unidad del campo contra el mercado de esa misma época. OJO CON LA MONEDA: fijate en qué moneda están los datos del campo (lo dice el encabezado del resumen). Si están en pesos corrientes, compará contra precios en pesos de esa misma época, nunca contra precios de hoy.
 
 LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
@@ -1211,7 +1515,6 @@ ${resumenParaIA()}${dolarInfo}`;
 
   try{
     let data=await llamarGemini(sistema,true);
-    // si el tool de búsqueda no está disponible en esta key, reintentar sin él
     if(data.error&&/search|tool|not supported|INVALID_ARGUMENT/i.test(data.error.message||'')){
       data=await llamarGemini(sistema,false);
     }
@@ -1225,7 +1528,6 @@ ${resumenParaIA()}${dolarInfo}`;
       iaHistorial.pop();
     }else{
       const cand=data.candidates?.[0];
-      // buscar el texto en cualquier part que lo tenga (los modelos nuevos a veces intercalan)
       let txt='';
       if(cand?.content?.parts)txt=cand.content.parts.map(p=>p.text||'').join('').trim();
       if(!txt){
@@ -1233,7 +1535,6 @@ ${resumenParaIA()}${dolarInfo}`;
         else txt='No pude generar una respuesta. Probá reformular la pregunta.';
       }
       let htmlResp=fmtRespuesta(txt);
-      // si buscó en Google, mostrar las fuentes
       const chunks=cand?.groundingMetadata?.groundingChunks;
       if(chunks&&chunks.length){
         const fuentes=[...new Map(chunks.filter(c=>c.web).map(c=>[c.web.uri,c.web.title||c.web.uri])).entries()].slice(0,4);
@@ -1241,7 +1542,7 @@ ${resumenParaIA()}${dolarInfo}`;
       }
       agregarMsg('bot',htmlResp,true);
       iaHistorial.push({role:'model',parts:[{text:txt}]});
-      if(iaHistorial.length>16)iaHistorial=iaHistorial.slice(-16); // limitar contexto
+      if(iaHistorial.length>16)iaHistorial=iaHistorial.slice(-16);
     }
   }catch(err){
     pensando.remove();
@@ -1252,7 +1553,7 @@ ${resumenParaIA()}${dolarInfo}`;
   document.getElementById('ia-input').focus();
 }
 
-// ============ GESTIÓN (funciones de contador) ============
+// ============ GESTIÓN ============
 function actualizarAniosGestion(){
   const anios=[...new Set(datosReales().map(d=>d.fecha.slice(0,4)))].sort().reverse();
   const sel=document.getElementById('g-anio');
@@ -1268,6 +1569,7 @@ function datosGestion(){
 function renderGestion(){
   actualizarAniosGestion();
   margenActividad();
+  preciosPromedio();
   costosEstructura();
   alertas();
   cierreEjercicio();
@@ -1276,14 +1578,9 @@ function renderGestion(){
 const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla'};
 
 function margenActividad(){
-  const d=datosGestion();
-  const acts={};
-  d.forEach(x=>{
-    if(x.act==='General')return; // estructura va aparte
-    if(!acts[x.act])acts[x.act]={ing:0,egr:0};
-    acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=x.monto;
-  });
-  const filas=Object.entries(acts).map(([a,v])=>({a,ing:v.ing,egr:v.egr,margen:v.ing-v.egr}))
+  const agg=actAgg(datosGestion());
+  const filas=Object.entries(agg).filter(([a])=>a!=='General')
+    .map(([a,v])=>({a,ing:v.ing,egr:v.egr,margen:v.ing-v.egr}))
     .sort((x,y)=>y.margen-x.margen);
   const maxAbs=Math.max(...filas.map(f=>Math.abs(f.margen)),1);
   const el=document.getElementById('g-margen');
@@ -1304,10 +1601,32 @@ function margenActividad(){
   }).join('');
 }
 
+function preciosPromedio(){
+  const d=datosGestion().filter(x=>x.cant>0&&x.tipo!=='transfer');
+  const el=document.getElementById('g-precios');
+  if(!d.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay movimientos con cantidades cargadas. Vienen de la columna "Cantidades" del Excel o del campo Cantidad al cargar a mano.</p>';return}
+  const grupos={};
+  d.forEach(x=>{
+    const k=x.cat+'|'+x.tipo;
+    if(!grupos[k])grupos[k]={cant:0,monto:0};
+    grupos[k].cant+=x.cant;
+    grupos[k].monto+=mv(x);
+  });
+  const filas=Object.entries(grupos).map(([k,v])=>{
+    const [cat,tipo]=k.split('|');
+    return {cat,tipo,cant:v.cant,prom:v.monto/v.cant,total:v.monto};
+  }).sort((a,b)=>b.total-a.total);
+  el.innerHTML=filas.map(f=>`
+    <div class="g-fila">
+      <span>${f.cat} <span class="pill ${f.tipo==='ingreso'?'ing':'egr'}" style="margin-left:6px">${f.tipo==='ingreso'?'Venta':'Compra'}</span></span>
+      <div class="g-nums"><b>${fmt(f.prom)} /u</b>${Math.round(f.cant).toLocaleString('es-AR')} unidades · total ${fmt(f.total)}</div>
+    </div>`).join('');
+}
+
 function costosEstructura(){
   const d=datosGestion();
   const estr={};
-  d.filter(x=>x.act==='General'&&x.tipo==='egreso').forEach(x=>{estr[x.cat]=(estr[x.cat]||0)+x.monto});
+  d.filter(x=>x.act==='General'&&x.tipo==='egreso').forEach(x=>{estr[x.cat]=(estr[x.cat]||0)+mv(x)});
   const orden=Object.entries(estr).sort((a,b)=>b[1]-a[1]);
   const total=orden.reduce((s,[,v])=>s+v,0);
   const el=document.getElementById('g-estructura');
@@ -1316,70 +1635,79 @@ function costosEstructura(){
     orden.slice(0,10).map(([r,v])=>`<div class="g-fila"><span>${r}</span><b>${fmt(v)}</b></div>`).join('');
 }
 
-function alertas(){
-  const el=document.getElementById('g-alertas');
-  const anio=document.getElementById('g-anio').value;
+// Devuelve alertas como datos (con pregunta sugerida para el asesor).
+function calcularAlertas(anio){
+  const base=datosReales().filter(d=>!anio||d.fecha.slice(0,4)===anio);
   const als=[];
   // 1. Meses con caja negativa
-  const porMes={};
-  datosGestion().forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const porMes=cajaMensual(base);
   const negativos=Object.entries(porMes).filter(([,v])=>v<0).sort((a,b)=>a[1]-b[1]);
   if(negativos.length){
-    als.push({t:'roja',i:'📉',txt:`<b>${negativos.length} ${negativos.length===1?'mes cerró':'meses cerraron'} con caja negativa.</b> El peor fue ${negativos[0][0]} con ${fmt(negativos[0][1])}. Ahí gastaste más de lo que entró.`});
+    als.push({t:'roja',i:'📉',
+      txt:`<b>${negativos.length} ${negativos.length===1?'mes cerró':'meses cerraron'} con caja negativa.</b> El peor fue ${negativos[0][0]} con ${fmt(negativos[0][1])}. Ahí gastaste más de lo que entró.`,
+      preg:'¿Cómo manejo los meses donde la caja da negativa?'});
   }
-  // 2. Gastos por rubro muy por encima de su promedio histórico (solo si hay filtro de año)
+  // 2. Gastos por rubro muy arriba de su promedio histórico (solo con año elegido)
   if(anio){
     const rubrosAnio={},rubrosHist={},aniosCont={};
     datosReales().filter(x=>x.tipo==='egreso').forEach(x=>{
       const a=x.fecha.slice(0,4);
-      if(a===anio)rubrosAnio[x.cat]=(rubrosAnio[x.cat]||0)+x.monto;
-      rubrosHist[x.cat]=(rubrosHist[x.cat]||0)+x.monto;
+      const v=mv(x);
+      if(a===anio)rubrosAnio[x.cat]=(rubrosAnio[x.cat]||0)+v;
+      rubrosHist[x.cat]=(rubrosHist[x.cat]||0)+v;
       if(!aniosCont[x.cat])aniosCont[x.cat]=new Set();
       aniosCont[x.cat].add(a);
     });
+    const umbral=moneda==='usd'?500:500000;
     Object.entries(rubrosAnio).forEach(([r,v])=>{
       const nAnios=aniosCont[r].size;
-      if(nAnios<2||v<500000)return;
+      if(nAnios<2||v<umbral)return;
       const promOtros=(rubrosHist[r]-v)/(nAnios-1);
       if(promOtros>0&&v>promOtros*1.4){
         const subaPct=Math.round((v/promOtros-1)*100);
-        als.push({t:'amar',i:'⚠️',txt:`<b>${r}</b> está ${subaPct}% arriba del promedio de otros años (${fmt(v)} vs ${fmt(promOtros)} promedio). Vale la pena revisar por qué.`});
+        als.push({t:'amar',i:'⚠️',
+          txt:`<b>${r}</b> está ${subaPct}% arriba del promedio de otros años (${fmt(v)} vs ${fmt(promOtros)} promedio). Vale la pena revisar por qué.`,
+          preg:`¿Por qué el gasto en ${r} subió tanto en ${anio}?`});
       }
     });
   }
-  // 3. Actividad con margen negativo
-  const acts={};
-  datosGestion().forEach(x=>{if(x.act==='General')return;if(!acts[x.act])acts[x.act]={ing:0,egr:0};acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=x.monto});
-  Object.entries(acts).forEach(([a,v])=>{
+  // 3. Actividad con margen negativo (transferencias incluidas)
+  const agg=actAgg(base);
+  Object.entries(agg).forEach(([a,v])=>{
+    if(a==='General')return;
     if(v.ing>0&&v.ing-v.egr<0){
-      als.push({t:'amar',i:'🔍',txt:`<b>${ACT_NOMBRE[a]||a}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`});
+      als.push({t:'amar',i:'🔍',
+        txt:`<b>${ACT_NOMBRE[a]||a}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`,
+        preg:`¿${ACT_NOMBRE[a]||a} pierde plata en serio o es un tema de cómo están repartidos los costos?`});
     }
   });
-  // 4. Todo bien
   if(!als.length){
-    als.push({t:'verde',i:'✅',txt:'No hay alertas para este ejercicio. La caja y los márgenes vienen sanos.'});
+    als.push({t:'verde',i:'✅',txt:'No hay alertas para este ejercicio. La caja y los márgenes vienen sanos.',preg:null});
   }
-  el.innerHTML=als.map(a=>`<div class="alerta ${a.t}"><span class="ai">${a.i}</span><div>${a.txt}</div></div>`).join('');
+  return als;
+}
+function alertas(){
+  const anio=document.getElementById('g-anio').value;
+  const als=calcularAlertas(anio);
+  document.getElementById('g-alertas').innerHTML=als.map(a=>`<div class="alerta ${a.t}"><span class="ai">${a.i}</span><div>${a.txt}</div></div>`).join('');
 }
 
 function cierreEjercicio(){
   const d=datosGestion();
-  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
-  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+x.monto,0);
+  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
+  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   const anio=document.getElementById('g-anio').value;
   const el=document.getElementById('g-cierre');
-  // comparativo con año anterior si hay filtro
   let comp='';
   if(anio){
     const prev=(parseInt(anio)-1)+'';
     const dp=datosReales().filter(x=>x.fecha.slice(0,4)===prev);
     if(dp.length){
-      const ingP=dp.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
-      const egrP=dp.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+x.monto,0);
+      const ingP=dp.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
+      const egrP=dp.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
       const resP=ingP-egrP,res=ing-egr;
-      const dif=resP!==0?Math.round((res/resP-1)*100):0;
       comp=`<div class="cierre-box" style="grid-column:1/-1;margin-top:14px">
-        <div class="et">Comparación con ${prev}</div>
+        <div class="et">Comparación con ${prev}${moneda==='corriente'?' (⚠️ en $ corrientes: la inflación distorsiona — probá "$ de hoy")':''}</div>
         <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px">
           <span>Resultado ${prev}: <b>${fmt(resP)}</b></span>
           <span>Resultado ${anio}: <b style="color:${res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(res)}</b></span>
@@ -1404,7 +1732,8 @@ function borrarTodo(){
   if(!confirm('¿Seguro? Última confirmación.'))return;
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
 }
-actualizarAnios();render();cargarDolar();
+document.getElementById('f-moneda').value=moneda;
+actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();
 </script>
 </body>
 </html>
