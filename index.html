@@ -93,9 +93,6 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
 .chart-box.chico{height:230px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:720px){.grid-2{grid-template-columns:1fr}}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-@media(max-width:980px){.grid-3{grid-template-columns:1fr 1fr}}
-@media(max-width:680px){.grid-3{grid-template-columns:1fr}}
 
 .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
 .filtros select,.filtros input{
@@ -251,7 +248,6 @@ tr:hover td{background:var(--papel-hondo)}
 </header>
 
 <main>
-  <!-- Recordatorio de backup (30 días) -->
   <div class="alerta amar" id="banner-backup" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai">💾</span>
     <div style="flex:1;min-width:200px">Hace más de 30 días que no exportás un backup. Los datos viven solo en este navegador: si se limpia el historial, se pierden.</div>
@@ -332,7 +328,7 @@ tr:hover td{background:var(--papel-hondo)}
   <!-- ===== MOVIMIENTOS ===== -->
   <div class="vista" id="v-mov">
     <div class="filtros">
-      <input type="text" id="busca" placeholder="Buscar..." oninput="renderTabla()" style="flex:1;min-width:150px">
+      <input type="text" id="busca" placeholder="Buscar (rubro, detalle, cuenta, cliente...)" oninput="renderTabla()" style="flex:1;min-width:150px">
       <select id="f-tipo" onchange="renderTabla()">
         <option value="">Todos</option>
         <option value="ingreso">Ingresos</option>
@@ -343,7 +339,7 @@ tr:hover td{background:var(--papel-hondo)}
     <div class="panel" style="padding:0;overflow:hidden">
       <div class="tabla-wrap">
         <table id="tabla">
-          <thead><tr><th>Fecha</th><th>Detalle</th><th>Actividad</th><th>Categoría</th><th>Tipo</th><th style="text-align:right">Monto</th><th></th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Detalle</th><th>Cuenta</th><th>Actividad</th><th>Categoría</th><th>Tipo</th><th style="text-align:right">Monto</th><th></th></tr></thead>
           <tbody id="tabla-body"></tbody>
         </table>
       </div>
@@ -363,6 +359,12 @@ tr:hover td{background:var(--papel-hondo)}
     </div>
 
     <div class="panel">
+      <h2><span class="pin"></span>Saldos por cuenta (hoy)</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Cuánta plata hay en cada caja según todos los movimientos cargados (incluye saldos iniciales, retiros y pases entre cuentas). Debería coincidir con el saldo real de cada cuenta — si no coincide, falta cargar algo.</p>
+      <div id="g-cuentas"></div>
+    </div>
+
+    <div class="panel">
       <h2><span class="pin"></span>Margen por actividad</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Ingresos menos costos directos de cada actividad, incluyendo transferencias internas (ej: maíz propio que consume la hacienda cuenta como ingreso de Agricultura y costo de Ganadería). Los costos de estructura van aparte.</p>
       <div id="g-margen"></div>
@@ -370,8 +372,14 @@ tr:hover td{background:var(--papel-hondo)}
 
     <div class="panel">
       <h2><span class="pin"></span>Precios promedio (rubros con cantidad)</h2>
-      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Monto dividido por las cantidades cargadas (cabezas, kg, qq). Sirve para comparar contra el mercado de esa época — preguntale al asesor.</p>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Monto dividido por las cantidades cargadas (cabezas, kg, litros, qq). Sirve para comparar contra el mercado de esa época — preguntale al asesor.</p>
       <div id="g-precios"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Clientes y proveedores</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">A quién le vendés y a quién le comprás, ordenado por plata. Se carga con el campo Cliente/Proveedor al anotar un movimiento, o desde la columna "Clientes-Proveedores" del Excel.</p>
+      <div id="g-provs"></div>
     </div>
 
     <div class="panel">
@@ -475,8 +483,13 @@ tr:hover td{background:var(--papel-hondo)}
       <input type="number" id="m-monto" placeholder="0" inputmode="decimal">
     </div>
     <div class="campo">
-      <label>Cantidad (opcional — cabezas, kg, qq)</label>
+      <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
       <input type="number" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
+    </div>
+    <div class="campo" id="wrap-cta">
+      <label>Cuenta (de dónde sale / a dónde entra la plata)</label>
+      <input type="text" id="m-cta" list="ctas" placeholder="Ej: Efectivo, Banco Rio, Echeq...">
+      <datalist id="ctas"></datalist>
     </div>
     <div class="campo" id="wrap-act-normal">
       <label>Actividad</label>
@@ -505,6 +518,11 @@ tr:hover td{background:var(--papel-hondo)}
         </select>
       </div>
     </div>
+    <div class="campo" id="wrap-prov">
+      <label>Cliente / Proveedor (opcional)</label>
+      <input type="text" id="m-prov" list="provs" placeholder="Ej: Gilardi, YPF, consignatario...">
+      <datalist id="provs"></datalist>
+    </div>
     <div class="campo">
       <label>Categoría</label>
       <input type="text" id="m-cat" list="cats" placeholder="Ej: gasoil, veterinaria, venta hacienda...">
@@ -518,7 +536,7 @@ tr:hover td{background:var(--papel-hondo)}
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
         <input type="checkbox" id="m-interno"> Es movimiento interno (retiro, ajuste, pase entre cajas)
       </label>
-      <p class="mini-nota">Los internos se guardan pero no cuentan como resultado del campo.</p>
+      <p class="mini-nota">Los internos se guardan pero no cuentan como resultado del campo. Sí afectan el saldo de la cuenta.</p>
     </div>
     <div class="modal-btns">
       <button class="btn btn-sec" onclick="cerrarModal()">Cancelar</button>
@@ -533,7 +551,7 @@ tr:hover td{background:var(--papel-hondo)}
     <h3>Importar Excel</h3>
     <div style="background:var(--papel-hondo);border-radius:12px;padding:14px;margin-bottom:16px">
       <p style="font-size:14px;font-weight:600;margin-bottom:6px">📗 Tu planilla "Gestión"</p>
-      <p style="font-size:13px;color:var(--tinta-suave);margin-bottom:10px">Si es el Excel de siempre (hoja "Base de Datos", con columnas Fecha / Cuenta / Cantidades / Ingresos / Egresos / Rubro), subilo acá y se importa solo. Los movimientos que ya estén cargados se saltean automáticamente.</p>
+      <p style="font-size:13px;color:var(--tinta-suave);margin-bottom:10px">Si es el Excel de siempre (hoja "Base de Datos", con columnas Fecha / Cuenta / Ingresos / Egresos / Rubro / Cantidades), subilo acá y se importa solo. Los movimientos que ya estén cargados se saltean automáticamente, así podés reimportar la planilla actualizada sin duplicar.</p>
       <input type="file" id="file-directo" accept=".xlsx,.xls,.xlsm,.csv" onchange="importarDirecto(event)" style="font-size:13px">
     </div>
     <details>
@@ -559,6 +577,8 @@ tr:hover td{background:var(--papel-hondo)}
       </div>
       <div class="campo" id="wrap-tipo"><label>Columna de tipo</label><select id="map-tipo"></select></div>
       <div class="campo" id="wrap-egrcol" style="display:none"><label>Columna de egresos</label><select id="map-egrcol"></select></div>
+      <div class="campo"><label>Cuenta (opcional)</label><select id="map-cta"></select></div>
+      <div class="campo"><label>Cliente/Proveedor (opcional)</label><select id="map-prov"></select></div>
       <div class="campo"><label>Cantidad (opcional)</label><select id="map-cant"></select></div>
       <div class="campo"><label>Actividad (opcional)</label><select id="map-act"></select></div>
       <div class="campo"><label>Categoría (opcional)</label><select id="map-cat"></select></div>
@@ -581,12 +601,12 @@ let editandoId=null;
 let charts={};
 let rawImport=null, colsImport=[];
 
-// moneda e índices (lote: inflación + dólar histórico)
+// moneda e índices (inflación + dólar histórico, ArgentinaDatos)
 let moneda=localStorage.getItem('campo_moneda')||'corriente';
-let ipcIdx=null, ipcUltimoMes=null;   // {'YYYY-MM': índice acumulado}
-let dolarMes=null, dolarUltimo=null;  // {'YYYY-MM': venta oficial fin de mes}
+let ipcIdx=null, ipcUltimoMes=null;
+let dolarMes=null, dolarUltimo=null;
 
-// caché liviano de filtrados (lote: performance con muchos años)
+// caché de filtrados (performance con muchos años)
 let dataVersion=0, cacheFilt={};
 
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -602,6 +622,8 @@ function fmtK(n){
   return pref()+Math.round(n);
 }
 function norm(s){return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
+// clave de cuenta: además sin espacios, así "e cheq" y "echeq" son la misma
+function normCta(s){return norm(s).replace(/\s+/g,'')}
 
 // ============ MONEDA / ÍNDICES ============
 function buscarMes(map,m){
@@ -629,7 +651,6 @@ function conv(monto,fecha){
 function mv(x){return conv(x.monto,x.fecha)}
 
 async function cargarIndices(){
-  // IPC mensual (ArgentinaDatos, fuente INDEC) — caché 24 h en localStorage
   try{
     let cache=JSON.parse(localStorage.getItem('campo_ipc')||'null');
     if(!cache||Date.now()-cache.t>864e5){
@@ -644,15 +665,14 @@ async function cargarIndices(){
       ipcIdx[o.fecha.slice(0,7)]=acc;
     });
     ipcUltimoMes=Object.keys(ipcIdx).sort().pop();
-  }catch(e){/* sin internet: queda lo cacheado o nada */}
-  // Dólar oficial histórico — se reduce a un valor por mes y se cachea
+  }catch(e){}
   try{
     let cache=JSON.parse(localStorage.getItem('campo_tc')||'null');
     if(!cache||Date.now()-cache.t>864e5){
       const r=await fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial');
       const arr=await r.json();
       const mes={};
-      arr.forEach(o=>{if(o.venta)mes[o.fecha.slice(0,7)]=o.venta}); // queda el último del mes
+      arr.forEach(o=>{if(o.venta)mes[o.fecha.slice(0,7)]=o.venta});
       cache={t:Date.now(),mes};
       localStorage.setItem('campo_tc',JSON.stringify(cache));
     }
@@ -710,6 +730,8 @@ function setTipo(t){
   document.getElementById('wrap-act-normal').style.display=esT?'none':'block';
   document.getElementById('wrap-act-transfer').style.display=esT?'block':'none';
   document.getElementById('wrap-interno').style.display=esT?'none':'block';
+  document.getElementById('wrap-cta').style.display=esT?'none':'block';
+  document.getElementById('wrap-prov').style.display=esT?'none':'block';
   document.getElementById('nota-transfer').style.display=esT?'block':'none';
 }
 function abrirModal(id){
@@ -721,6 +743,8 @@ function abrirModal(id){
     document.getElementById('m-fecha').value=m.fecha;
     document.getElementById('m-monto').value=m.monto;
     document.getElementById('m-cant').value=m.cant||'';
+    document.getElementById('m-cta').value=m.cta||'';
+    document.getElementById('m-prov').value=m.prov||'';
     if(m.tipo==='transfer'){
       document.getElementById('m-origen').value=m.actOrigen;
       document.getElementById('m-destino').value=m.actDestino;
@@ -735,6 +759,8 @@ function abrirModal(id){
     document.getElementById('m-fecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-monto').value='';
     document.getElementById('m-cant').value='';
+    document.getElementById('m-cta').value='';
+    document.getElementById('m-prov').value='';
     document.getElementById('m-cat').value='';
     document.getElementById('m-det').value='';
     document.getElementById('m-interno').checked=false;
@@ -743,6 +769,17 @@ function abrirModal(id){
   document.getElementById('modal-bg').classList.add('abierto');
 }
 function cerrarModal(){document.getElementById('modal-bg').classList.remove('abierto')}
+function formaCanonica(v,campo){
+  // Si ya existe un valor escrito "parecido" (mismo sin mayúsculas/acentos), usar esa forma
+  const nrm=campo==='cta'?normCta:norm;
+  const k=nrm(v);
+  if(!k)return '';
+  const conteo={};
+  datos.forEach(d=>{if(d[campo]&&nrm(d[campo])===k)conteo[d[campo]]=(conteo[d[campo]]||0)+1});
+  const formas=Object.keys(conteo);
+  if(formas.length)return formas.sort((a,b)=>conteo[b]-conteo[a])[0];
+  return (''+v).trim();
+}
 function guardar(){
   const monto=parseFloat(document.getElementById('m-monto').value);
   const fecha=document.getElementById('m-fecha').value;
@@ -764,6 +801,8 @@ function guardar(){
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
       tipo:tipoActual,fecha,monto:Math.abs(monto),cant,
+      cta:formaCanonica(document.getElementById('m-cta').value,'cta'),
+      prov:formaCanonica(document.getElementById('m-prov').value,'prov'),
       act:document.getElementById('m-act').value,
       cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
       det:document.getElementById('m-det').value.trim(),
@@ -783,6 +822,10 @@ function borrar(id){
 function actualizarCats(){
   const cats=[...new Set(datos.map(d=>d.cat))].filter(Boolean);
   document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
+  const ctas=[...new Set(datos.map(d=>d.cta).filter(Boolean))];
+  document.getElementById('ctas').innerHTML=ctas.map(c=>`<option value="${c}">`).join('');
+  const provs=[...new Set(datos.map(d=>d.prov).filter(Boolean))];
+  document.getElementById('provs').innerHTML=provs.map(c=>`<option value="${c}">`).join('');
 }
 
 // ============ FILTROS / AÑOS ============
@@ -797,7 +840,7 @@ function filtrados(){
   const anio=document.getElementById('f-anio').value;
   const act=document.getElementById('f-act').value;
   const incInt=document.getElementById('f-internos').checked;
-  const key=anio+'|'+act+'|'+incInt+'|'+dataVersion;
+  const key=anio+'|'+act+'|'+incInt+'|'+dataVersion+'|'+moneda;
   if(cacheFilt[key])return cacheFilt[key];
   const res=datos.filter(d=>
     (!anio||d.fecha.slice(0,4)===anio)&&
@@ -948,12 +991,15 @@ function renderTabla(){
   const ft=document.getElementById('f-tipo').value;
   let d=[...datos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(ft)d=d.filter(x=>x.tipo===ft);
-  if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
+  if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.cta||'')+(x.prov||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
   const body=document.getElementById('tabla-body');
   document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
   document.getElementById('tabla').style.display=datos.length?'table':'none';
   body.innerHTML=d.map(x=>{
     const esT=x.tipo==='transfer';
+    // si el detalle termina en [Cuenta] y ya tenemos la cuenta aparte, no lo repetimos
+    let detTxt=x.det||'';
+    if(x.cta&&detTxt.endsWith('['+x.cta+']'))detTxt=detTxt.slice(0,-(x.cta.length+2)).trim();
     const actCell=esT
       ?`<span class="act-tag">${nombreAct(x.actOrigen)} → ${nombreAct(x.actDestino)}</span>`
       :`<span class="act-tag">${nombreAct(x.act)}</span>`;
@@ -963,7 +1009,8 @@ function renderTabla(){
       :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
     return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
       <td>${x.fecha}</td>
-      <td>${x.det||'<span style="color:var(--tinta-suave)">—</span>'}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}</td>
+      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}</td>
+      <td>${x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>'}</td>
       <td>${actCell}</td>
       <td>${x.cat}</td>
       <td>${pill}</td>
@@ -982,7 +1029,7 @@ function datosReales(){return datos.filter(d=>!d.interno)}
 function cajaMensual(lista){
   const porMes={};
   lista.forEach(x=>{
-    if(x.tipo==='transfer')return; // las transferencias no mueven plata
+    if(x.tipo==='transfer')return;
     const k=x.fecha.slice(0,7);
     porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?mv(x):-mv(x));
   });
@@ -990,16 +1037,18 @@ function cajaMensual(lista){
 }
 function chartProj(){
   destruir('proj');
+  const cv=document.getElementById('ch-proj');
+  if(!cv)return;
   const porMes=cajaMensual(datosReales());
   const keys=Object.keys(porMes).sort();
-  if(keys.length<2){document.getElementById('ch-proj').parentElement.innerHTML='<p style="color:var(--tinta-suave);text-align:center;padding:40px">Cargá al menos 2 meses de datos para ver la proyección.</p>';return}
+  if(keys.length<2){cv.parentElement.innerHTML='<p style="color:var(--tinta-suave);text-align:center;padding:40px">Cargá al menos 2 meses de datos para ver la proyección.</p>';return}
   let ac=0;const reales=keys.map(k=>{ac+=porMes[k];return ac});
   const ult=keys.slice(-3).map(k=>porMes[k]);
   const prom=ult.reduce((s,v)=>s+v,0)/ult.length;
   const labels=[...keys];const dataReal=[...reales];const dataProj=Array(reales.length).fill(null);
   dataProj[reales.length-1]=ac;
   for(let i=1;i<=3;i++){const [y,m]=keys[keys.length-1].split('-').map(Number);const nm=new Date(y,m-1+i,1);labels.push(nm.toISOString().slice(0,7));ac+=prom;dataReal.push(null);dataProj.push(ac)}
-  charts.proj=new Chart(document.getElementById('ch-proj'),{
+  charts.proj=new Chart(cv,{
     type:'line',
     data:{labels,datasets:[
       {label:'Real',data:dataReal,borderColor:css('--trigo'),backgroundColor:'rgba(201,162,75,.12)',fill:true,tension:.3,pointRadius:3},
@@ -1030,7 +1079,7 @@ function rentActividad(){
 
 // ============ IMPORT ============
 function abrirImport(){document.getElementById('import-bg').classList.add('abierto')}
-function cerrarImport(){document.getElementById('import-bg').classList.remove('abierto');document.getElementById('mapeo').style.display='none';document.getElementById('btn-importar').style.display='none';document.getElementById('file-input').value=''}
+function cerrarImport(){document.getElementById('import-bg').classList.remove('abierto');document.getElementById('mapeo').style.display='none';document.getElementById('btn-importar').style.display='none';document.getElementById('file-input').value='';document.getElementById('file-directo').value=''}
 function leerArchivo(e){
   const f=e.target.files[0];if(!f)return;
   const reader=new FileReader();
@@ -1041,10 +1090,12 @@ function leerArchivo(e){
     if(!rawImport.length){alert('El archivo parece vacío');return}
     colsImport=Object.keys(rawImport[0]);
     const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${c}">${c}</option>`).join('');
-    ['map-fecha','map-monto','map-tipo','map-egrcol','map-cant','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
+    ['map-fecha','map-monto','map-tipo','map-egrcol','map-cta','map-prov','map-cant','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
     adivinar('map-fecha',['fecha','date','dia']);
     adivinar('map-monto',['monto','importe','valor','total','pesos','$']);
     adivinar('map-tipo',['tipo','concepto','clase']);
+    adivinar('map-cta',['cuenta','caja','banco']);
+    adivinar('map-prov',['cliente','proveedor','prov']);
     adivinar('map-cant',['cantidad','kg','cabez','qq']);
     adivinar('map-act',['actividad','rubro','sector']);
     adivinar('map-cat',['categoria','categoría','detalle','concepto','descripcion']);
@@ -1092,15 +1143,19 @@ function parseMonto(v){
   return neg?-Math.abs(n):n;
 }
 
-// --- lote: detección de duplicados + unificación de rubros ---
+// --- duplicados + unificación de rubros y cuentas ---
 function claveDup(x){return x.fecha+'|'+x.tipo+'|'+Math.round(x.monto)+'|'+norm(x.cat)+'|'+norm(x.det||'')}
 function filtrarDuplicados(nuevos){
-  const existentes=new Set(datos.map(claveDup));
+  // Multiset: cuenta cuántas veces existe cada clave ya cargada en la app.
+  // Así dos movimientos idénticos LEGÍTIMOS del mismo archivo (ej: dos cargas
+  // de gasoil iguales el mismo día) entran los dos en la primera importación,
+  // pero reimportar la misma planilla no duplica nada.
+  const existentes={};
+  datos.forEach(d=>{const k=claveDup(d);existentes[k]=(existentes[k]||0)+1});
   let dupes=0;
   const limpios=nuevos.filter(n=>{
     const k=claveDup(n);
-    if(existentes.has(k)){dupes++;return false}
-    existentes.add(k);
+    if(existentes[k]>0){existentes[k]--;dupes++;return false}
     return true;
   });
   return {limpios,dupes};
@@ -1118,6 +1173,32 @@ function unificarRubros(){
   });
   return cambios;
 }
+function unificarCuentas(){
+  const grupos={};
+  datos.forEach(d=>{if(d.cta){const k=normCta(d.cta);(grupos[k]=grupos[k]||[]).push(d.cta)}});
+  let cambios=0;
+  Object.entries(grupos).forEach(([k,lista])=>{
+    const conteo={};lista.forEach(c=>conteo[c]=(conteo[c]||0)+1);
+    const formas=Object.keys(conteo);
+    if(formas.length<2)return;
+    const canon=formas.sort((a,b)=>conteo[b]-conteo[a])[0];
+    datos.forEach(d=>{if(d.cta&&normCta(d.cta)===k&&d.cta!==canon){d.cta=canon;cambios++}});
+  });
+  return cambios;
+}
+function unificarProv(){
+  const grupos={};
+  datos.forEach(d=>{if(d.prov){const k=norm(d.prov);(grupos[k]=grupos[k]||[]).push(d.prov)}});
+  let cambios=0;
+  Object.entries(grupos).forEach(([k,lista])=>{
+    const conteo={};lista.forEach(c=>conteo[c]=(conteo[c]||0)+1);
+    const formas=Object.keys(conteo);
+    if(formas.length<2)return;
+    const canon=formas.sort((a,b)=>conteo[b]-conteo[a])[0];
+    datos.forEach(d=>{if(d.prov&&norm(d.prov)===k&&d.prov!==canon){d.prov=canon;cambios++}});
+  });
+  return cambios;
+}
 
 function confirmarImport(){
   const cFecha=document.getElementById('map-fecha').value;
@@ -1125,6 +1206,8 @@ function confirmarImport(){
   const modo=document.getElementById('map-modo').value;
   const cTipo=document.getElementById('map-tipo').value;
   const cEgr=document.getElementById('map-egrcol').value;
+  const cCta=document.getElementById('map-cta').value;
+  const cProv=document.getElementById('map-prov').value;
   const cCant=document.getElementById('map-cant').value;
   const cAct=document.getElementById('map-act').value;
   const cCat=document.getElementById('map-cat').value;
@@ -1149,6 +1232,8 @@ function confirmarImport(){
     nuevos.push({
       id:Date.now()+''+Math.random().toString(36).slice(2,8),
       fecha,tipo,monto,
+      cta:cCta&&fila[cCta]?(''+fila[cCta]).trim():'',
+      prov:cProv&&fila[cProv]?(''+fila[cProv]).trim():'',
       cant:cCant&&fila[cCant]?(Math.abs(parseMonto(fila[cCant]))||null):null,
       act:mapAct(cAct?fila[cAct]:''),
       cat:cCat&&fila[cCat]?(''+fila[cCat]).trim():'Sin categoría',
@@ -1159,12 +1244,12 @@ function confirmarImport(){
   const {limpios,dupes}=filtrarDuplicados(nuevos);
   if(!limpios.length){alert('Todas las filas ya estaban cargadas (duplicados detectados). No se importó nada.');return}
   datos=datos.concat(limpios);
-  const unif=unificarRubros();
+  const unif=unificarRubros()+unificarCuentas()+unificarProv();
   guardarLS();
   cerrarImport();actualizarAnios();render();renderTabla();
   alert(`Importados ${limpios.length} movimientos.`
     +(dupes?`\n${dupes} duplicados salteados (misma fecha, monto, rubro y detalle).`:'')
-    +(unif?`\n${unif} movimientos con rubros escritos distinto (mayúsculas/acentos) se unificaron.`:'')
+    +(unif?`\n${unif} rubros/cuentas escritos distinto se unificaron.`:'')
     +(errores?`\n${errores} filas sin fecha válida se saltearon.`:''));
 }
 function mapAct(v){
@@ -1201,7 +1286,7 @@ function importarDirecto(e){
     if(hIdx<0){alert('No encontré los encabezados (Fecha / Ingresos / Egresos). ¿Es la planilla de gestión? Si es otro formato, usá la opción de emparejar columnas.');return}
     const H=rows[hIdx].map(c=>(''+(c||'')).toLowerCase().trim());
     const col=n=>H.findIndex(h=>h.includes(n));
-    const iFecha=col('fecha'),iIng=col('ingreso'),iEgr=col('egreso'),iRubro=col('rubro'),iCuenta=col('cuenta'),iCant=col('cantidad'),iObs=col('observ');
+    const iFecha=col('fecha'),iIng=col('ingreso'),iEgr=col('egreso'),iRubro=col('rubro'),iCuenta=col('cuenta'),iCant=col('cantidad'),iObs=col('observ'),iProv=col('client')>=0?col('client'):col('proveedor');
     let nuevos=[],saltadas=0;
     for(let r=hIdx+1;r<rows.length;r++){
       const fila=rows[r];if(!fila)continue;
@@ -1216,31 +1301,53 @@ function importarDirecto(e){
       const clas=clasificarRubro(rubro);
       const obs=iObs>=0&&fila[iObs]?(''+fila[iObs]).trim():'';
       const cuenta=iCuenta>=0&&fila[iCuenta]?(''+fila[iCuenta]).trim():'';
+      const provNom=iProv>=0&&fila[iProv]?(''+fila[iProv]).trim():'';
       const cant=iCant>=0&&fila[iCant]?(Math.abs(parseMonto(fila[iCant]))||null):null;
+      // el detalle conserva [Cuenta] al final para que el anti-duplicados
+      // siga reconociendo lo importado con versiones anteriores de la app
       nuevos.push({
         id:Date.now()+''+Math.random().toString(36).slice(2,8),
-        fecha,tipo,monto,cant,act:clas.act,interno:clas.interno,
+        fecha,tipo,monto,cant,cta:cuenta,prov:provNom,act:clas.act,interno:clas.interno,
         cat:rubro,
         det:[obs,cuenta?('['+cuenta+']'):''].filter(Boolean).join(' ')
       });
     }
     if(!nuevos.length){alert('No se importó ninguna fila. Revisá que sea la planilla correcta.');return}
     const {limpios,dupes}=filtrarDuplicados(nuevos);
-    if(!limpios.length){alert('Todas las filas de esta planilla ya estaban cargadas. No se importó nada nuevo (duplicados detectados).');return}
+    if(!limpios.length){
+      // igual unificamos cuentas por si la base vieja no tenía el campo
+      migrarDatos();guardarLS();renderGestion();
+      alert('Todas las filas de esta planilla ya estaban cargadas. No se importó nada nuevo (anti-duplicados).');return;
+    }
     datos=datos.concat(limpios);
-    const unif=unificarRubros();
+    migrarDatos();
+    const unif=unificarRubros()+unificarCuentas()+unificarProv();
     guardarLS();
     cerrarImport();actualizarAnios();render();renderTabla();
     const internos=limpios.filter(n=>n.interno).length;
     const conCant=limpios.filter(n=>n.cant).length;
     alert(`✓ Importados ${limpios.length} movimientos.`
       +(dupes?`\n${dupes} ya estaban cargados y se saltearon (anti-duplicados).`:'')
-      +(conCant?`\n${conCant} traen cantidades (cabezas/kg) de la columna Cantidades.`:'')
-      +(internos?`\n${internos} son movimientos internos (retiros, ajustes, saldos) — no cuentan en el resultado.`:'')
-      +(unif?`\n${unif} rubros escritos distinto se unificaron.`:'')
+      +(conCant?`\n${conCant} traen cantidades (cabezas/kg/litros) de la columna Cantidades.`:'')
+      +(internos?`\n${internos} son movimientos internos (retiros, ajustes, saldos) — no cuentan en el resultado pero sí en los saldos por cuenta.`:'')
+      +(unif?`\n${unif} rubros/cuentas escritos distinto se unificaron.`:'')
       +(saltadas?`\n${saltadas} filas sin fecha válida se saltearon.`:''));
   };
   reader.readAsBinaryString(f);
+}
+
+// Migración: datos cargados con versiones viejas no tienen el campo cuenta;
+// si el detalle termina en [X], la extraemos de ahí.
+function migrarDatos(){
+  let cambios=0;
+  datos.forEach(d=>{
+    if(!d.cta&&d.det){
+      const m=d.det.match(/\[([^\]]+)\]\s*$/);
+      if(m){d.cta=m[1].trim();cambios++}
+    }
+  });
+  if(cambios)cambios+=unificarCuentas();
+  return cambios;
 }
 
 // ============ EXPORT ============
@@ -1251,6 +1358,8 @@ function exportar(){
     Tipo:d.tipo==='transfer'?'transferencia':d.tipo,
     Monto:d.monto,
     Cantidad:d.cant||'',
+    Cuenta:d.cta||'',
+    'Cliente/Proveedor':d.prov||'',
     Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):d.act,
     Categoría:d.cat,
     Interno:d.interno?'Sí':'No',
@@ -1270,7 +1379,6 @@ function chequearBackup(){
   const snooze=parseInt(localStorage.getItem('campo_backup_snooze')||'0');
   if(ult&&Date.now()-ult<30*864e5)return;
   if(!ult&&!localStorage.getItem('campo_backup_primera')){
-    // primera vez que hay datos y nunca se exportó: arrancamos a contar desde hoy
     localStorage.setItem('campo_backup_primera',''+Date.now());
     return;
   }
@@ -1333,12 +1441,11 @@ function cambiarKey(){
 function saludoIA(){
   const d=datosReales();
   const txt=d.length
-    ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos y puedo ayudarte a entender los números, ver qué conviene y proyectar a futuro. También puedo buscar precios de mercado actuales e históricos (ternero, maíz, cebolla) y compararlos con lo que vendiste. Preguntame lo que quieras, en criollo nomás.'
+    ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Puedo buscar precios de mercado actuales e históricos (ternero, maíz, cebolla) y compararlos con lo que vendiste. Preguntame lo que quieras, en criollo nomás.'
     : 'Hola! Todavía no hay datos cargados. Importá el Excel o cargá algunos movimientos y ya te puedo ayudar a analizarlos.';
   agregarMsg('bot',txt);
 }
 
-// --- lote: sugerencias dinámicas según alertas ---
 function sugerenciasDeAlertas(){
   const anios=[...new Set(datosReales().map(d=>d.fecha.slice(0,4)))].sort();
   if(!anios.length)return [];
@@ -1395,19 +1502,33 @@ function descMoneda(){
   if(moneda==='usd')return 'DÓLARES (cada movimiento convertido al oficial de su mes — comparables entre años)';
   return 'PESOS CORRIENTES (SIN ajustar por inflación: ojo al comparar entre años, los montos viejos están licuados)';
 }
+function saldosPorCuenta(){
+  const ctas={};
+  datos.forEach(x=>{
+    if(x.tipo==='transfer'||!x.cta)return;
+    if(!ctas[x.cta])ctas[x.cta]=0;
+    ctas[x.cta]+=(x.tipo==='ingreso'?x.monto:-x.monto);
+  });
+  return Object.entries(ctas).sort((a,b)=>b[1]-a[1]);
+}
+function retirosNetos(lista){
+  let r=0;
+  lista.forEach(x=>{
+    if(x.tipo==='transfer')return;
+    if(/retiro/.test(norm(x.cat)))r+=(x.tipo==='egreso'?x.monto:-x.monto);
+  });
+  return r;
+}
 function resumenParaIA(){
   const d=datosReales();
   if(!d.length)return 'No hay datos cargados.';
   const M=n=>pref()+Math.round(n).toLocaleString('es-AR');
-  // por actividad (con transferencias repartidas)
   const acts=actAgg(d);
-  // transferencias
   const trans={};
   d.filter(x=>x.tipo==='transfer').forEach(x=>{
     const k=x.actOrigen+' → '+x.actDestino;
     trans[k]=(trans[k]||0)+mv(x);
   });
-  // por año (solo plata real)
   const anios={};
   d.forEach(x=>{
     if(x.tipo==='transfer')return;
@@ -1415,18 +1536,15 @@ function resumenParaIA(){
     if(!anios[a])anios[a]={ing:0,egr:0};
     anios[a][x.tipo==='ingreso'?'ing':'egr']+=mv(x);
   });
-  // rubros
   const rubros={};
   d.filter(x=>x.tipo==='egreso').forEach(x=>{rubros[x.cat]=(rubros[x.cat]||0)+mv(x)});
   const topEgr=Object.entries(rubros).sort((a,b)=>b[1]-a[1]).slice(0,15);
   const rubrosI={};
   d.filter(x=>x.tipo==='ingreso').forEach(x=>{rubrosI[x.cat]=(rubrosI[x.cat]||0)+mv(x)});
   const topIng=Object.entries(rubrosI).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  // caja mensual
   const porMes=cajaMensual(d);
   const meses=Object.keys(porMes).sort();
   const ult6=meses.slice(-6).map(m=>`${m}: ${Math.round(porMes[m]).toLocaleString('es-AR')}`);
-  // cantidades: precio promedio por unidad por rubro y año
   const cantAnio={};
   d.filter(x=>x.cant>0&&x.tipo!=='transfer').forEach(x=>{
     const a=x.fecha.slice(0,4);
@@ -1459,6 +1577,39 @@ function resumenParaIA(){
   txt+=`- Costos de estructura totales (no atribuidos a ninguna actividad): ${M(estr)}\n`;
   txt+=`\nRESULTADO POR AÑO:\n`;
   Object.keys(anios).sort().forEach(a=>{const v=anios[a];txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)}\n`});
+  // saldos por cuenta y retiros: se calculan sobre TODOS los movimientos ($ corrientes)
+  const saldos=saldosPorCuenta();
+  if(saldos.length){
+    txt+=`\nSALDOS ACTUALES POR CUENTA (en $ corrientes, incluye internos porque los retiros y pases afectan la caja):\n`;
+    saldos.slice(0,10).forEach(([c,s])=>txt+=`- ${c}: $${Math.round(s).toLocaleString('es-AR')}\n`);
+    const tot=saldos.reduce((s,[,v])=>s+v,0);
+    txt+=`- TOTAL DISPONIBLE: $${Math.round(tot).toLocaleString('es-AR')}\n`;
+  }
+  const retAnios={};
+  datos.forEach(x=>{
+    if(x.tipo==='transfer')return;
+    if(/retiro/.test(norm(x.cat))){
+      const a=x.fecha.slice(0,4);
+      retAnios[a]=(retAnios[a]||0)+(x.tipo==='egreso'?x.monto:-x.monto);
+    }
+  });
+  const kRet=Object.keys(retAnios).sort();
+  if(kRet.length){
+    txt+=`\nRETIROS DEL PRODUCTOR POR AÑO (plata que sacó del campo para uso personal, en $ corrientes):\n`;
+    kRet.forEach(a=>txt+=`- ${a}: $${Math.round(retAnios[a]).toLocaleString('es-AR')}\n`);
+  }
+  const pa=provAgg(d);
+  if(pa.clientes.length||pa.proveedores.length){
+    if(pa.clientes.length){
+      txt+=`\nPRINCIPALES CLIENTES (ventas con cliente cargado):\n`;
+      pa.clientes.slice(0,8).forEach(([p,v])=>txt+=`- ${p}: ${M(v.monto)} (${v.n} operaciones)\n`);
+    }
+    if(pa.proveedores.length){
+      txt+=`\nPRINCIPALES PROVEEDORES (compras con proveedor cargado):\n`;
+      pa.proveedores.slice(0,8).forEach(([p,v])=>txt+=`- ${p}: ${M(v.monto)} (${v.n} operaciones)\n`);
+    }
+    txt+=`(No todos los movimientos tienen cliente/proveedor cargado: estos rankings son parciales.)\n`;
+  }
   txt+=`\nMAYORES EGRESOS ACUMULADOS TODO EL PERÍODO (por rubro):\n`;
   topEgr.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
   const egrAnioRubro={};
@@ -1480,7 +1631,7 @@ function resumenParaIA(){
     kCant.sort().forEach(k=>{
       const [cat,a,tipo]=k.split('|');
       const v=cantAnio[k];
-      txt+=`- ${a} · ${cat} (${tipo}): ${v.cant} unidades por ${M(v.monto)} → promedio ${M(v.monto/v.cant)} por unidad (cabezas/kg según el rubro)\n`;
+      txt+=`- ${a} · ${cat} (${tipo}): ${v.cant} unidades por ${M(v.monto)} → promedio ${M(v.monto/v.cant)} por unidad (cabezas/kg/litros según el rubro)\n`;
     });
   }
   txt+=`\nCAJA NETA ÚLTIMOS MESES (ingreso - egreso por mes):\n${ult6.join('\n')}\n`;
@@ -1498,7 +1649,7 @@ async function preguntarIA(pregunta){
 
   const dolarInfo=dolarCache?('\n\nCOTIZACIÓN DEL DÓLAR HOY (fuente dolarapi.com): '+dolarCache.filter(d=>['oficial','blue','bolsa'].includes(d.casa)).map(d=>`${d.nombre} venta $${Math.round(d.venta)}`).join(', ')+'.'):'';
 
-  const sistema=`Sos un asesor de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Pensás como un contador de gestión / analista de campo: mirás márgenes, rentabilidad por actividad, costos, estacionalidad y flujo de caja. Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen gestor de campo que conoce el negocio. Nada de vueltas ni relleno.
+  const sistema=`Sos un asesor de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Pensás como un contador de gestión / analista de campo: mirás márgenes, rentabilidad por actividad, costos, estacionalidad, flujo de caja, saldos por cuenta y retiros. Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen gestor de campo que conoce el negocio. Nada de vueltas ni relleno.
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
 
@@ -1568,14 +1719,26 @@ function datosGestion(){
 }
 function renderGestion(){
   actualizarAniosGestion();
+  cuentasPanel();
   margenActividad();
   preciosPromedio();
+  provPanel();
   costosEstructura();
   alertas();
   cierreEjercicio();
 }
 
 const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla'};
+
+function cuentasPanel(){
+  const el=document.getElementById('g-cuentas');
+  const saldos=saldosPorCuenta(); // $ corrientes siempre (es plata de hoy en la cuenta)
+  if(!saldos.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay cuentas cargadas. Vienen de la columna "Cuenta" del Excel o del campo Cuenta al cargar a mano.</p>';return}
+  const total=saldos.reduce((s,[,v])=>s+v,0);
+  const F=n=>'$'+Math.round(n).toLocaleString('es-AR');
+  el.innerHTML=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Total disponible (todas las cuentas)</div><div class="v" style="color:${total>=0?'var(--campo)':'var(--ladrillo)'}">${F(total)}</div><div class="d">Siempre en $ corrientes — es la plata de hoy</div></div>`+
+    saldos.map(([c,s])=>`<div class="g-fila"><span>${c}</span><b style="color:${s>=0?'var(--tinta)':'var(--ladrillo)'}">${F(s)}</b></div>`).join('');
+}
 
 function margenActividad(){
   const agg=actAgg(datosGestion());
@@ -1623,6 +1786,38 @@ function preciosPromedio(){
     </div>`).join('');
 }
 
+// Agrupa por cliente (ingresos) y proveedor (egresos) según el campo prov.
+function provAgg(lista){
+  const cli={},prov={};
+  lista.forEach(x=>{
+    if(x.tipo==='transfer'||!x.prov)return;
+    const v=mv(x);
+    if(x.tipo==='ingreso'){if(!cli[x.prov])cli[x.prov]={monto:0,n:0};cli[x.prov].monto+=v;cli[x.prov].n++}
+    else{if(!prov[x.prov])prov[x.prov]={monto:0,n:0};prov[x.prov].monto+=v;prov[x.prov].n++}
+  });
+  const orden=o=>Object.entries(o).sort((a,b)=>b[1].monto-a[1].monto);
+  return {clientes:orden(cli),proveedores:orden(prov)};
+}
+function provPanel(){
+  const el=document.getElementById('g-provs');
+  const {clientes,proveedores}=provAgg(datosGestion());
+  if(!clientes.length&&!proveedores.length){
+    el.innerHTML='<p style="color:var(--tinta-suave)">Todavía no hay movimientos con cliente o proveedor cargado. Al anotar una venta o una compra, completá el campo "Cliente / Proveedor" y acá aparece el ranking solo. Si lo empezás a cargar en la columna "Clientes-Proveedores" del Excel, también entra al importar.</p>';
+    return;
+  }
+  const bloque=(titulo,filas,color)=>{
+    if(!filas.length)return '';
+    const total=filas.reduce((s,[,v])=>s+v.monto,0);
+    return `<p style="font-size:13px;font-weight:700;margin:10px 0 4px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.04em">${titulo}</p>`+
+      filas.slice(0,10).map(([p,v])=>{
+        const pct=total>0?Math.round(v.monto/total*100):0;
+        return `<div class="g-fila"><span>${p} <span class="act-tag">${v.n} movs · ${pct}%</span></span><b style="color:${color}">${fmt(v.monto)}</b></div>`;
+      }).join('');
+  };
+  el.innerHTML=bloque('Clientes (a quién le vendés)',clientes,'var(--campo)')+
+    bloque('Proveedores (a quién le comprás)',proveedores,'var(--ladrillo)');
+}
+
 function costosEstructura(){
   const d=datosGestion();
   const estr={};
@@ -1635,11 +1830,10 @@ function costosEstructura(){
     orden.slice(0,10).map(([r,v])=>`<div class="g-fila"><span>${r}</span><b>${fmt(v)}</b></div>`).join('');
 }
 
-// Devuelve alertas como datos (con pregunta sugerida para el asesor).
+// Alertas como datos (con pregunta sugerida para el asesor).
 function calcularAlertas(anio){
   const base=datosReales().filter(d=>!anio||d.fecha.slice(0,4)===anio);
   const als=[];
-  // 1. Meses con caja negativa
   const porMes=cajaMensual(base);
   const negativos=Object.entries(porMes).filter(([,v])=>v<0).sort((a,b)=>a[1]-b[1]);
   if(negativos.length){
@@ -1647,7 +1841,6 @@ function calcularAlertas(anio){
       txt:`<b>${negativos.length} ${negativos.length===1?'mes cerró':'meses cerraron'} con caja negativa.</b> El peor fue ${negativos[0][0]} con ${fmt(negativos[0][1])}. Ahí gastaste más de lo que entró.`,
       preg:'¿Cómo manejo los meses donde la caja da negativa?'});
   }
-  // 2. Gastos por rubro muy arriba de su promedio histórico (solo con año elegido)
   if(anio){
     const rubrosAnio={},rubrosHist={},aniosCont={};
     datosReales().filter(x=>x.tipo==='egreso').forEach(x=>{
@@ -1671,7 +1864,6 @@ function calcularAlertas(anio){
       }
     });
   }
-  // 3. Actividad con margen negativo (transferencias incluidas)
   const agg=actAgg(base);
   Object.entries(agg).forEach(([a,v])=>{
     if(a==='General')return;
@@ -1679,6 +1871,26 @@ function calcularAlertas(anio){
       als.push({t:'amar',i:'🔍',
         txt:`<b>${ACT_NOMBRE[a]||a}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`,
         preg:`¿${ACT_NOMBRE[a]||a} pierde plata en serio o es un tema de cómo están repartidos los costos?`});
+    }
+  });
+  // concentración de ventas: mucha dependencia de un solo comprador
+  const {clientes}=provAgg(base);
+  if(clientes.length>=2){
+    const totCli=clientes.reduce((s,[,v])=>s+v.monto,0);
+    const [topN,topV]=clientes[0];
+    const pct=totCli>0?Math.round(topV.monto/totCli*100):0;
+    if(pct>=60&&topV.n>=3){
+      als.push({t:'amar',i:'🤝',
+        txt:`El ${pct}% de las ventas con cliente cargado va a <b>${topN}</b>. Depender tanto de un solo comprador es un riesgo: si se cae o aprieta el precio, te complica el año.`,
+        preg:`¿Qué riesgo tengo por venderle casi todo a ${topN} y cómo lo bajo?`});
+    }
+  }
+  // cuenta con saldo negativo: falta cargar algo o hay un error
+  saldosPorCuenta().forEach(([c,s])=>{
+    if(s<-1000){
+      als.push({t:'amar',i:'🏦',
+        txt:`La cuenta <b>${c}</b> da saldo negativo ($${Math.round(s).toLocaleString('es-AR')}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
+        preg:null});
     }
   });
   if(!als.length){
@@ -1698,6 +1910,9 @@ function cierreEjercicio(){
   const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   const anio=document.getElementById('g-anio').value;
   const el=document.getElementById('g-cierre');
+  // retiros del ejercicio (siempre $ corrientes: es plata que salió del campo)
+  const baseRet=datos.filter(x=>!anio||x.fecha.slice(0,4)===anio);
+  const ret=retirosNetos(baseRet);
   let comp='';
   if(anio){
     const prev=(parseInt(anio)-1)+'';
@@ -1720,7 +1935,7 @@ function cierreEjercicio(){
     <div class="cierre-box"><div class="et">Ingresos ${anio||'(todos)'}</div><div class="v" style="color:var(--campo)">${fmt(ing)}</div></div>
     <div class="cierre-box"><div class="et">Egresos ${anio||'(todos)'}</div><div class="v" style="color:var(--ladrillo)">${fmt(egr)}</div></div>
     <div class="cierre-box"><div class="et">Resultado del ejercicio</div><div class="v" style="color:${ing-egr>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(ing-egr)}</div></div>
-    <div class="cierre-box"><div class="et">Movimientos</div><div class="v">${d.length}</div><div class="d">sin contar internos</div></div>
+    <div class="cierre-box"><div class="et">Retiros del productor ${anio||'(todos)'}</div><div class="v" style="color:var(--cielo)">$${Math.round(ret).toLocaleString('es-AR')}</div><div class="d">Plata que salió del campo para uso personal ($ corrientes). No es gasto del campo, pero sale de la caja.</div></div>
     ${comp}
   </div>`;
 }
@@ -1733,6 +1948,8 @@ function borrarTodo(){
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
 }
 document.getElementById('f-moneda').value=moneda;
+// migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
+if(migrarDatos())guardarLS();
 actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();
 </script>
 </body>
