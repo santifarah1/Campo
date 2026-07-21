@@ -64,7 +64,10 @@ header .top-btns button{
 header .top-btns button:hover{background:rgba(255,255,255,.28)}
 
 /* ---- Layout ---- */
-main{max-width:1100px;margin:0 auto;padding:20px 16px 100px}
+main{max-width:1280px;margin:0 auto;padding:22px 20px 100px}
+@media(min-width:1000px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+}
 
 /* ---- Tarjetas KPI ---- */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
@@ -94,6 +97,10 @@ main{max-width:1100px;margin:0 auto;padding:20px 16px 100px}
 .chart-box.chico{height:230px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:720px){.grid-2{grid-template-columns:1fr}}
+/* En pantallas grandes (PC), grilla de 3 para más densidad */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:980px){.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.grid-3{grid-template-columns:1fr}}
 
 /* ---- Filtros ---- */
 .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
@@ -195,6 +202,30 @@ tr:hover td{background:var(--papel-hondo)}
 .vista.on{display:block}
 
 .mini-nota{font-size:12px;color:var(--tinta-suave);margin-top:6px}
+
+/* ---- Chat asesor ---- */
+.msg{margin-bottom:16px;display:flex;gap:10px;animation:aparece .3s ease}
+@keyframes aparece{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg .av{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.msg.user{flex-direction:row-reverse}
+.msg.user .av{background:var(--cielo);color:#fff}
+.msg.bot .av{background:var(--campo);color:#fff}
+.msg .burb{max-width:78%;padding:12px 15px;border-radius:14px;font-size:14.5px;line-height:1.55}
+.msg.user .burb{background:var(--cielo);color:#fff;border-bottom-right-radius:4px}
+.msg.bot .burb{background:var(--papel-hondo);color:var(--tinta);border-bottom-left-radius:4px}
+.msg.bot .burb b{color:var(--campo)}
+.msg .burb h4{font-size:14px;margin:10px 0 4px}
+.msg .burb ul{margin:6px 0 6px 18px}
+.msg .burb li{margin-bottom:3px}
+.msg .burb p{margin-bottom:8px}
+.msg .burb p:last-child{margin-bottom:0}
+.sug{background:var(--papel-hondo);border:1px solid var(--linea);color:var(--tinta-suave);padding:7px 12px;border-radius:20px;font-size:13px;cursor:pointer;transition:.15s}
+.sug:hover{background:var(--campo);color:#fff;border-color:var(--campo)}
+.pensando{display:flex;gap:4px;padding:4px 0}
+.pensando span{width:7px;height:7px;border-radius:50%;background:var(--tinta-suave);animation:latir 1.2s infinite}
+.pensando span:nth-child(2){animation-delay:.2s}
+.pensando span:nth-child(3){animation-delay:.4s}
+@keyframes latir{0%,60%,100%{opacity:.3}30%{opacity:1}}
 </style>
 </head>
 <body>
@@ -211,6 +242,7 @@ tr:hover td{background:var(--papel-hondo)}
     <button onclick="toggleTema()" title="Modo oscuro" id="btn-tema">🌙</button>
     <button onclick="abrirImport()" title="Importar Excel">📥</button>
     <button onclick="exportar()" title="Exportar">📤</button>
+    <button onclick="borrarTodo()" title="Borrar todo">🗑️</button>
   </div>
 </header>
 
@@ -219,6 +251,7 @@ tr:hover td{background:var(--papel-hondo)}
     <button class="on" onclick="verTab('dash',this)">📊 Análisis</button>
     <button onclick="verTab('mov',this)">📋 Movimientos</button>
     <button onclick="verTab('proj',this)">🔮 Proyección</button>
+    <button onclick="verTab('ia',this)">🤖 Asesor</button>
   </div>
 
   <!-- ===== ANÁLISIS ===== -->
@@ -232,8 +265,11 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="Ganadería">Cría / invernada</option>
         <option value="Agricultura">Agricultura</option>
         <option value="Cebolla">Alquiler cebolla</option>
-        <option value="General">General / sin actividad</option>
+        <option value="General">General / estructura</option>
       </select>
+      <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="checkbox" id="f-internos" onchange="render()"> Incluir internos (retiros, ajustes)
+      </label>
     </div>
 
     <div class="kpis">
@@ -298,10 +334,6 @@ tr:hover td{background:var(--papel-hondo)}
 
   <!-- ===== PROYECCIÓN ===== -->
   <div class="vista" id="v-proj">
-    <div class="asistente-nota" style="margin-bottom:18px">
-      <span class="ico">🤖</span>
-      <div><b>Asistente de IA — próxima etapa.</b> Cuando tengas datos cargados de unos meses, acá vas a poder preguntarle en criollo cosas como "¿cuánto gasté en gasoil este año?" o "¿me conviene más la agricultura o la ganadería?". Por ahora te dejo la proyección automática de abajo.</div>
-    </div>
     <div class="panel">
       <h2><span class="pin"></span>Proyección de caja (promedio últimos meses)</h2>
       <div class="chart-box"><canvas id="ch-proj"></canvas></div>
@@ -315,6 +347,46 @@ tr:hover td{background:var(--papel-hondo)}
       <div class="panel">
         <h2><span class="pin"></span>Rentabilidad por actividad</h2>
         <div id="rent-act" style="font-size:14px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ASESOR IA ===== -->
+  <div class="vista" id="v-ia">
+    <div id="ia-sin-key" style="display:none">
+      <div class="panel" style="text-align:center;padding:36px 24px">
+        <div style="font-size:42px;margin-bottom:12px">🤖</div>
+        <h2 style="justify-content:center;font-size:20px;margin-bottom:8px">Activá el asesor</h2>
+        <p style="color:var(--tinta-suave);max-width:520px;margin:0 auto 18px;font-size:14px">
+          El asesor usa Gemini de Google (gratis) para razonar sobre los datos del campo. Necesitás una clave gratuita, se pega una sola vez y queda guardada en esta PC. Tus datos <b>no</b> se suben a ningún lado — solo se manda un resumen de números cuando hacés una pregunta.
+        </p>
+        <div style="max-width:460px;margin:0 auto;text-align:left;background:var(--papel-hondo);border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px;color:var(--tinta-suave)">
+          <b style="color:var(--tinta)">Cómo sacar la clave (2 min):</b><br>
+          1. Entrá a <b>aistudio.google.com/apikey</b> con tu cuenta de Google.<br>
+          2. Tocá "Create API key" / "Crear clave".<br>
+          3. Copiala y pegala acá abajo.
+        </div>
+        <div style="max-width:460px;margin:0 auto;display:flex;gap:8px">
+          <input type="password" id="ia-key-input" placeholder="Pegá tu clave de Gemini acá" style="flex:1;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:14px">
+          <button class="btn btn-primario" onclick="guardarKey()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ia-chat" style="display:none">
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center">
+          <h2 style="margin:0"><span class="pin"></span>Asesor del campo</h2>
+          <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="cambiarKey()">Cambiar clave</button>
+        </div>
+        <div id="ia-mensajes" style="padding:18px;min-height:280px;max-height:520px;overflow-y:auto"></div>
+        <div style="padding:14px 18px;border-top:1px solid var(--linea)">
+          <div id="ia-sugerencias" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="ia-input" placeholder="Preguntá lo que quieras sobre el campo..." style="flex:1;padding:12px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px" onkeydown="if(event.key==='Enter')preguntarIA()">
+            <button class="btn btn-primario" id="ia-btn-enviar" onclick="preguntarIA()">Preguntar</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -359,6 +431,12 @@ tr:hover td{background:var(--papel-hondo)}
       <label>Detalle (opcional)</label>
       <textarea id="m-det" placeholder="Nota libre..."></textarea>
     </div>
+    <div class="campo">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+        <input type="checkbox" id="m-interno"> Es movimiento interno (retiro, ajuste, pase entre cajas)
+      </label>
+      <p class="mini-nota">Los internos se guardan pero no cuentan como resultado del campo.</p>
+    </div>
     <div class="modal-btns">
       <button class="btn btn-sec" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primario" onclick="guardar()">Guardar</button>
@@ -370,8 +448,15 @@ tr:hover td{background:var(--papel-hondo)}
 <div class="modal-bg" id="import-bg">
   <div class="modal">
     <h3>Importar Excel</h3>
-    <p style="font-size:14px;color:var(--tinta-suave);margin-bottom:14px">
-      Subí el Excel de tu viejo. Después de elegir el archivo te dejo emparejar cada columna con los campos de la app, así no importa cómo estén nombradas.
+    <div style="background:var(--papel-hondo);border-radius:12px;padding:14px;margin-bottom:16px">
+      <p style="font-size:14px;font-weight:600;margin-bottom:6px">📗 Tu planilla "Gestión"</p>
+      <p style="font-size:13px;color:var(--tinta-suave);margin-bottom:10px">Si es el Excel de siempre (hoja "Base de Datos", con columnas Fecha / Cuenta / Ingresos / Egresos / Rubro), subilo acá y se importa solo, sin emparejar nada.</p>
+      <input type="file" id="file-directo" accept=".xlsx,.xls,.xlsm,.csv" onchange="importarDirecto(event)" style="font-size:13px">
+    </div>
+    <details>
+      <summary style="font-size:13px;color:var(--tinta-suave);cursor:pointer;margin-bottom:10px">¿Otro formato de Excel? Importar emparejando columnas a mano</summary>
+    <p style="font-size:14px;color:var(--tinta-suave);margin:10px 0">
+      Subí cualquier Excel y emparejá cada columna con los campos de la app.
     </p>
     <div class="campo">
       <label>Archivo (.xlsx / .csv)</label>
@@ -396,8 +481,9 @@ tr:hover td{background:var(--papel-hondo)}
       <div class="campo"><label>Detalle (opcional)</label><select id="map-det"></select></div>
       <p class="mini-nota" id="preview-nota"></p>
     </div>
+    </details>
     <div class="modal-btns">
-      <button class="btn btn-sec" onclick="cerrarImport()">Cancelar</button>
+      <button class="btn btn-sec" onclick="cerrarImport()">Cerrar</button>
       <button class="btn btn-primario" id="btn-importar" onclick="confirmarImport()" style="display:none">Importar</button>
     </div>
   </div>
@@ -429,9 +515,11 @@ function verTab(t,btn){
   btn.classList.add('on');
   document.querySelectorAll('.vista').forEach(v=>v.classList.remove('on'));
   document.getElementById('v-'+t).classList.add('on');
+  document.querySelector('.fab').style.display=(t==='ia')?'none':'flex';
   if(t==='dash')render();
   if(t==='mov')renderTabla();
   if(t==='proj')renderProj();
+  if(t==='ia')initIA();
 }
 
 // ============ TEMA ============
@@ -460,12 +548,14 @@ function abrirModal(id){
     document.getElementById('m-act').value=m.act;
     document.getElementById('m-cat').value=m.cat;
     document.getElementById('m-det').value=m.det||'';
+    document.getElementById('m-interno').checked=!!m.interno;
   }else{
     setTipo('egreso');
     document.getElementById('m-fecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-monto').value='';
     document.getElementById('m-cat').value='';
     document.getElementById('m-det').value='';
+    document.getElementById('m-interno').checked=false;
   }
   actualizarCats();
   document.getElementById('modal-bg').classList.add('abierto');
@@ -480,7 +570,8 @@ function guardar(){
     tipo:tipoActual,fecha,monto:Math.abs(monto),
     act:document.getElementById('m-act').value,
     cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
-    det:document.getElementById('m-det').value.trim()
+    det:document.getElementById('m-det').value.trim(),
+    interno:document.getElementById('m-interno').checked
   };
   if(editandoId){datos=datos.map(d=>d.id===editandoId?obj:d)}
   else{datos.push(obj)}
@@ -508,9 +599,11 @@ function actualizarAnios(){
 function filtrados(){
   const anio=document.getElementById('f-anio').value;
   const act=document.getElementById('f-act').value;
+  const incInt=document.getElementById('f-internos').checked;
   return datos.filter(d=>
     (!anio||d.fecha.slice(0,4)===anio)&&
-    (!act||d.act===act)
+    (!act||d.act===act)&&
+    (incInt||!d.interno)
   );
 }
 
@@ -588,7 +681,8 @@ function chartCat(d){
 function chartAnios(){
   destruir('anios');
   const act=document.getElementById('f-act').value;
-  const base=datos.filter(d=>!act||d.act===act);
+  const incInt=document.getElementById('f-internos').checked;
+  const base=datos.filter(d=>(!act||d.act===act)&&(incInt||!d.interno));
   const anios={};
   base.forEach(x=>{const a=x.fecha.slice(0,4);if(!anios[a])anios[a]={ing:0,egr:0};if(x.tipo==='ingreso')anios[a].ing+=x.monto;else anios[a].egr+=x.monto});
   const labels=Object.keys(anios).sort();
@@ -624,9 +718,9 @@ function renderTabla(){
   document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
   document.getElementById('tabla').style.display=datos.length?'table':'none';
   body.innerHTML=d.map(x=>`
-    <tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
+    <tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
       <td>${x.fecha}</td>
-      <td>${x.det||'<span style="color:var(--tinta-suave)">—</span>'}</td>
+      <td>${x.det||'<span style="color:var(--tinta-suave)">—</span>'}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}</td>
       <td><span class="act-tag">${nombreAct(x.act)}</span></td>
       <td>${x.cat}</td>
       <td><span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
@@ -640,10 +734,11 @@ function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','C
 function renderProj(){
   chartProj();mesesFlojos();rentActividad();
 }
+function datosReales(){return datos.filter(d=>!d.interno)}
 function chartProj(){
   destruir('proj');
   const porMes={};
-  datos.forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  datosReales().forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
   const keys=Object.keys(porMes).sort();
   if(keys.length<2){document.getElementById('ch-proj').parentElement.innerHTML='<p style="color:var(--tinta-suave);text-align:center;padding:40px">Cargá al menos 2 meses de datos para ver la proyección.</p>';return}
   let ac=0;const reales=keys.map(k=>{ac+=porMes[k];return ac});
@@ -664,8 +759,7 @@ function chartProj(){
 }
 function mesesFlojos(){
   const prom=Array(12).fill(0),cont=Array(12).fill(0);
-  datos.forEach(x=>{const m=parseInt(x.fecha.slice(5,7))-1;prom[m]+=(x.tipo==='ingreso'?x.monto:-x.monto)});
-  datos.forEach(x=>{const a=x.fecha.slice(0,7)});
+  datosReales().forEach(x=>{const m=parseInt(x.fecha.slice(5,7))-1;prom[m]+=(x.tipo==='ingreso'?x.monto:-x.monto)});
   const flojos=prom.map((v,i)=>({m:MESES[i],v})).filter(o=>o.v!==0).sort((a,b)=>a.v-b.v).slice(0,4);
   const el=document.getElementById('meses-flojos');
   if(!flojos.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos suficientes.</p>';return}
@@ -673,7 +767,7 @@ function mesesFlojos(){
 }
 function rentActividad(){
   const acts={};
-  datos.forEach(x=>{if(!acts[x.act])acts[x.act]={ing:0,egr:0};if(x.tipo==='ingreso')acts[x.act].ing+=x.monto;else acts[x.act].egr+=x.monto});
+  datosReales().forEach(x=>{if(!acts[x.act])acts[x.act]={ing:0,egr:0};if(x.tipo==='ingreso')acts[x.act].ing+=x.monto;else acts[x.act].egr+=x.monto});
   const el=document.getElementById('rent-act');
   const filas=Object.entries(acts).map(([a,v])=>({a,res:v.ing-v.egr,ing:v.ing})).sort((x,y)=>y.res-x.res);
   if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos.</p>';return}
@@ -788,25 +882,256 @@ function confirmarImport(){
   alert(`Importados ${nuevos.length} movimientos.`+(errores?` (${errores} filas sin fecha válida se saltearon)`:''));
 }
 function mapAct(v){
-  const s=(''+v).toLowerCase();
-  if(/gana|cria|cría|invern|hacienda|vaca|novillo/.test(s))return 'Ganadería';
-  if(/agri|siembra|cosecha|trigo|maiz|maíz|soja|grano/.test(s))return 'Agricultura';
-  if(/cebolla|alquiler|renta/.test(s))return 'Cebolla';
-  return 'General';
+  return clasificarRubro(v).act;
+}
+
+// Clasificador de rubros del campo -> actividad + si es movimiento interno
+function clasificarRubro(rubro){
+  const r=(''+(rubro||'')).toLowerCase();
+  // movimientos que NO son resultado real del campo
+  if(/movimiento interno|retiro|saldo inicial|ajuste|inversion|prestamo|credito|movimiento entre/.test(r))
+    return {act:'General',interno:true};
+  if(/cebolla/.test(r))return {act:'Cebolla',interno:false};
+  if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo/.test(r))return {act:'Ganadería',interno:false};
+  if(/maiz|maíz|semilla|fertiliz|herbicida|cosecha|siembra|grano|trigo|soja|canon de riego|riego|contratista/.test(r))
+    return {act:'Agricultura',interno:false};
+  return {act:'General',interno:false};
+}
+
+// ===== IMPORT DIRECTO del formato "Gestión" de tu viejo =====
+function importarDirecto(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    let wb;
+    try{wb=XLSX.read(ev.target.result,{type:'binary',cellDates:true})}
+    catch(err){alert('No pude leer el archivo. ¿Es un Excel válido?');return}
+    // buscar hoja "Base de Datos" (o la primera)
+    let hoja=wb.SheetNames.find(n=>/base de datos/i.test(n))||wb.SheetNames[0];
+    const ws=wb.Sheets[hoja];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false,cellDates:true});
+    // encontrar fila de encabezado (la que tiene "Fecha" e "Ingresos")
+    let hIdx=-1;
+    for(let i=0;i<Math.min(rows.length,15);i++){
+      const fila=(rows[i]||[]).map(c=>(''+c).toLowerCase());
+      if(fila.some(c=>c.includes('fecha'))&&fila.some(c=>c.includes('ingreso'))){hIdx=i;break}
+    }
+    if(hIdx<0){alert('No encontré los encabezados (Fecha / Ingresos / Egresos). ¿Es la planilla de gestión? Si es otro formato, usá la opción de emparejar columnas.');return}
+    const H=rows[hIdx].map(c=>(''+(c||'')).toLowerCase().trim());
+    const col=n=>H.findIndex(h=>h.includes(n));
+    const iFecha=col('fecha'),iIng=col('ingreso'),iEgr=col('egreso'),iRubro=col('rubro'),iCuenta=col('cuenta'),iCant=col('cantidad'),iObs=col('observ');
+    let nuevos=[],saltadas=0;
+    for(let r=hIdx+1;r<rows.length;r++){
+      const fila=rows[r];if(!fila)continue;
+      const fecha=parseFecha(fila[iFecha]);
+      if(!fecha){if(fila[iIng]||fila[iEgr])saltadas++;continue}
+      const ing=parseMonto(fila[iIng]),egr=parseMonto(fila[iEgr]);
+      let tipo,monto;
+      if(ing>0){tipo='ingreso';monto=ing}
+      else if(egr>0){tipo='egreso';monto=egr}
+      else continue;
+      const rubro=fila[iRubro]?(''+fila[iRubro]).trim():'Sin categoría';
+      const clas=clasificarRubro(rubro);
+      const obs=iObs>=0&&fila[iObs]?(''+fila[iObs]).trim():'';
+      const cuenta=iCuenta>=0&&fila[iCuenta]?(''+fila[iCuenta]).trim():'';
+      nuevos.push({
+        id:Date.now()+''+Math.random().toString(36).slice(2,8),
+        fecha,tipo,monto,act:clas.act,interno:clas.interno,
+        cat:rubro,
+        det:[obs,cuenta?('['+cuenta+']'):''].filter(Boolean).join(' ')
+      });
+    }
+    if(!nuevos.length){alert('No se importó ninguna fila. Revisá que sea la planilla correcta.');return}
+    if(datos.length&&!confirm(`Ya hay ${datos.length} movimientos cargados. ¿Agregar ${nuevos.length} más? (Si es la misma planilla que ya importaste, van a quedar duplicados — mejor cancelá y borrá primero.)`))return;
+    datos=datos.concat(nuevos);guardarLS();
+    cerrarImport();actualizarAnios();render();renderTabla();
+    const internos=nuevos.filter(n=>n.interno).length;
+    alert(`✓ Importados ${nuevos.length} movimientos.\n${internos} son movimientos internos (retiros, ajustes, saldos) — se guardan pero no cuentan en el resultado del campo.${saltadas?'\n'+saltadas+' filas sin fecha válida se saltearon.':''}`);
+  };
+  reader.readAsBinaryString(f);
 }
 
 // ============ EXPORT ============
 function exportar(){
   if(!datos.length){alert('No hay datos para exportar');return}
   const ws=XLSX.utils.json_to_sheet(datos.map(d=>({
-    Fecha:d.fecha,Tipo:d.tipo,Monto:d.monto,Actividad:d.act,Categoría:d.cat,Detalle:d.det
+    Fecha:d.fecha,Tipo:d.tipo,Monto:d.monto,Actividad:d.act,Categoría:d.cat,Interno:d.interno?'Sí':'No',Detalle:d.det
   })));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Movimientos');
   XLSX.writeFile(wb,'gestion-campo-'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
+// ============ ASESOR IA (Gemini) ============
+let iaKey=localStorage.getItem('campo_gemini_key')||'';
+let iaHistorial=[];
+
+function initIA(){
+  if(iaKey){
+    document.getElementById('ia-sin-key').style.display='none';
+    document.getElementById('ia-chat').style.display='block';
+    if(!iaHistorial.length)saludoIA();
+    renderSugerencias();
+  }else{
+    document.getElementById('ia-sin-key').style.display='block';
+    document.getElementById('ia-chat').style.display='none';
+  }
+}
+function guardarKey(){
+  const k=document.getElementById('ia-key-input').value.trim();
+  if(!k){alert('Pegá la clave primero');return}
+  iaKey=k;localStorage.setItem('campo_gemini_key',k);
+  document.getElementById('ia-key-input').value='';
+  initIA();
+}
+function cambiarKey(){
+  if(!confirm('¿Borrar la clave guardada y cargar otra?'))return;
+  iaKey='';localStorage.removeItem('campo_gemini_key');
+  iaHistorial=[];document.getElementById('ia-mensajes').innerHTML='';
+  initIA();
+}
+function saludoIA(){
+  const d=datosReales();
+  const txt=d.length
+    ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos y puedo ayudarte a entender los números, ver qué conviene y proyectar a futuro. Preguntame lo que quieras, en criollo nomás.'
+    : 'Hola! Todavía no hay datos cargados. Importá el Excel o cargá algunos movimientos y ya te puedo ayudar a analizarlos.';
+  agregarMsg('bot',txt);
+}
+function renderSugerencias(){
+  const sugs=['¿Por qué la agricultura da negativo?','¿Cómo viene la caja para los próximos meses?','¿En qué gastamos más este año?','¿Qué actividad conviene?'];
+  document.getElementById('ia-sugerencias').innerHTML=sugs.map(s=>`<button class="sug" onclick="preguntarIA('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
+}
+function agregarMsg(rol,txt,html){
+  const cont=document.getElementById('ia-mensajes');
+  const div=document.createElement('div');
+  div.className='msg '+(rol==='user'?'user':'bot');
+  div.innerHTML=`<div class="av">${rol==='user'?'👤':'🌾'}</div><div class="burb">${html?txt:esc(txt)}</div>`;
+  cont.appendChild(div);cont.scrollTop=cont.scrollHeight;
+  return div;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// Convierte respuesta de Gemini (markdown simple) a HTML
+function fmtRespuesta(t){
+  let h=esc(t);
+  h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  // procesar por bloques separados por líneas en blanco
+  return h.split(/\n\n+/).map(bloque=>{
+    const lineas=bloque.split('\n');
+    // ¿es lista?
+    if(lineas.every(l=>/^[\*\-] /.test(l.trim())||l.trim()==='')){
+      const items=lineas.filter(l=>l.trim()).map(l=>'<li>'+l.trim().replace(/^[\*\-] /,'')+'</li>').join('');
+      return '<ul>'+items+'</ul>';
+    }
+    // ¿es título?
+    if(/^### /.test(bloque))return '<h4>'+bloque.replace(/^### /,'')+'</h4>';
+    // párrafo normal
+    return '<p>'+bloque.replace(/^### (.+)$/gm,'<h4>$1</h4>').replace(/\n/g,'<br>')+'</p>';
+  }).join('');
+}
+
+// ===== EL RESUMEN QUE VE LA IA =====
+// En vez de mandar 4000 movimientos, precalculamos los números clave.
+function resumenParaIA(){
+  const d=datosReales();
+  if(!d.length)return 'No hay datos cargados.';
+  const R={};
+  // por actividad
+  const acts={};
+  d.forEach(x=>{if(!acts[x.act])acts[x.act]={ing:0,egr:0,n:0};acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=x.monto;acts[x.act].n++});
+  // por año
+  const anios={};
+  d.forEach(x=>{const a=x.fecha.slice(0,4);if(!anios[a])anios[a]={ing:0,egr:0};anios[a][x.tipo==='ingreso'?'ing':'egr']+=x.monto});
+  // por rubro (egresos, top)
+  const rubros={};
+  d.filter(x=>x.tipo==='egreso').forEach(x=>{rubros[x.cat]=(rubros[x.cat]||0)+x.monto});
+  const topEgr=Object.entries(rubros).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  // por rubro ingresos
+  const rubrosI={};
+  d.filter(x=>x.tipo==='ingreso').forEach(x=>{rubrosI[x.cat]=(rubrosI[x.cat]||0)+x.monto});
+  const topIng=Object.entries(rubrosI).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  // caja mensual (para proyección)
+  const porMes={};
+  d.forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const meses=Object.keys(porMes).sort();
+  const ult6=meses.slice(-6).map(m=>`${m}: ${Math.round(porMes[m]).toLocaleString('es-AR')}`);
+
+  const M=n=>'$'+Math.round(n).toLocaleString('es-AR');
+  const rango=`${d[0]?meses[0]:''} a ${meses[meses.length-1]||''}`;
+  let txt=`RESUMEN FINANCIERO DEL CAMPO (datos reales, sin movimientos internos como retiros/ajustes)\n`;
+  txt+=`Período: ${rango}. Total movimientos: ${d.length}.\n\n`;
+  txt+=`RESULTADO POR ACTIVIDAD:\n`;
+  Object.entries(acts).sort((a,b)=>(b[1].ing-b[1].egr)-(a[1].ing-a[1].egr)).forEach(([a,v])=>{
+    txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)} (${v.n} movs)\n`;
+  });
+  txt+=`\nNOTA IMPORTANTE: "General" son gastos de estructura (sueldos, combustible, bancarios, impuestos) que NO están repartidos entre las actividades. Por eso una actividad puede verse negativa si sus costos reales están cayendo en General. Tenelo en cuenta al analizar rentabilidad.\n`;
+  txt+=`\nRESULTADO POR AÑO:\n`;
+  Object.keys(anios).sort().forEach(a=>{const v=anios[a];txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)}\n`});
+  txt+=`\nMAYORES EGRESOS (por rubro):\n`;
+  topEgr.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
+  txt+=`\nMAYORES INGRESOS (por rubro):\n`;
+  topIng.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
+  txt+=`\nCAJA NETA ÚLTIMOS MESES (ingreso - egreso por mes):\n${ult6.join('\n')}\n`;
+  return txt;
+}
+
+async function preguntarIA(pregunta){
+  const input=document.getElementById('ia-input');
+  const q=(pregunta||input.value).trim();
+  if(!q)return;
+  input.value='';
+  document.getElementById('ia-btn-enviar').disabled=true;
+  agregarMsg('user',q);
+  const pensando=agregarMsg('bot','<div class="pensando"><span></span><span></span><span></span></div>',true);
+
+  const sistema=`Sos un asesor financiero y de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen contador de campo que conoce el negocio. Nada de vueltas ni relleno.
+
+Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate SOLO en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
+
+DATOS DEL CAMPO:
+${resumenParaIA()}`;
+
+  iaHistorial.push({role:'user',parts:[{text:q}]});
+
+  try{
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${iaKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        systemInstruction:{parts:[{text:sistema}]},
+        contents:iaHistorial,
+        generationConfig:{temperature:.4,maxOutputTokens:1200}
+      })
+    });
+    const data=await resp.json();
+    pensando.remove();
+    if(data.error){
+      let msg=data.error.message||'Error desconocido';
+      if(/API key not valid|API_KEY_INVALID/i.test(msg))msg='La clave de Gemini no es válida. Tocá "Cambiar clave" y cargá una correcta desde aistudio.google.com/apikey';
+      else if(/quota|RESOURCE_EXHAUSTED/i.test(msg))msg='Se agotó la cuota gratuita por hoy. Probá de nuevo mañana.';
+      agregarMsg('bot','⚠️ '+msg);
+      iaHistorial.pop();
+    }else{
+      const txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'No pude generar una respuesta. Probá reformular la pregunta.';
+      agregarMsg('bot',fmtRespuesta(txt),true);
+      iaHistorial.push({role:'model',parts:[{text:txt}]});
+      if(iaHistorial.length>16)iaHistorial=iaHistorial.slice(-16); // limitar contexto
+    }
+  }catch(err){
+    pensando.remove();
+    agregarMsg('bot','⚠️ No pude conectar con el asesor. Revisá que tengas internet. ('+err.message+')');
+    iaHistorial.pop();
+  }
+  document.getElementById('ia-btn-enviar').disabled=false;
+  document.getElementById('ia-input').focus();
+}
+
 // ============ INIT ============
+function borrarTodo(){
+  if(!datos.length){alert('No hay datos.');return}
+  if(!confirm(`¿Borrar TODOS los ${datos.length} movimientos? Esto no se puede deshacer.\n\nSi querés conservarlos, exportá primero con el botón 📤.`))return;
+  if(!confirm('¿Seguro? Última confirmación.'))return;
+  datos=[];guardarLS();actualizarAnios();render();renderTabla();
+}
 actualizarAnios();render();
 </script>
 </body>
