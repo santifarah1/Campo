@@ -280,6 +280,8 @@ tr:hover td{background:var(--papel-hondo)}
 
   <!-- ===== ANÁLISIS ===== -->
   <div class="vista on" id="v-dash">
+    <div id="barra-dolar" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+    </div>
     <div class="filtros">
       <span class="lbl">Año:</span>
       <select id="f-anio" onchange="render()"></select>
@@ -1017,6 +1019,25 @@ function exportar(){
   XLSX.writeFile(wb,'gestion-campo-'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
+// ============ COTIZACIONES (dolarapi.com - API pública argentina) ============
+let dolarCache=null;
+async function cargarDolar(){
+  try{
+    const r=await fetch('https://dolarapi.com/v1/dolares');
+    const ds=await r.json();
+    dolarCache=ds;
+    const barra=document.getElementById('barra-dolar');
+    const interes=['oficial','blue','bolsa'];
+    const nombres={oficial:'Oficial',blue:'Blue',bolsa:'MEP'};
+    barra.innerHTML='<b style="color:var(--tinta-suave);font-size:12px;text-transform:uppercase;letter-spacing:.04em">💵 Dólar hoy</b>'+
+      ds.filter(d=>interes.includes(d.casa)).map(d=>
+        `<span><b>${nombres[d.casa]||d.nombre}</b> $${Math.round(d.venta).toLocaleString('es-AR')}</span>`
+      ).join('')+
+      `<span style="font-size:11px;color:var(--tinta-suave);margin-left:auto">dolarapi.com</span>`;
+    barra.style.display='flex';
+  }catch(e){/* sin internet, no mostramos la barra */}
+}
+
 // ============ ASESOR IA (Gemini) ============
 let iaKey=localStorage.getItem('campo_gemini_key')||'';
 let iaHistorial=[];
@@ -1053,7 +1074,7 @@ function saludoIA(){
   agregarMsg('bot',txt);
 }
 function renderSugerencias(){
-  const sugs=['¿Por qué la agricultura da negativo?','¿Cómo viene la caja para los próximos meses?','¿En qué gastamos más este año?','¿Qué actividad conviene?'];
+  const sugs=['¿A cuánto está el ternero hoy en Cañuelas?','¿Vendimos el maíz a buen precio vs el mercado?','¿Por qué la agricultura da negativo?','¿Cómo viene la caja para los próximos meses?'];
   document.getElementById('ia-sugerencias').innerHTML=sugs.map(s=>`<button class="sug" onclick="preguntarIA('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
 }
 function agregarMsg(rol,txt,html){
@@ -1065,6 +1086,20 @@ function agregarMsg(rol,txt,html){
   return div;
 }
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function llamarGemini(sistema,conBusqueda){
+  const body={
+    systemInstruction:{parts:[{text:sistema}]},
+    contents:iaHistorial,
+    generationConfig:{temperature:.4,maxOutputTokens:3000}
+  };
+  if(conBusqueda)body.tools=[{google_search:{}}];
+  const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${iaKey}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  return await resp.json();
+}
 
 // Convierte respuesta de Gemini (markdown simple) a HTML
 function fmtRespuesta(t){
@@ -1159,27 +1194,27 @@ async function preguntarIA(pregunta){
   agregarMsg('user',q);
   const pensando=agregarMsg('bot','<div class="pensando"><span></span><span></span><span></span></div>',true);
 
+  const dolarInfo=dolarCache?('\n\nCOTIZACIÓN DEL DÓLAR HOY (fuente dolarapi.com): '+dolarCache.filter(d=>['oficial','blue','bolsa'].includes(d.casa)).map(d=>`${d.nombre} venta $${Math.round(d.venta)}`).join(', ')+'.'):'';
+
   const sistema=`Sos un asesor de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Pensás como un contador de gestión / analista de campo: mirás márgenes, rentabilidad por actividad, costos, estacionalidad y flujo de caja. Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen gestor de campo que conoce el negocio. Nada de vueltas ni relleno.
 
-Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate SOLO en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
+Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
+
+PRECIOS DE MERCADO: Tenés acceso a búsqueda en Google. Si te preguntan precios actuales de mercado (hacienda/ternero/novillo en Cañuelas o MAG, maíz pizarra Rosario, cebolla, insumos, dólar), BUSCÁ el dato real de hoy en Google y respondé con el precio encontrado citando la fuente y fecha. NUNCA inventes ni estimes un precio de memoria: si no encontrás el dato, decilo. Podés combinar precios de mercado con los datos del campo (ej: comparar a cuánto vendió terneros vs el mercado hoy).
 
 LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
 DATOS DEL CAMPO:
-${resumenParaIA()}`;
+${resumenParaIA()}${dolarInfo}`;
 
   iaHistorial.push({role:'user',parts:[{text:q}]});
 
   try{
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${iaKey}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        systemInstruction:{parts:[{text:sistema}]},
-        contents:iaHistorial,
-        generationConfig:{temperature:.4,maxOutputTokens:3000}
-      })
-    });
-    const data=await resp.json();
+    let data=await llamarGemini(sistema,true);
+    // si el tool de búsqueda no está disponible en esta key, reintentar sin él
+    if(data.error&&/search|tool|not supported|INVALID_ARGUMENT/i.test(data.error.message||'')){
+      data=await llamarGemini(sistema,false);
+    }
     pensando.remove();
     if(data.error){
       let msg=data.error.message||'Error desconocido';
@@ -1197,7 +1232,14 @@ ${resumenParaIA()}`;
         if(cand?.finishReason==='MAX_TOKENS')txt='(La respuesta salió muy larga y se cortó. Probá preguntar algo más puntual.)';
         else txt='No pude generar una respuesta. Probá reformular la pregunta.';
       }
-      agregarMsg('bot',fmtRespuesta(txt),true);
+      let htmlResp=fmtRespuesta(txt);
+      // si buscó en Google, mostrar las fuentes
+      const chunks=cand?.groundingMetadata?.groundingChunks;
+      if(chunks&&chunks.length){
+        const fuentes=[...new Map(chunks.filter(c=>c.web).map(c=>[c.web.uri,c.web.title||c.web.uri])).entries()].slice(0,4);
+        if(fuentes.length)htmlResp+='<p style="font-size:11.5px;color:var(--tinta-suave);margin-top:8px">🔎 Fuentes: '+fuentes.map(([u,t])=>`<a href="${u}" target="_blank" style="color:var(--cielo)">${esc(t)}</a>`).join(' · ')+'</p>';
+      }
+      agregarMsg('bot',htmlResp,true);
       iaHistorial.push({role:'model',parts:[{text:txt}]});
       if(iaHistorial.length>16)iaHistorial=iaHistorial.slice(-16); // limitar contexto
     }
@@ -1362,7 +1404,7 @@ function borrarTodo(){
   if(!confirm('¿Seguro? Última confirmación.'))return;
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
 }
-actualizarAnios();render();
+actualizarAnios();render();cargarDolar();
 </script>
 </body>
 </html>
