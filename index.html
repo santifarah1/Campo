@@ -1094,7 +1094,7 @@ ${resumenParaIA()}`;
   iaHistorial.push({role:'user',parts:[{text:q}]});
 
   try{
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${iaKey}`,{
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${iaKey}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         systemInstruction:{parts:[{text:sistema}]},
@@ -1108,6 +1108,7 @@ ${resumenParaIA()}`;
       let msg=data.error.message||'Error desconocido';
       if(/API key not valid|API_KEY_INVALID/i.test(msg))msg='La clave de Gemini no es válida. Tocá "Cambiar clave" y cargá una correcta desde aistudio.google.com/apikey';
       else if(/quota|RESOURCE_EXHAUSTED/i.test(msg))msg='Se agotó la cuota gratuita por hoy. Probá de nuevo mañana.';
+      else if(/no longer available|not found|not supported/i.test(msg))msg='El modelo de IA cambió de nombre en Google. Avisale a Santi para que actualice la app.';
       agregarMsg('bot','⚠️ '+msg);
       iaHistorial.pop();
     }else{
