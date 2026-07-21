@@ -226,6 +226,29 @@ tr:hover td{background:var(--papel-hondo)}
 .pensando span:nth-child(2){animation-delay:.2s}
 .pensando span:nth-child(3){animation-delay:.4s}
 @keyframes latir{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+/* ---- Gestión ---- */
+.g-fila{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--linea)}
+.g-fila:last-child{border-bottom:none}
+.g-act{display:flex;align-items:center;gap:9px;font-weight:600}
+.g-punto{width:12px;height:12px;border-radius:4px;flex-shrink:0}
+.g-nums{text-align:right;font-size:13px;color:var(--tinta-suave)}
+.g-nums b{font-size:17px;display:block}
+.g-barra{height:8px;border-radius:5px;background:var(--papel-hondo);overflow:hidden;margin-top:6px}
+.g-barra i{display:block;height:100%;border-radius:5px}
+.alerta{display:flex;gap:11px;padding:12px 14px;border-radius:11px;margin-bottom:10px;font-size:14px;align-items:flex-start}
+.alerta:last-child{margin-bottom:0}
+.alerta.roja{background:rgba(166,83,58,.1);border-left:4px solid var(--ladrillo)}
+.alerta.amar{background:rgba(201,162,75,.12);border-left:4px solid var(--trigo)}
+.alerta.verde{background:rgba(92,122,61,.1);border-left:4px solid var(--campo)}
+.alerta .ai{font-size:18px;flex-shrink:0}
+.alerta b{font-weight:700}
+.cierre-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.cierre-grid{grid-template-columns:1fr}}
+.cierre-box{background:var(--papel-hondo);border-radius:11px;padding:14px}
+.cierre-box .et{font-size:12px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.cierre-box .v{font-size:22px;font-weight:800;margin-top:4px}
+.cierre-box .d{font-size:12px;color:var(--tinta-suave);margin-top:3px}
 </style>
 </head>
 <body>
@@ -250,6 +273,7 @@ tr:hover td{background:var(--papel-hondo)}
   <div class="tabs">
     <button class="on" onclick="verTab('dash',this)">📊 Análisis</button>
     <button onclick="verTab('mov',this)">📋 Movimientos</button>
+    <button onclick="verTab('gestion',this)">📈 Gestión</button>
     <button onclick="verTab('proj',this)">🔮 Proyección</button>
     <button onclick="verTab('ia',this)">🤖 Asesor</button>
   </div>
@@ -329,6 +353,36 @@ tr:hover td{background:var(--papel-hondo)}
         <h3>Todavía no hay movimientos</h3>
         <p>Cargá el primero con el botón + o importá el Excel de tu viejo.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== GESTIÓN (funciones de contador) ===== -->
+  <div class="vista" id="v-gestion">
+    <div class="filtros">
+      <span class="lbl">Ejercicio:</span>
+      <select id="g-anio" onchange="renderGestion()"></select>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Margen por actividad</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Ingresos menos costos directos de cada actividad. Los costos de estructura (sueldos, combustible, bancarios) van aparte porque no son de una sola actividad — así ves la rentabilidad real de cada negocio.</p>
+      <div id="g-margen"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Costos de estructura (no atribuidos)</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Gastos que sirven a todo el campo y no se cargan a una actividad puntual. Un contador los reparte o los mira aparte.</p>
+      <div id="g-estructura"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Alertas</h2>
+      <div id="g-alertas"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Cierre del ejercicio</h2>
+      <div id="g-cierre"></div>
     </div>
   </div>
 
@@ -518,6 +572,7 @@ function verTab(t,btn){
   document.querySelector('.fab').style.display=(t==='ia')?'none':'flex';
   if(t==='dash')render();
   if(t==='mov')renderTabla();
+  if(t==='gestion')renderGestion();
   if(t==='proj')renderProj();
   if(t==='ia')initIA();
 }
@@ -892,8 +947,8 @@ function clasificarRubro(rubro){
   if(/movimiento interno|retiro|saldo inicial|ajuste|inversion|prestamo|credito|movimiento entre/.test(r))
     return {act:'General',interno:true};
   if(/cebolla/.test(r))return {act:'Cebolla',interno:false};
-  if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo/.test(r))return {act:'Ganadería',interno:false};
-  if(/maiz|maíz|semilla|fertiliz|herbicida|cosecha|siembra|grano|trigo|soja|canon de riego|riego|contratista/.test(r))
+  if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo|veterinari|sanidad animal/.test(r))return {act:'Ganadería',interno:false};
+  if(/maiz|maíz|semilla|fertiliz|herbicida|cosecha|siembra|grano|trigo|soja|canon de riego|riego|contratista|chacra|luz chacra/.test(r))
     return {act:'Agricultura',interno:false};
   return {act:'General',interno:false};
 }
@@ -1065,6 +1120,14 @@ function resumenParaIA(){
     txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)} (${v.n} movs)\n`;
   });
   txt+=`\nNOTA IMPORTANTE: "General" son gastos de estructura (sueldos, combustible, bancarios, impuestos) que NO están repartidos entre las actividades. Por eso una actividad puede verse negativa si sus costos reales están cayendo en General. Tenelo en cuenta al analizar rentabilidad.\n`;
+  // margen por actividad (sin estructura) - lo que mira un gestor
+  txt+=`\nMARGEN POR ACTIVIDAD (ingresos - costos directos de esa actividad, SIN estructura):\n`;
+  Object.entries(acts).filter(([a])=>a!=='General').sort((x,y)=>(y[1].ing-y[1].egr)-(x[1].ing-x[1].egr)).forEach(([a,v])=>{
+    const mg=v.ing>0?Math.round((v.ing-v.egr)/v.ing*100):0;
+    txt+=`- ${a}: margen ${M(v.ing-v.egr)}${v.ing>0?' ('+mg+'% sobre ingresos)':''}\n`;
+  });
+  const estr=acts['General']?acts['General'].egr:0;
+  txt+=`- Costos de estructura totales (no atribuidos a ninguna actividad): ${M(estr)}\n`;
   txt+=`\nRESULTADO POR AÑO:\n`;
   Object.keys(anios).sort().forEach(a=>{const v=anios[a];txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)}\n`});
   txt+=`\nMAYORES EGRESOS ACUMULADOS TODO EL PERÍODO (por rubro):\n`;
@@ -1096,9 +1159,11 @@ async function preguntarIA(pregunta){
   agregarMsg('user',q);
   const pensando=agregarMsg('bot','<div class="pensando"><span></span><span></span><span></span></div>',true);
 
-  const sistema=`Sos un asesor financiero y de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen contador de campo que conoce el negocio. Nada de vueltas ni relleno.
+  const sistema=`Sos un asesor de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Pensás como un contador de gestión / analista de campo: mirás márgenes, rentabilidad por actividad, costos, estacionalidad y flujo de caja. Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen gestor de campo que conoce el negocio. Nada de vueltas ni relleno.
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate SOLO en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
+
+LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
 DATOS DEL CAMPO:
 ${resumenParaIA()}`;
@@ -1143,6 +1208,151 @@ ${resumenParaIA()}`;
   }
   document.getElementById('ia-btn-enviar').disabled=false;
   document.getElementById('ia-input').focus();
+}
+
+// ============ GESTIÓN (funciones de contador) ============
+function actualizarAniosGestion(){
+  const anios=[...new Set(datosReales().map(d=>d.fecha.slice(0,4)))].sort().reverse();
+  const sel=document.getElementById('g-anio');
+  if(!sel)return;
+  const actual=sel.value;
+  sel.innerHTML='<option value="">Todos los años</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(actual)sel.value=actual;
+}
+function datosGestion(){
+  const anio=document.getElementById('g-anio').value;
+  return datosReales().filter(d=>!anio||d.fecha.slice(0,4)===anio);
+}
+function renderGestion(){
+  actualizarAniosGestion();
+  margenActividad();
+  costosEstructura();
+  alertas();
+  cierreEjercicio();
+}
+
+const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla'};
+
+function margenActividad(){
+  const d=datosGestion();
+  const acts={};
+  d.forEach(x=>{
+    if(x.act==='General')return; // estructura va aparte
+    if(!acts[x.act])acts[x.act]={ing:0,egr:0};
+    acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=x.monto;
+  });
+  const filas=Object.entries(acts).map(([a,v])=>({a,ing:v.ing,egr:v.egr,margen:v.ing-v.egr}))
+    .sort((x,y)=>y.margen-x.margen);
+  const maxAbs=Math.max(...filas.map(f=>Math.abs(f.margen)),1);
+  const el=document.getElementById('g-margen');
+  if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos para este ejercicio.</p>';return}
+  el.innerHTML=filas.map(f=>{
+    const pct=f.ing>0?Math.round(f.margen/f.ing*100):0;
+    const col=COL_ACT[f.a]||'#888';
+    return `<div style="padding:14px 0;border-bottom:1px solid var(--linea)">
+      <div class="g-fila" style="border:none;padding:0">
+        <div class="g-act"><span class="g-punto" style="background:${col}"></span>${ACT_NOMBRE[f.a]||f.a}</div>
+        <div class="g-nums"><b style="color:${f.margen>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.margen)}</b>${f.ing>0?'margen '+pct+'%':''}</div>
+      </div>
+      <div class="g-barra"><i style="width:${Math.abs(f.margen)/maxAbs*100}%;background:${f.margen>=0?'var(--campo)':'var(--ladrillo)'}"></i></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tinta-suave);margin-top:6px">
+        <span>Ingresos: ${fmt(f.ing)}</span><span>Costos directos: ${fmt(f.egr)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function costosEstructura(){
+  const d=datosGestion();
+  const estr={};
+  d.filter(x=>x.act==='General'&&x.tipo==='egreso').forEach(x=>{estr[x.cat]=(estr[x.cat]||0)+x.monto});
+  const orden=Object.entries(estr).sort((a,b)=>b[1]-a[1]);
+  const total=orden.reduce((s,[,v])=>s+v,0);
+  const el=document.getElementById('g-estructura');
+  if(!orden.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin costos de estructura en este ejercicio.</p>';return}
+  el.innerHTML=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Total estructura</div><div class="v" style="color:var(--ladrillo)">${fmt(total)}</div></div>`+
+    orden.slice(0,10).map(([r,v])=>`<div class="g-fila"><span>${r}</span><b>${fmt(v)}</b></div>`).join('');
+}
+
+function alertas(){
+  const el=document.getElementById('g-alertas');
+  const anio=document.getElementById('g-anio').value;
+  const als=[];
+  // 1. Meses con caja negativa
+  const porMes={};
+  datosGestion().forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const negativos=Object.entries(porMes).filter(([,v])=>v<0).sort((a,b)=>a[1]-b[1]);
+  if(negativos.length){
+    als.push({t:'roja',i:'📉',txt:`<b>${negativos.length} ${negativos.length===1?'mes cerró':'meses cerraron'} con caja negativa.</b> El peor fue ${negativos[0][0]} con ${fmt(negativos[0][1])}. Ahí gastaste más de lo que entró.`});
+  }
+  // 2. Gastos por rubro muy por encima de su promedio histórico (solo si hay filtro de año)
+  if(anio){
+    const rubrosAnio={},rubrosHist={},aniosCont={};
+    datosReales().filter(x=>x.tipo==='egreso').forEach(x=>{
+      const a=x.fecha.slice(0,4);
+      if(a===anio)rubrosAnio[x.cat]=(rubrosAnio[x.cat]||0)+x.monto;
+      rubrosHist[x.cat]=(rubrosHist[x.cat]||0)+x.monto;
+      if(!aniosCont[x.cat])aniosCont[x.cat]=new Set();
+      aniosCont[x.cat].add(a);
+    });
+    Object.entries(rubrosAnio).forEach(([r,v])=>{
+      const nAnios=aniosCont[r].size;
+      if(nAnios<2||v<500000)return;
+      const promOtros=(rubrosHist[r]-v)/(nAnios-1);
+      if(promOtros>0&&v>promOtros*1.4){
+        const subaPct=Math.round((v/promOtros-1)*100);
+        als.push({t:'amar',i:'⚠️',txt:`<b>${r}</b> está ${subaPct}% arriba del promedio de otros años (${fmt(v)} vs ${fmt(promOtros)} promedio). Vale la pena revisar por qué.`});
+      }
+    });
+  }
+  // 3. Actividad con margen negativo
+  const acts={};
+  datosGestion().forEach(x=>{if(x.act==='General')return;if(!acts[x.act])acts[x.act]={ing:0,egr:0};acts[x.act][x.tipo==='ingreso'?'ing':'egr']+=x.monto});
+  Object.entries(acts).forEach(([a,v])=>{
+    if(v.ing>0&&v.ing-v.egr<0){
+      als.push({t:'amar',i:'🔍',txt:`<b>${ACT_NOMBRE[a]||a}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`});
+    }
+  });
+  // 4. Todo bien
+  if(!als.length){
+    als.push({t:'verde',i:'✅',txt:'No hay alertas para este ejercicio. La caja y los márgenes vienen sanos.'});
+  }
+  el.innerHTML=als.map(a=>`<div class="alerta ${a.t}"><span class="ai">${a.i}</span><div>${a.txt}</div></div>`).join('');
+}
+
+function cierreEjercicio(){
+  const d=datosGestion();
+  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
+  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+x.monto,0);
+  const anio=document.getElementById('g-anio').value;
+  const el=document.getElementById('g-cierre');
+  // comparativo con año anterior si hay filtro
+  let comp='';
+  if(anio){
+    const prev=(parseInt(anio)-1)+'';
+    const dp=datosReales().filter(x=>x.fecha.slice(0,4)===prev);
+    if(dp.length){
+      const ingP=dp.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
+      const egrP=dp.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+x.monto,0);
+      const resP=ingP-egrP,res=ing-egr;
+      const dif=resP!==0?Math.round((res/resP-1)*100):0;
+      comp=`<div class="cierre-box" style="grid-column:1/-1;margin-top:14px">
+        <div class="et">Comparación con ${prev}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px">
+          <span>Resultado ${prev}: <b>${fmt(resP)}</b></span>
+          <span>Resultado ${anio}: <b style="color:${res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(res)}</b></span>
+        </div>
+        <div class="d" style="margin-top:6px">${res>=resP?'📈 Mejoró':'📉 Cayó'} respecto al año anterior.</div>
+      </div>`;
+    }
+  }
+  el.innerHTML=`<div class="cierre-grid">
+    <div class="cierre-box"><div class="et">Ingresos ${anio||'(todos)'}</div><div class="v" style="color:var(--campo)">${fmt(ing)}</div></div>
+    <div class="cierre-box"><div class="et">Egresos ${anio||'(todos)'}</div><div class="v" style="color:var(--ladrillo)">${fmt(egr)}</div></div>
+    <div class="cierre-box"><div class="et">Resultado del ejercicio</div><div class="v" style="color:${ing-egr>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(ing-egr)}</div></div>
+    <div class="cierre-box"><div class="et">Movimientos</div><div class="v">${d.length}</div><div class="d">sin contar internos</div></div>
+    ${comp}
+  </div>`;
 }
 
 // ============ INIT ============
