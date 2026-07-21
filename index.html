@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión del Campo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --tierra:#6B4A2E;      /* marrón tierra */
+  --tierra-claro:#8A6B4A;
+  --campo:#5C7A3D;       /* verde campo apagado */
+  --campo-claro:#7B9C56;
+  --trigo:#C9A24B;       /* dorado trigo */
+  --cielo:#4A6B8A;       /* azul apagado */
+  --ladrillo:#A6533A;    /* egresos */
+  --papel:#F5F1E8;       /* fondo papel */
+  --papel-hondo:#EBE5D6;
+  --tinta:#2E2820;       /* texto */
+  --tinta-suave:#6E6656;
+  --linea:#D8D0BE;
+  --blanco:#FDFBF6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+  background:var(--papel);
+  color:var(--tinta);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+body.oscuro{
+  --papel:#1C1A15;--papel-hondo:#14120E;--blanco:#26231C;
+  --tinta:#EDE7D8;--tinta-suave:#A69C86;--linea:#38342A;
+}
+h1,h2,h3{font-weight:700;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer;border:none}
+input,select{font-family:inherit}
+
+/* ---- Encabezado ---- */
+header{
+  background:linear-gradient(135deg,var(--campo),var(--tierra));
+  color:var(--blanco);
+  padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+}
+header .marca{display:flex;align-items:center;gap:12px}
+header .logo{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--trigo);color:var(--tierra);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:20px;flex-shrink:0;
+}
+header h1{font-size:19px;color:#fff}
+header .sub{font-size:12px;opacity:.85;font-weight:400}
+header .top-btns{display:flex;gap:8px}
+header .top-btns button{
+  background:rgba(255,255,255,.15);color:#fff;
+  padding:8px 10px;border-radius:8px;font-size:14px;
+}
+header .top-btns button:hover{background:rgba(255,255,255,.28)}
+
+/* ---- Layout ---- */
+main{max-width:1100px;margin:0 auto;padding:20px 16px 100px}
+
+/* ---- Tarjetas KPI ---- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.kpi{
+  background:var(--blanco);border:1px solid var(--linea);
+  border-radius:14px;padding:16px;position:relative;overflow:hidden;
+}
+.kpi .et{font-size:12px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.kpi .val{font-size:26px;font-weight:800;margin-top:6px}
+.kpi .det{font-size:12px;color:var(--tinta-suave);margin-top:4px}
+.kpi.ingreso .val{color:var(--campo)}
+.kpi.egreso .val{color:var(--ladrillo)}
+.kpi .franja{position:absolute;left:0;top:0;bottom:0;width:5px}
+.kpi.ingreso .franja{background:var(--campo)}
+.kpi.egreso .franja{background:var(--ladrillo)}
+.kpi.saldo .franja{background:var(--trigo)}
+.kpi.proj .franja{background:var(--cielo)}
+
+/* ---- Secciones ---- */
+.panel{
+  background:var(--blanco);border:1px solid var(--linea);
+  border-radius:14px;padding:18px;margin-bottom:18px;
+}
+.panel h2{font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel h2 .pin{width:9px;height:9px;border-radius:3px;background:var(--trigo)}
+.chart-box{position:relative;height:280px}
+.chart-box.chico{height:230px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:720px){.grid-2{grid-template-columns:1fr}}
+
+/* ---- Filtros ---- */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+.filtros select,.filtros input{
+  background:var(--blanco);border:1px solid var(--linea);color:var(--tinta);
+  padding:9px 12px;border-radius:9px;font-size:14px;
+}
+.filtros .lbl{font-size:13px;color:var(--tinta-suave);font-weight:600}
+
+/* ---- Botones acción ---- */
+.btn{
+  padding:11px 16px;border-radius:10px;font-size:14px;font-weight:600;
+  display:inline-flex;align-items:center;gap:7px;transition:.15s;
+}
+.btn-primario{background:var(--campo);color:#fff}
+.btn-primario:hover{background:var(--campo-claro)}
+.btn-sec{background:var(--papel-hondo);color:var(--tinta);border:1px solid var(--linea)}
+.btn-sec:hover{background:var(--linea)}
+
+/* ---- FAB ---- */
+.fab{
+  position:fixed;right:20px;bottom:20px;z-index:40;
+  width:60px;height:60px;border-radius:18px;
+  background:var(--trigo);color:var(--tierra);
+  font-size:30px;font-weight:700;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+  display:flex;align-items:center;justify-content:center;
+}
+.fab:hover{transform:translateY(-2px)}
+
+/* ---- Tabla ---- */
+.tabla-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;padding:10px 12px;color:var(--tinta-suave);font-size:12px;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--linea)}
+td{padding:10px 12px;border-bottom:1px solid var(--linea)}
+tr:hover td{background:var(--papel-hondo)}
+.pill{padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600;display:inline-block}
+.pill.ing{background:rgba(92,122,61,.15);color:var(--campo)}
+.pill.egr{background:rgba(166,83,58,.15);color:var(--ladrillo)}
+.monto-ing{color:var(--campo);font-weight:700}
+.monto-egr{color:var(--ladrillo);font-weight:700}
+.act-tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--papel-hondo);color:var(--tinta-suave)}
+.borrar{background:none;color:var(--ladrillo);font-size:16px;padding:2px 6px;border-radius:6px}
+.borrar:hover{background:rgba(166,83,58,.12)}
+
+/* ---- Modal ---- */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(20,18,14,.55);z-index:100;
+  display:none;align-items:flex-end;justify-content:center;
+}
+.modal-bg.abierto{display:flex}
+.modal{
+  background:var(--blanco);width:100%;max-width:480px;
+  border-radius:20px 20px 0 0;padding:22px;
+  max-height:90vh;overflow-y:auto;
+  animation:sube .25s ease;
+}
+@media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:20px}}
+@keyframes sube{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{font-size:18px;margin-bottom:16px}
+.campo{margin-bottom:14px}
+.campo label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--tinta-suave)}
+.campo input,.campo select,.campo textarea{
+  width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;
+  background:var(--papel);color:var(--tinta);font-size:15px;
+}
+.campo textarea{resize:vertical;min-height:50px}
+.tipo-toggle{display:flex;gap:8px}
+.tipo-toggle button{
+  flex:1;padding:12px;border-radius:10px;font-weight:700;font-size:14px;
+  border:2px solid var(--linea);background:var(--papel);color:var(--tinta-suave);
+}
+.tipo-toggle button.on-ing{border-color:var(--campo);background:rgba(92,122,61,.12);color:var(--campo)}
+.tipo-toggle button.on-egr{border-color:var(--ladrillo);background:rgba(166,83,58,.12);color:var(--ladrillo)}
+.modal-btns{display:flex;gap:10px;margin-top:8px}
+.modal-btns .btn{flex:1;justify-content:center}
+
+/* ---- Asistente (placeholder etapa 3) ---- */
+.asistente-nota{
+  background:linear-gradient(135deg,rgba(74,107,138,.1),rgba(92,122,61,.08));
+  border:1px dashed var(--cielo);border-radius:12px;padding:14px 16px;
+  font-size:13px;color:var(--tinta-suave);display:flex;gap:12px;align-items:flex-start;
+}
+.asistente-nota .ico{font-size:22px}
+
+/* ---- Vacío ---- */
+.vacio{text-align:center;padding:50px 20px;color:var(--tinta-suave)}
+.vacio .ico{font-size:44px;margin-bottom:12px}
+.vacio h3{color:var(--tinta);margin-bottom:6px}
+
+/* ---- Tabs ---- */
+.tabs{display:flex;gap:6px;margin-bottom:18px;background:var(--papel-hondo);padding:5px;border-radius:12px}
+.tabs button{
+  flex:1;padding:10px;border-radius:9px;font-size:14px;font-weight:600;
+  background:none;color:var(--tinta-suave);
+}
+.tabs button.on{background:var(--blanco);color:var(--tinta);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.vista{display:none}
+.vista.on{display:block}
+
+.mini-nota{font-size:12px;color:var(--tinta-suave);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">
+    <div class="logo">C</div>
+    <div>
+      <h1>Gestión del Campo</h1>
+      <div class="sub" id="sub-header">Ingresos y egresos · análisis</div>
+    </div>
+  </div>
+  <div class="top-btns">
+    <button onclick="toggleTema()" title="Modo oscuro" id="btn-tema">🌙</button>
+    <button onclick="abrirImport()" title="Importar Excel">📥</button>
+    <button onclick="exportar()" title="Exportar">📤</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="on" onclick="verTab('dash',this)">📊 Análisis</button>
+    <button onclick="verTab('mov',this)">📋 Movimientos</button>
+    <button onclick="verTab('proj',this)">🔮 Proyección</button>
+  </div>
+
+  <!-- ===== ANÁLISIS ===== -->
+  <div class="vista on" id="v-dash">
+    <div class="filtros">
+      <span class="lbl">Año:</span>
+      <select id="f-anio" onchange="render()"></select>
+      <span class="lbl">Actividad:</span>
+      <select id="f-act" onchange="render()">
+        <option value="">Todas</option>
+        <option value="Ganadería">Cría / invernada</option>
+        <option value="Agricultura">Agricultura</option>
+        <option value="Cebolla">Alquiler cebolla</option>
+        <option value="General">General / sin actividad</option>
+      </select>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi ingreso"><div class="franja"></div><div class="et">Ingresos</div><div class="val" id="k-ing">$0</div><div class="det" id="k-ing-d"></div></div>
+      <div class="kpi egreso"><div class="franja"></div><div class="et">Egresos</div><div class="val" id="k-egr">$0</div><div class="det" id="k-egr-d"></div></div>
+      <div class="kpi saldo"><div class="franja"></div><div class="et">Resultado</div><div class="val" id="k-res">$0</div><div class="det" id="k-res-d"></div></div>
+      <div class="kpi proj"><div class="franja"></div><div class="et">Movimientos</div><div class="val" id="k-cant">0</div><div class="det" id="k-cant-d"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Ingresos vs egresos por mes</h2>
+      <div class="chart-box"><canvas id="ch-mes"></canvas></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2><span class="pin"></span>Saldo acumulado</h2>
+        <div class="chart-box chico"><canvas id="ch-saldo"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2><span class="pin"></span>Resultado por actividad</h2>
+        <div class="chart-box chico"><canvas id="ch-act"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2><span class="pin"></span>Egresos por categoría</h2>
+        <div class="chart-box chico"><canvas id="ch-cat"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2><span class="pin"></span>Comparación año contra año</h2>
+        <div class="chart-box chico"><canvas id="ch-anios"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MOVIMIENTOS ===== -->
+  <div class="vista" id="v-mov">
+    <div class="filtros">
+      <input type="text" id="busca" placeholder="Buscar..." oninput="renderTabla()" style="flex:1;min-width:150px">
+      <select id="f-tipo" onchange="renderTabla()">
+        <option value="">Todos</option>
+        <option value="ingreso">Ingresos</option>
+        <option value="egreso">Egresos</option>
+      </select>
+    </div>
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="tabla-wrap">
+        <table id="tabla">
+          <thead><tr><th>Fecha</th><th>Detalle</th><th>Actividad</th><th>Categoría</th><th>Tipo</th><th style="text-align:right">Monto</th><th></th></tr></thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+      <div class="vacio" id="tabla-vacia" style="display:none">
+        <div class="ico">🌾</div>
+        <h3>Todavía no hay movimientos</h3>
+        <p>Cargá el primero con el botón + o importá el Excel de tu viejo.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROYECCIÓN ===== -->
+  <div class="vista" id="v-proj">
+    <div class="asistente-nota" style="margin-bottom:18px">
+      <span class="ico">🤖</span>
+      <div><b>Asistente de IA — próxima etapa.</b> Cuando tengas datos cargados de unos meses, acá vas a poder preguntarle en criollo cosas como "¿cuánto gasté en gasoil este año?" o "¿me conviene más la agricultura o la ganadería?". Por ahora te dejo la proyección automática de abajo.</div>
+    </div>
+    <div class="panel">
+      <h2><span class="pin"></span>Proyección de caja (promedio últimos meses)</h2>
+      <div class="chart-box"><canvas id="ch-proj"></canvas></div>
+      <p class="mini-nota">Línea punteada = proyección estimada según el promedio de tus últimos meses con datos. Es una guía, no una bola de cristal.</p>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h2><span class="pin"></span>Meses históricamente flojos de caja</h2>
+        <div id="meses-flojos" style="font-size:14px"></div>
+      </div>
+      <div class="panel">
+        <h2><span class="pin"></span>Rentabilidad por actividad</h2>
+        <div id="rent-act" style="font-size:14px"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<button class="fab" onclick="abrirModal()">+</button>
+
+<!-- MODAL CARGA -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3 id="modal-titulo">Nuevo movimiento</h3>
+    <div class="campo">
+      <label>Tipo</label>
+      <div class="tipo-toggle">
+        <button id="tg-ing" onclick="setTipo('ingreso')">Ingreso</button>
+        <button id="tg-egr" onclick="setTipo('egreso')">Egreso</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Fecha</label>
+      <input type="date" id="m-fecha">
+    </div>
+    <div class="campo">
+      <label>Monto ($)</label>
+      <input type="number" id="m-monto" placeholder="0" inputmode="decimal">
+    </div>
+    <div class="campo">
+      <label>Actividad</label>
+      <select id="m-act">
+        <option value="Ganadería">Cría / invernada</option>
+        <option value="Agricultura">Agricultura</option>
+        <option value="Cebolla">Alquiler cebolla</option>
+        <option value="General">General / sin actividad</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Categoría</label>
+      <input type="text" id="m-cat" list="cats" placeholder="Ej: gasoil, veterinaria, venta hacienda...">
+      <datalist id="cats"></datalist>
+    </div>
+    <div class="campo">
+      <label>Detalle (opcional)</label>
+      <textarea id="m-det" placeholder="Nota libre..."></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-sec" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primario" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-bg" id="import-bg">
+  <div class="modal">
+    <h3>Importar Excel</h3>
+    <p style="font-size:14px;color:var(--tinta-suave);margin-bottom:14px">
+      Subí el Excel de tu viejo. Después de elegir el archivo te dejo emparejar cada columna con los campos de la app, así no importa cómo estén nombradas.
+    </p>
+    <div class="campo">
+      <label>Archivo (.xlsx / .csv)</label>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="leerArchivo(event)">
+    </div>
+    <div id="mapeo" style="display:none">
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px">Emparejá las columnas:</p>
+      <div class="campo"><label>Fecha</label><select id="map-fecha"></select></div>
+      <div class="campo"><label>Monto</label><select id="map-monto"></select></div>
+      <div class="campo">
+        <label>¿Cómo distingue ingreso de egreso?</label>
+        <select id="map-modo" onchange="cambiarModo()">
+          <option value="col">Una columna dice el tipo</option>
+          <option value="signo">El monto es negativo = egreso</option>
+          <option value="dos">Hay una columna ingresos y otra egresos</option>
+        </select>
+      </div>
+      <div class="campo" id="wrap-tipo"><label>Columna de tipo</label><select id="map-tipo"></select></div>
+      <div class="campo" id="wrap-egrcol" style="display:none"><label>Columna de egresos</label><select id="map-egrcol"></select></div>
+      <div class="campo"><label>Actividad (opcional)</label><select id="map-act"></select></div>
+      <div class="campo"><label>Categoría (opcional)</label><select id="map-cat"></select></div>
+      <div class="campo"><label>Detalle (opcional)</label><select id="map-det"></select></div>
+      <p class="mini-nota" id="preview-nota"></p>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-sec" onclick="cerrarImport()">Cancelar</button>
+      <button class="btn btn-primario" id="btn-importar" onclick="confirmarImport()" style="display:none">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ ESTADO ============
+let datos = JSON.parse(localStorage.getItem('campo_datos')||'[]');
+let tipoActual='egreso';
+let editandoId=null;
+let charts={};
+let rawImport=null, colsImport=[];
+
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','General':'#4A6B8A'};
+
+function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos))}
+function fmt(n){return '$'+Math.round(n).toLocaleString('es-AR')}
+function fmtK(n){
+  const a=Math.abs(n);
+  if(a>=1e6)return '$'+(n/1e6).toFixed(1)+'M';
+  if(a>=1e3)return '$'+(n/1e3).toFixed(0)+'k';
+  return '$'+Math.round(n);
+}
+
+// ============ TABS ============
+function verTab(t,btn){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.vista').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+t).classList.add('on');
+  if(t==='dash')render();
+  if(t==='mov')renderTabla();
+  if(t==='proj')renderProj();
+}
+
+// ============ TEMA ============
+function toggleTema(){
+  document.body.classList.toggle('oscuro');
+  localStorage.setItem('campo_tema',document.body.classList.contains('oscuro')?'1':'0');
+  document.getElementById('btn-tema').textContent=document.body.classList.contains('oscuro')?'☀️':'🌙';
+  render();renderProj();
+}
+if(localStorage.getItem('campo_tema')==='1'){document.body.classList.add('oscuro');document.getElementById('btn-tema').textContent='☀️'}
+
+// ============ MODAL ============
+function setTipo(t){
+  tipoActual=t;
+  document.getElementById('tg-ing').className=t==='ingreso'?'on-ing':'';
+  document.getElementById('tg-egr').className=t==='egreso'?'on-egr':'';
+}
+function abrirModal(id){
+  editandoId=id||null;
+  document.getElementById('modal-titulo').textContent=id?'Editar movimiento':'Nuevo movimiento';
+  if(id){
+    const m=datos.find(d=>d.id===id);
+    setTipo(m.tipo);
+    document.getElementById('m-fecha').value=m.fecha;
+    document.getElementById('m-monto').value=m.monto;
+    document.getElementById('m-act').value=m.act;
+    document.getElementById('m-cat').value=m.cat;
+    document.getElementById('m-det').value=m.det||'';
+  }else{
+    setTipo('egreso');
+    document.getElementById('m-fecha').value=new Date().toISOString().slice(0,10);
+    document.getElementById('m-monto').value='';
+    document.getElementById('m-cat').value='';
+    document.getElementById('m-det').value='';
+  }
+  actualizarCats();
+  document.getElementById('modal-bg').classList.add('abierto');
+}
+function cerrarModal(){document.getElementById('modal-bg').classList.remove('abierto')}
+function guardar(){
+  const monto=parseFloat(document.getElementById('m-monto').value);
+  const fecha=document.getElementById('m-fecha').value;
+  if(!monto||!fecha){alert('Falta la fecha o el monto');return}
+  const obj={
+    id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
+    tipo:tipoActual,fecha,monto:Math.abs(monto),
+    act:document.getElementById('m-act').value,
+    cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
+    det:document.getElementById('m-det').value.trim()
+  };
+  if(editandoId){datos=datos.map(d=>d.id===editandoId?obj:d)}
+  else{datos.push(obj)}
+  guardarLS();cerrarModal();
+  render();renderTabla();actualizarAnios();
+}
+function borrar(id){
+  if(!confirm('¿Borrar este movimiento?'))return;
+  datos=datos.filter(d=>d.id!==id);
+  guardarLS();render();renderTabla();actualizarAnios();
+}
+function actualizarCats(){
+  const cats=[...new Set(datos.map(d=>d.cat))].filter(Boolean);
+  document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
+}
+
+// ============ FILTROS / AÑOS ============
+function actualizarAnios(){
+  const anios=[...new Set(datos.map(d=>d.fecha.slice(0,4)))].sort().reverse();
+  const sel=document.getElementById('f-anio');
+  const actual=sel.value;
+  sel.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(actual&&anios.includes(actual))sel.value=actual;
+}
+function filtrados(){
+  const anio=document.getElementById('f-anio').value;
+  const act=document.getElementById('f-act').value;
+  return datos.filter(d=>
+    (!anio||d.fecha.slice(0,4)===anio)&&
+    (!act||d.act===act)
+  );
+}
+
+// ============ RENDER DASHBOARD ============
+function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim()}
+function destruir(k){if(charts[k]){charts[k].destroy();delete charts[k]}}
+
+function render(){
+  const d=filtrados();
+  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+x.monto,0);
+  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+x.monto,0);
+  document.getElementById('k-ing').textContent=fmtK(ing);
+  document.getElementById('k-egr').textContent=fmtK(egr);
+  document.getElementById('k-res').textContent=fmtK(ing-egr);
+  document.getElementById('k-res').style.color=ing-egr>=0?css('--campo'):css('--ladrillo');
+  document.getElementById('k-cant').textContent=d.length;
+  document.getElementById('k-ing-d').textContent=fmt(ing);
+  document.getElementById('k-egr-d').textContent=fmt(egr);
+  document.getElementById('k-res-d').textContent=(ing-egr>=0?'Positivo':'Negativo');
+  const cats=[...new Set(d.map(x=>x.cat))].length;
+  document.getElementById('k-cant-d').textContent=cats+' categorías';
+
+  chartMes(d);chartSaldo(d);chartAct(d);chartCat(d);chartAnios();
+}
+
+function chartMes(d){
+  destruir('mes');
+  const ing=Array(12).fill(0),egr=Array(12).fill(0);
+  d.forEach(x=>{const m=parseInt(x.fecha.slice(5,7))-1;if(x.tipo==='ingreso')ing[m]+=x.monto;else egr[m]+=x.monto});
+  charts.mes=new Chart(document.getElementById('ch-mes'),{
+    type:'bar',
+    data:{labels:MESES,datasets:[
+      {label:'Ingresos',data:ing,backgroundColor:css('--campo'),borderRadius:4},
+      {label:'Egresos',data:egr,backgroundColor:css('--ladrillo'),borderRadius:4}
+    ]},
+    options:baseOpts(true)
+  });
+}
+function chartSaldo(d){
+  destruir('saldo');
+  const orden=[...d].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  let ac=0;const labels=[],vals=[];
+  const porMes={};
+  orden.forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  Object.keys(porMes).sort().forEach(k=>{ac+=porMes[k];labels.push(k);vals.push(ac)});
+  charts.saldo=new Chart(document.getElementById('ch-saldo'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Saldo',data:vals,borderColor:css('--trigo'),backgroundColor:'rgba(201,162,75,.15)',fill:true,tension:.3,pointRadius:2}]},
+    options:baseOpts(false)
+  });
+}
+function chartAct(d){
+  destruir('act');
+  const acts={};
+  d.forEach(x=>{acts[x.act]=(acts[x.act]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const labels=Object.keys(acts);
+  charts.act=new Chart(document.getElementById('ch-act'),{
+    type:'bar',
+    data:{labels,datasets:[{data:labels.map(l=>acts[l]),backgroundColor:labels.map(l=>COL_ACT[l]||'#888'),borderRadius:4}]},
+    options:{...baseOpts(false),plugins:{legend:{display:false}}}
+  });
+}
+function chartCat(d){
+  destruir('cat');
+  const cats={};
+  d.filter(x=>x.tipo==='egreso').forEach(x=>{cats[x.cat]=(cats[x.cat]||0)+x.monto});
+  const orden=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const paleta=['#A6533A','#6B4A2E','#C9A24B','#5C7A3D','#4A6B8A','#8A6B4A','#7B9C56','#B08968'];
+  charts.cat=new Chart(document.getElementById('ch-cat'),{
+    type:'doughnut',
+    data:{labels:orden.map(o=>o[0]),datasets:[{data:orden.map(o=>o[1]),backgroundColor:paleta}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:css('--tinta'),font:{size:11},boxWidth:12}}}}
+  });
+}
+function chartAnios(){
+  destruir('anios');
+  const act=document.getElementById('f-act').value;
+  const base=datos.filter(d=>!act||d.act===act);
+  const anios={};
+  base.forEach(x=>{const a=x.fecha.slice(0,4);if(!anios[a])anios[a]={ing:0,egr:0};if(x.tipo==='ingreso')anios[a].ing+=x.monto;else anios[a].egr+=x.monto});
+  const labels=Object.keys(anios).sort();
+  charts.anios=new Chart(document.getElementById('ch-anios'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Ingresos',data:labels.map(a=>anios[a].ing),backgroundColor:css('--campo'),borderRadius:4},
+      {label:'Egresos',data:labels.map(a=>anios[a].egr),backgroundColor:css('--ladrillo'),borderRadius:4}
+    ]},
+    options:baseOpts(true)
+  });
+}
+function baseOpts(legend){
+  return{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:legend,labels:{color:css('--tinta'),font:{size:12},boxWidth:14}},
+      tooltip:{callbacks:{label:c=>c.dataset.label?c.dataset.label+': '+fmt(c.parsed.y):fmt(c.parsed.y||c.parsed)}}},
+    scales:{
+      x:{ticks:{color:css('--tinta-suave'),font:{size:11}},grid:{display:false}},
+      y:{ticks:{color:css('--tinta-suave'),font:{size:11},callback:v=>fmtK(v)},grid:{color:css('--linea')}}
+    }
+  };
+}
+
+// ============ TABLA ============
+function renderTabla(){
+  const q=(document.getElementById('busca').value||'').toLowerCase();
+  const ft=document.getElementById('f-tipo').value;
+  let d=[...datos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(ft)d=d.filter(x=>x.tipo===ft);
+  if(q)d=d.filter(x=>(x.cat+x.det+x.act).toLowerCase().includes(q));
+  const body=document.getElementById('tabla-body');
+  document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
+  document.getElementById('tabla').style.display=datos.length?'table':'none';
+  body.innerHTML=d.map(x=>`
+    <tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
+      <td>${x.fecha}</td>
+      <td>${x.det||'<span style="color:var(--tinta-suave)">—</span>'}</td>
+      <td><span class="act-tag">${nombreAct(x.act)}</span></td>
+      <td>${x.cat}</td>
+      <td><span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td>
+      <td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(x.monto)}</td>
+      <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
+    </tr>`).join('');
+}
+function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','Cebolla':'Cebolla','General':'General'}[a]||a}
+
+// ============ PROYECCIÓN ============
+function renderProj(){
+  chartProj();mesesFlojos();rentActividad();
+}
+function chartProj(){
+  destruir('proj');
+  const porMes={};
+  datos.forEach(x=>{const k=x.fecha.slice(0,7);porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?x.monto:-x.monto)});
+  const keys=Object.keys(porMes).sort();
+  if(keys.length<2){document.getElementById('ch-proj').parentElement.innerHTML='<p style="color:var(--tinta-suave);text-align:center;padding:40px">Cargá al menos 2 meses de datos para ver la proyección.</p>';return}
+  let ac=0;const reales=keys.map(k=>{ac+=porMes[k];return ac});
+  // promedio de variación de últimos 3 meses
+  const ult=keys.slice(-3).map(k=>porMes[k]);
+  const prom=ult.reduce((s,v)=>s+v,0)/ult.length;
+  const labels=[...keys];const dataReal=[...reales];const dataProj=Array(reales.length).fill(null);
+  dataProj[reales.length-1]=ac;
+  for(let i=1;i<=3;i++){const [y,m]=keys[keys.length-1].split('-').map(Number);const nm=new Date(y,m-1+i,1);labels.push(nm.toISOString().slice(0,7));ac+=prom;dataReal.push(null);dataProj.push(ac)}
+  charts.proj=new Chart(document.getElementById('ch-proj'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Real',data:dataReal,borderColor:css('--trigo'),backgroundColor:'rgba(201,162,75,.12)',fill:true,tension:.3,pointRadius:3},
+      {label:'Proyección',data:dataProj,borderColor:css('--cielo'),borderDash:[6,5],tension:.3,pointRadius:2,fill:false}
+    ]},
+    options:baseOpts(true)
+  });
+}
+function mesesFlojos(){
+  const prom=Array(12).fill(0),cont=Array(12).fill(0);
+  datos.forEach(x=>{const m=parseInt(x.fecha.slice(5,7))-1;prom[m]+=(x.tipo==='ingreso'?x.monto:-x.monto)});
+  datos.forEach(x=>{const a=x.fecha.slice(0,7)});
+  const flojos=prom.map((v,i)=>({m:MESES[i],v})).filter(o=>o.v!==0).sort((a,b)=>a.v-b.v).slice(0,4);
+  const el=document.getElementById('meses-flojos');
+  if(!flojos.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos suficientes.</p>';return}
+  el.innerHTML=flojos.map(o=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--linea)"><span>${o.m}</span><b style="color:${o.v<0?'var(--ladrillo)':'var(--campo)'}">${fmt(o.v)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto acumulado por mes (todos los años). Los de arriba son donde más apretás la caja.</p>';
+}
+function rentActividad(){
+  const acts={};
+  datos.forEach(x=>{if(!acts[x.act])acts[x.act]={ing:0,egr:0};if(x.tipo==='ingreso')acts[x.act].ing+=x.monto;else acts[x.act].egr+=x.monto});
+  const el=document.getElementById('rent-act');
+  const filas=Object.entries(acts).map(([a,v])=>({a,res:v.ing-v.egr,ing:v.ing})).sort((x,y)=>y.res-x.res);
+  if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos.</p>';return}
+  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${COL_ACT[f.a]||'#888'};margin-right:7px"></span>${nombreAct(f.a)}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad. Acá ves de una cuál te deja plata y cuál te la come.</p>';
+}
+
+// ============ IMPORT ============
+function abrirImport(){document.getElementById('import-bg').classList.add('abierto')}
+function cerrarImport(){document.getElementById('import-bg').classList.remove('abierto');document.getElementById('mapeo').style.display='none';document.getElementById('btn-importar').style.display='none';document.getElementById('file-input').value=''}
+function leerArchivo(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const wb=XLSX.read(ev.target.result,{type:'binary',cellDates:true});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    rawImport=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+    if(!rawImport.length){alert('El archivo parece vacío');return}
+    colsImport=Object.keys(rawImport[0]);
+    const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${c}">${c}</option>`).join('');
+    ['map-fecha','map-monto','map-tipo','map-egrcol','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
+    // adivinar
+    adivinar('map-fecha',['fecha','date','dia']);
+    adivinar('map-monto',['monto','importe','valor','total','pesos','$']);
+    adivinar('map-tipo',['tipo','concepto','clase']);
+    adivinar('map-act',['actividad','rubro','sector']);
+    adivinar('map-cat',['categoria','categoría','detalle','concepto','descripcion']);
+    document.getElementById('mapeo').style.display='block';
+    document.getElementById('btn-importar').style.display='inline-flex';
+    document.getElementById('preview-nota').textContent=rawImport.length+' filas detectadas.';
+  };
+  reader.readAsBinaryString(f);
+}
+function adivinar(id,claves){
+  const col=colsImport.find(c=>claves.some(k=>c.toLowerCase().includes(k)));
+  if(col)document.getElementById(id).value=col;
+}
+function cambiarModo(){
+  const modo=document.getElementById('map-modo').value;
+  document.getElementById('wrap-tipo').style.display=modo==='col'?'block':'none';
+  document.getElementById('wrap-egrcol').style.display=modo==='dos'?'block':'none';
+}
+function parseFecha(v){
+  if(v instanceof Date&&!isNaN(v))return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const s=(''+v).trim();
+  // ISO primero: 2025-03-15
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m){let[_,y,mo,d]=m;return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`}
+  // dd/mm/aaaa (formato argentino)
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(m){let[_,d,mo,y]=m;if(y.length===2)y='20'+y;return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`}
+  return null;
+}
+function parseMonto(v){
+  if(typeof v==='number')return v;
+  let neg=/^\s*-/.test(''+v)||/\(\s*[\d]/.test(''+v);
+  let s=(''+v).replace(/[^0-9,\.]/g,'');
+  if(!s)return 0;
+  if(s.includes(',')&&s.includes('.')){
+    // el último separador es el decimal
+    if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');
+    else s=s.replace(/,/g,'');
+  }else if(s.includes(',')){
+    // coma = decimal si hay 1-2 dígitos después; si no, es separador de miles
+    const p=s.split(',');
+    if(p[p.length-1].length<=2&&p.length===2)s=s.replace(',','.');
+    else s=s.replace(/,/g,'');
+  }else if(s.includes('.')){
+    // punto: decimal solo si hay exactamente 1-2 dígitos después y un solo punto
+    const p=s.split('.');
+    if(!(p.length===2&&p[1].length<=2))s=s.replace(/\./g,'');
+  }
+  let n=parseFloat(s)||0;
+  return neg?-Math.abs(n):n;
+}
+function confirmarImport(){
+  const cFecha=document.getElementById('map-fecha').value;
+  const cMonto=document.getElementById('map-monto').value;
+  const modo=document.getElementById('map-modo').value;
+  const cTipo=document.getElementById('map-tipo').value;
+  const cEgr=document.getElementById('map-egrcol').value;
+  const cAct=document.getElementById('map-act').value;
+  const cCat=document.getElementById('map-cat').value;
+  const cDet=document.getElementById('map-det').value;
+  if(!cFecha||!cMonto){alert('Necesito al menos la columna de fecha y la de monto');return}
+  let nuevos=[],errores=0;
+  rawImport.forEach(fila=>{
+    const fecha=parseFecha(fila[cFecha]);
+    if(!fecha){errores++;return}
+    let monto,tipo;
+    if(modo==='dos'){
+      const ing=parseMonto(fila[cMonto]),eg=parseMonto(fila[cEgr]);
+      if(ing>0){monto=ing;tipo='ingreso'}else if(eg>0){monto=eg;tipo='egreso'}else return;
+    }else if(modo==='signo'){
+      const v=parseMonto(fila[cMonto]);if(!v)return;
+      tipo=v<0?'egreso':'ingreso';monto=Math.abs(v);
+    }else{
+      monto=Math.abs(parseMonto(fila[cMonto]));if(!monto)return;
+      const t=(''+fila[cTipo]).toLowerCase();
+      tipo=/egr|gasto|pago|salida|compra|debito|débito/.test(t)?'egreso':'ingreso';
+    }
+    nuevos.push({
+      id:Date.now()+''+Math.random().toString(36).slice(2,8),
+      fecha,tipo,monto,
+      act:mapAct(cAct?fila[cAct]:''),
+      cat:cCat&&fila[cCat]?(''+fila[cCat]).trim():'Sin categoría',
+      det:cDet&&fila[cDet]?(''+fila[cDet]).trim():''
+    });
+  });
+  if(!nuevos.length){alert('No se pudo importar ninguna fila. Revisá el mapeo de columnas.');return}
+  datos=datos.concat(nuevos);guardarLS();
+  cerrarImport();actualizarAnios();render();renderTabla();
+  alert(`Importados ${nuevos.length} movimientos.`+(errores?` (${errores} filas sin fecha válida se saltearon)`:''));
+}
+function mapAct(v){
+  const s=(''+v).toLowerCase();
+  if(/gana|cria|cría|invern|hacienda|vaca|novillo/.test(s))return 'Ganadería';
+  if(/agri|siembra|cosecha|trigo|maiz|maíz|soja|grano/.test(s))return 'Agricultura';
+  if(/cebolla|alquiler|renta/.test(s))return 'Cebolla';
+  return 'General';
+}
+
+// ============ EXPORT ============
+function exportar(){
+  if(!datos.length){alert('No hay datos para exportar');return}
+  const ws=XLSX.utils.json_to_sheet(datos.map(d=>({
+    Fecha:d.fecha,Tipo:d.tipo,Monto:d.monto,Actividad:d.act,Categoría:d.cat,Detalle:d.det
+  })));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Movimientos');
+  XLSX.writeFile(wb,'gestion-campo-'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ============ INIT ============
+actualizarAnios();render();
+</script>
+</body>
+</html>
