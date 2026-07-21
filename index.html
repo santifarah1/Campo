@@ -1067,8 +1067,20 @@ function resumenParaIA(){
   txt+=`\nNOTA IMPORTANTE: "General" son gastos de estructura (sueldos, combustible, bancarios, impuestos) que NO están repartidos entre las actividades. Por eso una actividad puede verse negativa si sus costos reales están cayendo en General. Tenelo en cuenta al analizar rentabilidad.\n`;
   txt+=`\nRESULTADO POR AÑO:\n`;
   Object.keys(anios).sort().forEach(a=>{const v=anios[a];txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)}\n`});
-  txt+=`\nMAYORES EGRESOS (por rubro):\n`;
+  txt+=`\nMAYORES EGRESOS ACUMULADOS TODO EL PERÍODO (por rubro):\n`;
   topEgr.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
+  // Egresos por rubro DESGLOSADO POR AÑO (para preguntas tipo "este año")
+  const egrAnioRubro={};
+  d.filter(x=>x.tipo==='egreso').forEach(x=>{
+    const a=x.fecha.slice(0,4);
+    if(!egrAnioRubro[a])egrAnioRubro[a]={};
+    egrAnioRubro[a][x.cat]=(egrAnioRubro[a][x.cat]||0)+x.monto;
+  });
+  txt+=`\nMAYORES EGRESOS POR AÑO (top 8 de cada año):\n`;
+  Object.keys(egrAnioRubro).sort().forEach(a=>{
+    const top=Object.entries(egrAnioRubro[a]).sort((x,y)=>y[1]-x[1]).slice(0,8);
+    txt+=`  Año ${a}: `+top.map(([r,v])=>`${r} ${M(v)}`).join(', ')+`\n`;
+  });
   txt+=`\nMAYORES INGRESOS (por rubro):\n`;
   topIng.forEach(([r,v])=>txt+=`- ${r}: ${M(v)}\n`);
   txt+=`\nCAJA NETA ÚLTIMOS MESES (ingreso - egreso por mes):\n${ult6.join('\n')}\n`;
@@ -1099,7 +1111,7 @@ ${resumenParaIA()}`;
       body:JSON.stringify({
         systemInstruction:{parts:[{text:sistema}]},
         contents:iaHistorial,
-        generationConfig:{temperature:.4,maxOutputTokens:1200}
+        generationConfig:{temperature:.4,maxOutputTokens:3000}
       })
     });
     const data=await resp.json();
@@ -1112,7 +1124,14 @@ ${resumenParaIA()}`;
       agregarMsg('bot','⚠️ '+msg);
       iaHistorial.pop();
     }else{
-      const txt=data.candidates?.[0]?.content?.parts?.[0]?.text||'No pude generar una respuesta. Probá reformular la pregunta.';
+      const cand=data.candidates?.[0];
+      // buscar el texto en cualquier part que lo tenga (los modelos nuevos a veces intercalan)
+      let txt='';
+      if(cand?.content?.parts)txt=cand.content.parts.map(p=>p.text||'').join('').trim();
+      if(!txt){
+        if(cand?.finishReason==='MAX_TOKENS')txt='(La respuesta salió muy larga y se cortó. Probá preguntar algo más puntual.)';
+        else txt='No pude generar una respuesta. Probá reformular la pregunta.';
+      }
       agregarMsg('bot',fmtRespuesta(txt),true);
       iaHistorial.push({role:'model',parts:[{text:txt}]});
       if(iaHistorial.length>16)iaHistorial=iaHistorial.slice(-16); // limitar contexto
