@@ -248,6 +248,12 @@ tr:hover td{background:var(--papel-hondo)}
 </header>
 
 <main>
+  <div class="alerta roja" id="banner-fechas" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span class="ai">📅</span>
+    <div style="flex:1;min-width:220px"><b>Las fechas se importaron mal.</b> Una versión anterior de la app leía mal las fechas del Excel (las tomaba en formato americano). Ya está corregido, pero los datos que están cargados quedaron con el día y el mes cambiados. <b>La solución:</b> exportá un backup por las dudas, borrá todo con 🗑️ y volvé a importar la planilla. Tarda un minuto y queda todo bien.</div>
+    <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="document.getElementById('banner-fechas').style.display='none'">Entendido</button>
+  </div>
+
   <div class="alerta amar" id="banner-backup" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai">💾</span>
     <div style="flex:1;min-width:200px">Hace más de 30 días que no exportás un backup. Los datos viven solo en este navegador: si se limpia el historial, se pierden.</div>
@@ -1171,7 +1177,7 @@ function leerArchivo(e){
   reader.onload=ev=>{
     const wb=XLSX.read(ev.target.result,{type:'binary',cellDates:true});
     const ws=wb.Sheets[wb.SheetNames[0]];
-    rawImport=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+    rawImport=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true,cellDates:true});
     if(!rawImport.length){alert('El archivo parece vacío');return}
     colsImport=Object.keys(rawImport[0]);
     const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -1201,11 +1207,24 @@ function cambiarModo(){
 }
 function parseFecha(v){
   if(v instanceof Date&&!isNaN(v))return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  // número serie de Excel (por si viene sin cellDates)
+  if(typeof v==='number'&&v>20000&&v<80000){
+    const d=new Date(Date.UTC(1899,11,30)+v*864e5);
+    if(!isNaN(d))return d.toISOString().slice(0,10);
+  }
   const s=(''+v).trim();
   let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
   if(m){let[_,y,mo,d]=m;return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`}
   m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){let[_,d,mo,y]=m;if(y.length===2)y='20'+y;return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`}
+  if(m){
+    let[_,d,mo,y]=m;
+    if(y.length===2)y='20'+y;
+    // Red de seguridad: si el "mes" es imposible (13-31) la fecha venía en
+    // formato americano mes/día. Damos vuelta en vez de guardar basura.
+    if(+mo>12&&+d<=12){const t=d;d=mo;mo=t}
+    if(+mo>12||+d>31)return null;
+    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
   return null;
 }
 function parseMonto(v){
@@ -1362,7 +1381,7 @@ function importarDirecto(e){
     catch(err){alert('No pude leer el archivo. ¿Es un Excel válido?');return}
     let hoja=wb.SheetNames.find(n=>/base de datos/i.test(n))||wb.SheetNames[0];
     const ws=wb.Sheets[hoja];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false,cellDates:true});
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true,cellDates:true});
     let hIdx=-1;
     for(let i=0;i<Math.min(rows.length,15);i++){
       const fila=(rows[i]||[]).map(c=>(''+c).toLowerCase());
@@ -1460,6 +1479,15 @@ function exportar(){
 }
 
 // ============ RECORDATORIO DE BACKUP ============
+// Detecta datos cargados con el bug de fechas (mes 13-31 = importación vieja rota)
+function chequearFechas(){
+  const rotas=datos.filter(d=>{
+    const mo=+(''+d.fecha).slice(5,7);
+    return !(mo>=1&&mo<=12);
+  }).length;
+  if(rotas)document.getElementById('banner-fechas').style.display='flex';
+  return rotas;
+}
 function chequearBackup(){
   if(datos.length<10)return;
   const ult=parseInt(localStorage.getItem('campo_backup')||'0');
@@ -2037,7 +2065,7 @@ function borrarTodo(){
 document.getElementById('f-moneda').value=moneda;
 // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
 if(migrarDatos())guardarLS();
-actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();
+actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
 </script>
 </body>
 </html>
