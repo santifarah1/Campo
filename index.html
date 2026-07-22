@@ -465,6 +465,11 @@ tr:hover td{background:var(--papel-hondo)}
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <h3 id="modal-titulo">Nuevo movimiento</h3>
+    <div id="ocr-zona" style="margin-bottom:16px">
+      <button class="btn btn-sec" style="width:100%;justify-content:center;border-style:dashed" onclick="document.getElementById('file-factura').click()">📷 Cargar desde foto de factura</button>
+      <input type="file" id="file-factura" accept="image/*" capture="environment" style="display:none" onchange="leerFactura(event)">
+      <div id="ocr-estado" style="display:none;margin-top:10px;font-size:13px;color:var(--tinta-suave);text-align:center"></div>
+    </div>
     <div class="campo">
       <label>Tipo</label>
       <div class="tipo-toggle">
@@ -479,9 +484,23 @@ tr:hover td{background:var(--papel-hondo)}
       <input type="date" id="m-fecha">
     </div>
     <div class="campo">
-      <label>Monto ($ corrientes)</label>
+      <label>Monto total ($ corrientes, con IVA incluido)</label>
       <input type="number" id="m-monto" placeholder="0" inputmode="decimal">
     </div>
+    <details id="det-iva" style="margin-bottom:14px">
+      <summary style="font-size:13px;color:var(--tinta-suave);cursor:pointer">Desglosar IVA (opcional — para el contador)</summary>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div style="flex:1">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--tinta-suave)">Neto (sin IVA)</label>
+          <input type="number" id="m-neto" placeholder="0" inputmode="decimal" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px">
+        </div>
+        <div style="flex:1">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--tinta-suave)">IVA</label>
+          <input type="number" id="m-iva" placeholder="0" inputmode="decimal" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px">
+        </div>
+      </div>
+      <p class="mini-nota">El total sigue siendo lo que cuenta para la gestión. El neto y el IVA se guardan aparte para armar el reporte del contador.</p>
+    </details>
     <div class="campo">
       <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
       <input type="number" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
@@ -737,11 +756,16 @@ function setTipo(t){
 function abrirModal(id){
   editandoId=id||null;
   document.getElementById('modal-titulo').textContent=id?'Editar movimiento':'Nuevo movimiento';
+  document.getElementById('ocr-zona').style.display=id?'none':'block';
+  const est=document.getElementById('ocr-estado');est.style.display='none';est.style.color='var(--tinta-suave)';
+  document.getElementById('det-iva').open=false;
   if(id){
     const m=datos.find(d=>d.id===id);
     setTipo(m.tipo);
     document.getElementById('m-fecha').value=m.fecha;
     document.getElementById('m-monto').value=m.monto;
+    document.getElementById('m-neto').value=m.neto||'';
+    document.getElementById('m-iva').value=m.iva||'';
     document.getElementById('m-cant').value=m.cant||'';
     document.getElementById('m-cta').value=m.cta||'';
     document.getElementById('m-prov').value=m.prov||'';
@@ -758,6 +782,8 @@ function abrirModal(id){
     setTipo('egreso');
     document.getElementById('m-fecha').value=new Date().toISOString().slice(0,10);
     document.getElementById('m-monto').value='';
+    document.getElementById('m-neto').value='';
+    document.getElementById('m-iva').value='';
     document.getElementById('m-cant').value='';
     document.getElementById('m-cta').value='';
     document.getElementById('m-prov').value='';
@@ -780,11 +806,70 @@ function formaCanonica(v,campo){
   if(formas.length)return formas.sort((a,b)=>conteo[b]-conteo[a])[0];
   return (''+v).trim();
 }
+// ===== LECTOR DE FACTURAS (foto → Gemini) =====
+function leerFactura(e){
+  const f=e.target.files[0];
+  e.target.value='';
+  if(!f)return;
+  if(!iaKey){
+    alert('Para leer facturas con foto necesitás activar el asesor primero (pestaña 🤖 Asesor), que es donde se pega la clave gratuita de Gemini. Es la misma clave.');
+    return;
+  }
+  const est=document.getElementById('ocr-estado');
+  est.style.display='block';
+  est.textContent='📖 Leyendo la factura...';
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const b64=ev.target.result.split(',')[1];
+    const mime=f.type||'image/jpeg';
+    const prompt=`Sos un lector de facturas y comprobantes argentinos. Mirá esta imagen y extraé los datos en JSON, sin texto adicional, sin backticks. Campos:
+{"fecha":"YYYY-MM-DD o null","proveedor":"nombre del comercio/proveedor o null","total":número o null,"neto":número o null,"iva":número o null,"rubro":"una categoría corta del gasto (ej: combustibles, veterinaria, fertilizantes, repuestos, honorarios) o null","es_ingreso":true si es una factura de VENTA emitida por el productor, false si es una compra/gasto}
+Reglas: los montos van como número sin separador de miles ni símbolo (ej 1234567.89). El neto es el importe gravado sin IVA; el IVA es el impuesto; total = neto + IVA + otros. Si sólo ves el total, poné total y dejá neto e iva en null. Si un dato no está claro, poné null. NO inventes.`;
+    try{
+      const body={contents:[{role:'user',parts:[{inlineData:{mimeType:mime,data:b64}},{text:prompt}]}],generationConfig:{temperature:0,maxOutputTokens:600}};
+      const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${iaKey}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+      });
+      const data=await resp.json();
+      if(data.error){
+        let m=data.error.message||'error';
+        if(/API key not valid|API_KEY_INVALID/i.test(m))m='La clave de Gemini no es válida. Cargá una correcta en la pestaña Asesor.';
+        else if(/quota|RESOURCE_EXHAUSTED/i.test(m))m='Se agotó la cuota gratis por hoy. Cargá la factura a mano o probá mañana.';
+        est.textContent='⚠️ '+m;
+        return;
+      }
+      let txt=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
+      txt=txt.replace(/```json|```/g,'').trim();
+      let d;
+      try{d=JSON.parse(txt)}catch(_){est.textContent='⚠️ No pude leer bien la factura. Cargala a mano.';return}
+      // volcar al formulario para que revise
+      setTipo(d.es_ingreso?'ingreso':'egreso');
+      if(d.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(d.fecha))document.getElementById('m-fecha').value=d.fecha;
+      if(d.total)document.getElementById('m-monto').value=Math.round(d.total*100)/100;
+      if(d.neto){document.getElementById('m-neto').value=Math.round(d.neto*100)/100;document.getElementById('det-iva').open=true}
+      if(d.iva){document.getElementById('m-iva').value=Math.round(d.iva*100)/100;document.getElementById('det-iva').open=true}
+      if(d.proveedor)document.getElementById('m-prov').value=d.proveedor;
+      if(d.rubro){
+        document.getElementById('m-cat').value=d.rubro;
+        const clas=clasificarRubro(d.rubro);
+        document.getElementById('m-act').value=clas.act;
+      }
+      est.style.color='var(--campo)';
+      est.textContent='✓ Datos cargados. Revisalos, corregí lo que haga falta y tocá Guardar.';
+    }catch(err){
+      est.textContent='⚠️ No pude conectar. Revisá internet y probá de nuevo.';
+    }
+  };
+  reader.readAsDataURL(f);
+}
+
 function guardar(){
   const monto=parseFloat(document.getElementById('m-monto').value);
   const fecha=document.getElementById('m-fecha').value;
   if(!monto||!fecha){alert('Falta la fecha o el monto');return}
   const cant=parseFloat(document.getElementById('m-cant').value)||null;
+  const neto=parseFloat(document.getElementById('m-neto').value)||null;
+  const iva=parseFloat(document.getElementById('m-iva').value)||null;
   let obj;
   if(tipoActual==='transfer'){
     const o=document.getElementById('m-origen').value, de=document.getElementById('m-destino').value;
@@ -800,7 +885,7 @@ function guardar(){
   }else{
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
-      tipo:tipoActual,fecha,monto:Math.abs(monto),cant,
+      tipo:tipoActual,fecha,monto:Math.abs(monto),cant,neto,iva,
       cta:formaCanonica(document.getElementById('m-cta').value,'cta'),
       prov:formaCanonica(document.getElementById('m-prov').value,'prov'),
       act:document.getElementById('m-act').value,
@@ -1357,6 +1442,8 @@ function exportar(){
     Fecha:d.fecha,
     Tipo:d.tipo==='transfer'?'transferencia':d.tipo,
     Monto:d.monto,
+    Neto:d.neto||'',
+    IVA:d.iva||'',
     Cantidad:d.cant||'',
     Cuenta:d.cta||'',
     'Cliente/Proveedor':d.prov||'',
