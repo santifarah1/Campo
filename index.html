@@ -256,8 +256,8 @@ tr:hover td{background:var(--papel-hondo)}
 
   <div class="alerta amar" id="banner-backup" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai">💾</span>
-    <div style="flex:1;min-width:200px">Hace más de 30 días que no exportás un backup. Los datos viven solo en este navegador: si se limpia el historial, se pierden.</div>
-    <button class="btn btn-primario" style="padding:8px 12px;font-size:13px" onclick="exportar()">Exportar ahora</button>
+    <div style="flex:1;min-width:220px" id="txt-backup"></div>
+    <button class="btn btn-primario" style="padding:8px 12px;font-size:13px" onclick="respaldar()">Guardar copia ahora</button>
     <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="posponerBackup()">Después</button>
   </div>
 
@@ -402,6 +402,18 @@ tr:hover td{background:var(--papel-hondo)}
     <div class="panel">
       <h2><span class="pin"></span>Cierre del ejercicio</h2>
       <div id="g-cierre"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Copias de seguridad</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Todo lo que cargás vive únicamente en esta computadora. Si se rompe, si la formatean o si se borran los datos del navegador, se pierde. Guardá una copia cada tanto y <b>mandátela por WhatsApp o subila a tu Drive</b>: si la dejás solo en esta misma PC, no te salva de nada.</p>
+      <div id="estado-backup" style="margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primario" onclick="respaldar()">💾 Guardar copia de seguridad</button>
+        <button class="btn btn-sec" onclick="document.getElementById('file-restaurar').click()">📂 Restaurar desde una copia</button>
+        <input type="file" id="file-restaurar" accept=".json,application/json" style="display:none" onchange="restaurar(event)">
+      </div>
+      <p class="mini-nota">La copia se baja como un archivo <b>respaldo-campo-fecha.json</b>. Guardalo bien: con ese archivo se recupera todo tal cual estaba. Al restaurar, la app guarda primero una copia de lo que había ahora, por las dudas.</p>
     </div>
   </div>
 
@@ -1474,8 +1486,6 @@ function exportar(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Movimientos');
   XLSX.writeFile(wb,'gestion-campo-'+new Date().toISOString().slice(0,10)+'.xlsx');
-  localStorage.setItem('campo_backup',''+Date.now());
-  document.getElementById('banner-backup').style.display='none';
 }
 
 // ============ RECORDATORIO DE BACKUP ============
@@ -1488,17 +1498,136 @@ function chequearFechas(){
   if(rotas)document.getElementById('banner-fechas').style.display='flex';
   return rotas;
 }
+// ============ RESPALDO Y RESTAURACIÓN ============
+const RESPALDO_VERSION=1;
+const RESPALDO_MARCA='gestion-campo';
+// Claves que NO van al respaldo: caché que se rebaja sola de internet.
+const NO_RESPALDAR=['campo_ipc','campo_tc'];
+
+// Junta dinámicamente todas las claves campo_* (menos la caché),
+// así una función nueva queda respaldada sola sin tocar esto.
+function juntarDatosLS(){
+  const d={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('campo_'))continue;
+    if(NO_RESPALDAR.includes(k))continue;
+    d[k]=localStorage.getItem(k);
+  }
+  return d;
+}
+function bajarArchivo(nombre,contenido){
+  const blob=new Blob([contenido],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=nombre;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function armarRespaldo(){
+  const hoy=new Date();
+  return JSON.stringify({
+    app:RESPALDO_MARCA,
+    version:RESPALDO_VERSION,
+    fecha:hoy.toISOString(),
+    movimientos:datos.length,
+    datos:juntarDatosLS()
+  },null,2);
+}
+function respaldar(){
+  if(!datos.length&&!confirm('Todavía no hay movimientos cargados. ¿Guardar igual la copia?'))return;
+  const hoy=new Date();
+  const nombre='respaldo-campo-'+hoy.toISOString().slice(0,10)+'.json';
+  bajarArchivo(nombre,armarRespaldo());
+  localStorage.setItem('campo_backup',''+Date.now());
+  localStorage.removeItem('campo_backup_snooze');
+  document.getElementById('banner-backup').style.display='none';
+  estadoBackup();
+  alert('✓ Copia guardada como:\n'+nombre+'\n\nFijate en la carpeta de Descargas. Muy importante: mandátela por WhatsApp o subila a tu Drive. Si la dejás solo en esta computadora y la computadora se rompe, la copia se pierde con ella.');
+}
+function restaurar(e){
+  const f=e.target.files[0];
+  e.target.value='';
+  if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    let j;
+    try{j=JSON.parse(ev.target.result)}
+    catch(_){alert('⚠️ Ese archivo no se puede leer. Tiene que ser el archivo respaldo-campo-....json que bajó esta misma app.');return}
+    if(!j||j.app!==RESPALDO_MARCA||!j.datos||typeof j.datos!=='object'){
+      alert('⚠️ Ese archivo no es una copia de seguridad de esta app.\n\nBuscá el archivo que empieza con "respaldo-campo-" y termina en .json. No sirve el Excel.');
+      return;
+    }
+    if(j.version>RESPALDO_VERSION){
+      alert('⚠️ Esa copia se hizo con una versión más nueva de la app. Actualizá la app antes de restaurarla.');
+      return;
+    }
+    let fTxt='desconocida';
+    if(j.fecha){
+      const d=new Date(j.fecha);
+      if(!isNaN(d))fTxt=d.toLocaleDateString('es-AR')+' a las '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    }
+    let movs=j.movimientos;
+    if(movs==null&&j.datos.campo_datos){try{movs=JSON.parse(j.datos.campo_datos).length}catch(_){}}
+    const ahora=datos.length;
+    if(!confirm(`COPIA DEL ${fTxt}\nTiene ${movs!=null?movs:'?'} movimientos.\n\nAhora en la app hay ${ahora} movimientos, y se van a REEMPLAZAR por los de la copia.\n\nAntes de hacerlo se va a bajar automáticamente una copia de lo que tenés ahora, por si te arrepentís.\n\n¿Seguimos?`))return;
+    // respaldo de seguridad de lo que había
+    try{
+      bajarArchivo('respaldo-anterior-'+new Date().toISOString().slice(0,10)+'.json',armarRespaldo());
+    }catch(_){}
+    // limpiar solo las claves de la app y escribir las de la copia
+    const viejas=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('campo_')&&!NO_RESPALDAR.includes(k))viejas.push(k);
+    }
+    viejas.forEach(k=>localStorage.removeItem(k));
+    Object.entries(j.datos).forEach(([k,v])=>{
+      if(k&&k.startsWith('campo_'))localStorage.setItem(k,v);
+    });
+    alert('✓ Listo, se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.');
+    location.reload();
+  };
+  reader.readAsText(f);
+}
+function diasSinBackup(){
+  const ult=parseInt(localStorage.getItem('campo_backup')||'0');
+  if(!ult)return null;
+  return Math.floor((Date.now()-ult)/864e5);
+}
+function estadoBackup(){
+  const el=document.getElementById('estado-backup');
+  if(!el)return;
+  const d=diasSinBackup();
+  if(d===null){
+    el.innerHTML='<div class="alerta amar"><span class="ai">⚠️</span><div>Todavía no guardaste ninguna copia de seguridad.</div></div>';
+  }else if(d>=7){
+    el.innerHTML=`<div class="alerta roja"><span class="ai">⚠️</span><div>Última copia: hace <b>${d} ${d===1?'día':'días'}</b>. Conviene guardar una nueva.</div></div>`;
+  }else{
+    el.innerHTML=`<div class="alerta verde"><span class="ai">✅</span><div>Última copia guardada hace ${d===0?'menos de un día':d+(d===1?' día':' días')}.</div></div>`;
+  }
+}
 function chequearBackup(){
   if(datos.length<10)return;
   const ult=parseInt(localStorage.getItem('campo_backup')||'0');
   const snooze=parseInt(localStorage.getItem('campo_backup_snooze')||'0');
-  if(ult&&Date.now()-ult<30*864e5)return;
-  if(!ult&&!localStorage.getItem('campo_backup_primera')){
-    localStorage.setItem('campo_backup_primera',''+Date.now());
+  // "Después" silencia el aviso hasta el día siguiente
+  if(snooze&&Date.now()-snooze<864e5)return;
+  if(!ult){
+    // nunca respaldó: damos 3 días de gracia desde el primer uso
+    if(!localStorage.getItem('campo_backup_primera')){
+      localStorage.setItem('campo_backup_primera',''+Date.now());
+      return;
+    }
+    if(Date.now()-parseInt(localStorage.getItem('campo_backup_primera'))<3*864e5)return;
+    document.getElementById('txt-backup').innerHTML='<b>Todavía no guardaste ninguna copia de seguridad.</b> Todo lo que cargaste vive solo en esta computadora: si se rompe o se borran los datos del navegador, se pierde.';
+    document.getElementById('banner-backup').style.display='flex';
     return;
   }
-  if(!ult&&Date.now()-parseInt(localStorage.getItem('campo_backup_primera'))<30*864e5)return;
-  if(snooze&&Date.now()-snooze<7*864e5)return;
+  const d=diasSinBackup();
+  if(d<7)return;
+  document.getElementById('txt-backup').innerHTML=`<b>Hace ${d} días que no guardás una copia de seguridad.</b> Si esta computadora se rompe, se pierde todo lo cargado desde entonces.`;
   document.getElementById('banner-backup').style.display='flex';
 }
 function posponerBackup(){
@@ -1841,6 +1970,7 @@ function renderGestion(){
   costosEstructura();
   alertas();
   cierreEjercicio();
+  estadoBackup();
 }
 
 const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla'};
@@ -2058,7 +2188,7 @@ function cierreEjercicio(){
 // ============ INIT ============
 function borrarTodo(){
   if(!datos.length){alert('No hay datos.');return}
-  if(!confirm(`¿Borrar TODOS los ${datos.length} movimientos? Esto no se puede deshacer.\n\nSi querés conservarlos, exportá primero con el botón 📤.`))return;
+  if(!confirm(`¿Borrar TODOS los ${datos.length} movimientos? Esto no se puede deshacer.\n\nSi querés poder recuperarlos, cancelá y primero guardá una copia de seguridad (pestaña Gestión, abajo de todo).`))return;
   if(!confirm('¿Seguro? Última confirmación.'))return;
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
 }
