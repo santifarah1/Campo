@@ -350,6 +350,11 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="egreso">Egresos</option>
         <option value="transfer">Transferencias</option>
       </select>
+      <select id="f-pend" onchange="renderTabla()">
+        <option value="">Con pendientes</option>
+        <option value="ocultar">Solo lo cobrado/pagado</option>
+        <option value="solo">Solo pendientes</option>
+      </select>
     </div>
     <div class="panel" style="padding:0;overflow:hidden">
       <div class="tabla-wrap">
@@ -1236,8 +1241,11 @@ function etiquetaPlazo(x){
 function renderTabla(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
   const ft=document.getElementById('f-tipo').value;
+  const fp=document.getElementById('f-pend').value;
   let d=[...datos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(ft)d=d.filter(x=>x.tipo===ft);
+  if(fp==='ocultar')d=d.filter(x=>!x.plazo);
+  else if(fp==='solo')d=d.filter(x=>x.plazo);
   if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.cta||'')+(x.prov||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
   const body=document.getElementById('tabla-body');
   document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
