@@ -447,10 +447,18 @@ tr:hover td{background:var(--papel-hondo)}
         </p>
         <div style="max-width:460px;margin:0 auto;text-align:left;background:var(--papel-hondo);border-radius:12px;padding:16px;margin-bottom:16px;font-size:13px;color:var(--tinta-suave)">
           <b style="color:var(--tinta)">Cómo sacar la clave (2 min):</b><br>
-          1. Entrá a <b>aistudio.google.com/apikey</b> con tu cuenta de Google.<br>
+          1. Entrá a la página que se indica abajo con tu cuenta.<br>
           2. Tocá "Create API key" / "Crear clave".<br>
           3. Copiala y pegala acá abajo.
         </div>
+        <div style="max-width:460px;margin:0 auto 14px">
+          <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--tinta-suave);text-align:left">¿Qué asistente querés usar?</label>
+          <select id="ia-prov-sel" onchange="cambiarProveedor()" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:14px">
+            <option value="gemini">Gemini (Google) — recomendado</option>
+            <option value="groq">Groq — más cuota gratis, sin buscar precios</option>
+          </select>
+        </div>
+        <div id="ia-prov-nota" style="max-width:460px;margin:0 auto 16px;text-align:left;background:var(--papel-hondo);border-radius:12px;padding:14px;font-size:13px;color:var(--tinta-suave)"></div>
         <div style="max-width:460px;margin:0 auto;display:flex;gap:8px">
           <input type="password" id="ia-key-input" placeholder="Pegá tu clave de Gemini acá" style="flex:1;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:14px">
           <button class="btn btn-primario" onclick="guardarKey()">Guardar</button>
@@ -461,8 +469,11 @@ tr:hover td{background:var(--papel-hondo)}
     <div id="ia-chat" style="display:none">
       <div class="panel" style="padding:0;overflow:hidden">
         <div style="padding:14px 18px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center">
-          <h2 style="margin:0"><span class="pin"></span>Asesor del campo</h2>
-          <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="cambiarKey()">Cambiar clave</button>
+          <h2 style="margin:0"><span class="pin"></span>Asesor del campo <span class="act-tag" id="ia-etiqueta" style="margin-left:6px"></span></h2>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="verTab('ia',document.querySelectorAll('.tabs button')[4]);document.getElementById('ia-sin-key').style.display='block';document.getElementById('ia-chat').style.display='none'">Cambiar asistente</button>
+            <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="cambiarKey()">Cambiar clave</button>
+          </div>
         </div>
         <div id="ia-mensajes" style="padding:18px;min-height:280px;max-height:520px;overflow-y:auto"></div>
         <div style="padding:14px 18px;border-top:1px solid var(--linea)">
@@ -503,25 +514,25 @@ tr:hover td{background:var(--papel-hondo)}
     </div>
     <div class="campo">
       <label>Monto total ($ corrientes, con IVA incluido)</label>
-      <input type="number" id="m-monto" placeholder="0" inputmode="decimal">
+      <input type="text" id="m-monto" placeholder="Ej: 1.500,50" inputmode="decimal">
     </div>
     <details id="det-iva" style="margin-bottom:14px">
       <summary style="font-size:13px;color:var(--tinta-suave);cursor:pointer">Desglosar IVA (opcional — para el contador)</summary>
       <div style="display:flex;gap:10px;margin-top:10px">
         <div style="flex:1">
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--tinta-suave)">Neto (sin IVA)</label>
-          <input type="number" id="m-neto" placeholder="0" inputmode="decimal" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px">
+          <input type="text" id="m-neto" placeholder="0" inputmode="decimal" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px">
         </div>
         <div style="flex:1">
           <label style="display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--tinta-suave)">IVA</label>
-          <input type="number" id="m-iva" placeholder="0" inputmode="decimal" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px">
+          <input type="text" id="m-iva" placeholder="0" inputmode="decimal" style="width:100%;padding:11px;border:1px solid var(--linea);border-radius:10px;background:var(--papel);color:var(--tinta);font-size:15px">
         </div>
       </div>
       <p class="mini-nota">El total sigue siendo lo que cuenta para la gestión. El neto y el IVA se guardan aparte para armar el reporte del contador.</p>
     </details>
     <div class="campo">
       <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
-      <input type="number" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
+      <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
     </div>
     <div class="campo" id="wrap-cta">
       <label>Cuenta (de dónde sale / a dónde entra la plata)</label>
@@ -829,10 +840,14 @@ function leerFactura(e){
   const f=e.target.files[0];
   e.target.value='';
   if(!f)return;
-  if(!iaKey){
-    alert('Para leer facturas con foto necesitás activar el asesor primero (pestaña 🤖 Asesor), que es donde se pega la clave gratuita de Gemini. Es la misma clave.');
-    return;
+  if(!iaKey||usarGroq()){
+    const claveGem=localStorage.getItem('campo_gemini_key')||'';
+    if(!claveGem){
+      alert('Para leer facturas con foto hace falta el asistente Gemini.\n\nAndá a la pestaña 🤖 Asesor, elegí Gemini y pegá su clave (es gratis). Después volvés y sacás la foto.');
+      return;
+    }
   }
+  const keyFactura=localStorage.getItem('campo_gemini_key')||'';
   const est=document.getElementById('ocr-estado');
   est.style.display='block';
   est.textContent='📖 Leyendo la factura...';
@@ -845,7 +860,7 @@ function leerFactura(e){
 Reglas: los montos van como número sin separador de miles ni símbolo (ej 1234567.89). El neto es el importe gravado sin IVA; el IVA es el impuesto; total = neto + IVA + otros. Si sólo ves el total, poné total y dejá neto e iva en null. Si un dato no está claro, poné null. NO inventes.`;
     try{
       const body={contents:[{role:'user',parts:[{inlineData:{mimeType:mime,data:b64}},{text:prompt}]}],generationConfig:{temperature:0,maxOutputTokens:600}};
-      const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${iaKey}`,{
+      const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${keyFactura}`,{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
       });
       const data=await resp.json();
@@ -882,12 +897,21 @@ Reglas: los montos van como número sin separador de miles ni símbolo (ej 12345
 }
 
 function guardar(){
-  const monto=parseFloat(document.getElementById('m-monto').value);
   const fecha=document.getElementById('m-fecha').value;
-  if(!monto||!fecha){alert('Falta la fecha o el monto');return}
-  const cant=parseFloat(document.getElementById('m-cant').value)||null;
-  const neto=parseFloat(document.getElementById('m-neto').value)||null;
-  const iva=parseFloat(document.getElementById('m-iva').value)||null;
+  const monto=parseMonto(document.getElementById('m-monto').value);
+  if(!fecha){alert('Falta la fecha.');return}
+  if(!monto){alert('Falta el monto, o no se entiende lo que escribiste.\n\nPodés escribirlo como quieras: 1500 · 1500,50 · 1.500,50');return}
+  // Un año mal tipeado (2206 en vez de 2026) entra sin chistar y descoloca
+  // los gráficos por mes, la proyección y el cierre de ejercicio.
+  const anio=parseInt(fecha.slice(0,4));
+  const maxAnio=new Date().getFullYear()+1;
+  if(!(anio>=2015&&anio<=maxAnio)){
+    alert('La fecha parece estar mal: el año es '+anio+'. Revisala.');
+    return;
+  }
+  const cant=parseMonto(document.getElementById('m-cant').value)||null;
+  const neto=parseMonto(document.getElementById('m-neto').value)||null;
+  const iva=parseMonto(document.getElementById('m-iva').value)||null;
   let obj;
   if(tipoActual==='transfer'){
     const o=document.getElementById('m-origen').value, de=document.getElementById('m-destino').value;
@@ -1501,8 +1525,12 @@ function chequearFechas(){
 // ============ RESPALDO Y RESTAURACIÓN ============
 const RESPALDO_VERSION=1;
 const RESPALDO_MARCA='gestion-campo';
-// Claves que NO van al respaldo: caché que se rebaja sola de internet.
-const NO_RESPALDAR=['campo_ipc','campo_tc'];
+// Claves que NO van al respaldo:
+// - campo_ipc / campo_tc: caché que se rebaja sola de internet.
+// - campo_gemini_key / campo_groq_key: son credenciales y el archivo se comparte por WhatsApp/Drive.
+// - campo_backup*: control interno del aviso; si viajaran, restaurar una copia
+//   vieja haría saltar "hace X días" al instante.
+const NO_RESPALDAR=['campo_ipc','campo_tc','campo_gemini_key','campo_groq_key','campo_backup','campo_backup_snooze','campo_backup_primera'];
 
 // Junta dinámicamente todas las claves campo_* (menos la caché),
 // así una función nueva queda respaldada sola sin tocar esto.
@@ -1544,7 +1572,7 @@ function respaldar(){
   localStorage.removeItem('campo_backup_snooze');
   document.getElementById('banner-backup').style.display='none';
   estadoBackup();
-  alert('✓ Copia guardada como:\n'+nombre+'\n\nFijate en la carpeta de Descargas. Muy importante: mandátela por WhatsApp o subila a tu Drive. Si la dejás solo en esta computadora y la computadora se rompe, la copia se pierde con ella.');
+  alert('✓ Copia guardada como:\n'+nombre+'\n\nFijate en la carpeta de Descargas. Muy importante: mandátela por WhatsApp o subila a tu Drive. Si la dejás solo en esta computadora y la computadora se rompe, la copia se pierde con ella.\n\n(La clave del asesor no se incluye en el archivo, así podés compartirlo tranquilo. Si restaurás en una computadora nueva, la pegás una vez y listo.)');
 }
 function restaurar(e){
   const f=e.target.files[0];
@@ -1572,10 +1600,15 @@ function restaurar(e){
     if(movs==null&&j.datos.campo_datos){try{movs=JSON.parse(j.datos.campo_datos).length}catch(_){}}
     const ahora=datos.length;
     if(!confirm(`COPIA DEL ${fTxt}\nTiene ${movs!=null?movs:'?'} movimientos.\n\nAhora en la app hay ${ahora} movimientos, y se van a REEMPLAZAR por los de la copia.\n\nAntes de hacerlo se va a bajar automáticamente una copia de lo que tenés ahora, por si te arrepentís.\n\n¿Seguimos?`))return;
-    // respaldo de seguridad de lo que había
+    // copia de seguridad de lo que había, por si se equivocó de archivo
     try{
       bajarArchivo('respaldo-anterior-'+new Date().toISOString().slice(0,10)+'.json',armarRespaldo());
-    }catch(_){}
+    }catch(err){
+      if(!confirm('⚠️ No se pudo generar la copia de lo que tenés ahora (puede ser que el navegador haya bloqueado la descarga).\n\nSi seguís, los datos actuales se van a reemplazar sin red de seguridad: si esta copia no era la que buscabas, no hay vuelta atrás.\n\n¿Querés continuar igual?')){
+        alert('No se tocó nada. Tus datos siguen como estaban.');
+        return;
+      }
+    }
     // limpiar solo las claves de la app y escribir las de la copia
     const viejas=[];
     for(let i=0;i<localStorage.length;i++){
@@ -1584,7 +1617,15 @@ function restaurar(e){
     }
     viejas.forEach(k=>localStorage.removeItem(k));
     Object.entries(j.datos).forEach(([k,v])=>{
-      if(k&&k.startsWith('campo_'))localStorage.setItem(k,v);
+      if(!k||!k.startsWith('campo_'))return;
+      // Copias hechas con versiones anteriores pueden traer la clave de Gemini
+      // o el control del aviso: no pisamos lo que ya tiene esta PC.
+      if(NO_RESPALDAR.includes(k)){
+        // única excepción: si acá no hay clave cargada, aprovechamos la de la copia
+        if((k==='campo_gemini_key'||k==='campo_groq_key')&&!localStorage.getItem(k))localStorage.setItem(k,v);
+        return;
+      }
+      localStorage.setItem(k,v);
     });
     alert('✓ Listo, se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.');
     location.reload();
@@ -1654,14 +1695,28 @@ async function cargarDolar(){
   }catch(e){}
 }
 
-// ============ ASESOR IA (Gemini) ============
-let iaKey=localStorage.getItem('campo_gemini_key')||'';
+// ============ ASESOR IA (Gemini / Groq) ============
+let iaProveedor=localStorage.getItem('campo_ia_prov')||'gemini';
+let iaKey=localStorage.getItem(iaProveedor==='groq'?'campo_groq_key':'campo_gemini_key')||'';
 let iaHistorial=[];
+function claveDe(prov){return localStorage.getItem(prov==='groq'?'campo_groq_key':'campo_gemini_key')||''}
+function usarGroq(){return iaProveedor==='groq'}
 
 function initIA(){
+  iaKey=claveDe(iaProveedor);
+  const selP=document.getElementById('ia-prov-sel');
+  if(selP)selP.value=iaProveedor;
+  const nota=document.getElementById('ia-prov-nota');
+  if(nota)nota.innerHTML=usarGroq()
+    ? 'Con Groq el asesor analiza tus números igual, pero <b>no puede buscar precios de mercado en internet</b> ni leer facturas por foto. Para eso hace falta Gemini. La cuota gratis de Groq es más amplia.<br>Sacá la clave gratis en <b>console.groq.com/keys</b>.'
+    : 'Gemini puede buscar precios de mercado en internet y leer facturas por foto. Si se te agota la cuota gratis del día, podés cambiar a Groq.<br>Sacá la clave gratis en <b>aistudio.google.com/apikey</b>.';
+  const inp=document.getElementById('ia-key-input');
+  if(inp)inp.placeholder=usarGroq()?'Pegá tu clave de Groq acá':'Pegá tu clave de Gemini acá';
   if(iaKey){
     document.getElementById('ia-sin-key').style.display='none';
     document.getElementById('ia-chat').style.display='block';
+    const et=document.getElementById('ia-etiqueta');
+    if(et)et.textContent=usarGroq()?'Groq':'Gemini';
     if(!iaHistorial.length)saludoIA();
     renderSugerencias();
   }else{
@@ -1669,23 +1724,34 @@ function initIA(){
     document.getElementById('ia-chat').style.display='none';
   }
 }
+function cambiarProveedor(){
+  iaProveedor=document.getElementById('ia-prov-sel').value;
+  localStorage.setItem('campo_ia_prov',iaProveedor);
+  iaHistorial=[];
+  const cont=document.getElementById('ia-mensajes');
+  if(cont)cont.innerHTML='';
+  initIA();
+}
 function guardarKey(){
   const k=document.getElementById('ia-key-input').value.trim();
   if(!k){alert('Pegá la clave primero');return}
-  iaKey=k;localStorage.setItem('campo_gemini_key',k);
+  localStorage.setItem(usarGroq()?'campo_groq_key':'campo_gemini_key',k);
   document.getElementById('ia-key-input').value='';
   initIA();
 }
 function cambiarKey(){
   if(!confirm('¿Borrar la clave guardada y cargar otra?'))return;
-  iaKey='';localStorage.removeItem('campo_gemini_key');
+  localStorage.removeItem(usarGroq()?'campo_groq_key':'campo_gemini_key');
+  iaKey='';
   iaHistorial=[];document.getElementById('ia-mensajes').innerHTML='';
   initIA();
 }
 function saludoIA(){
   const d=datosReales();
   const txt=d.length
-    ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Puedo buscar precios de mercado actuales e históricos (ternero, maíz, cebolla) y compararlos con lo que vendiste. Preguntame lo que quieras, en criollo nomás.'
+    ? (usarGroq()
+      ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Ojo que con Groq no puedo buscar precios de mercado en internet, pero sí analizar todos tus números. Preguntame lo que quieras, en criollo nomás.'
+      : 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Puedo buscar precios de mercado actuales e históricos (ternero, maíz, cebolla) y compararlos con lo que vendiste. Preguntame lo que quieras, en criollo nomás.')
     : 'Hola! Todavía no hay datos cargados. Importá el Excel o cargá algunos movimientos y ya te puedo ayudar a analizarlos.';
   agregarMsg('bot',txt);
 }
@@ -1697,7 +1763,9 @@ function sugerenciasDeAlertas(){
   return calcularAlertas(ult).filter(a=>a.preg).map(a=>a.preg).slice(0,3);
 }
 function renderSugerencias(){
-  const base=['¿A cuánto está el ternero hoy en Cañuelas?','¿Vendimos a buen precio comparado con el mercado de ese momento?','¿Cómo viene la caja para los próximos meses?'];
+  const base=usarGroq()
+    ? ['¿Cómo viene la caja para los próximos meses?','¿Qué actividad me deja más plata?','¿Dónde se me está yendo la plata este año?']
+    : ['¿A cuánto está el ternero hoy en Cañuelas?','¿Vendimos a buen precio comparado con el mercado de ese momento?','¿Cómo viene la caja para los próximos meses?'];
   const din=sugerenciasDeAlertas();
   const sugs=[...new Set([...din,...base])].slice(0,4);
   document.getElementById('ia-sugerencias').innerHTML=sugs.map(s=>`<button class="sug" onclick="preguntarIA('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
@@ -1713,6 +1781,21 @@ function agregarMsg(rol,txt,html){
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 async function llamarGemini(sistema,conBusqueda){
+  if(usarGroq()){
+    // Groq usa el formato tipo OpenAI: mensajes planos, sin búsqueda web.
+    const msgs=[{role:'system',content:sistema}].concat(
+      iaHistorial.map(h=>({role:h.role==='model'?'assistant':'user',content:(h.parts||[]).map(p=>p.text||'').join('')}))
+    );
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+iaKey},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,temperature:.4,max_tokens:3000})
+    });
+    const d=await resp.json();
+    if(d.error)return {error:{message:d.error.message||'Error de Groq'}};
+    // devolvemos con la misma forma que Gemini para no tocar el resto del código
+    return {candidates:[{content:{parts:[{text:d.choices?.[0]?.message?.content||''}]},finishReason:d.choices?.[0]?.finish_reason}]};
+  }
   const body={
     systemInstruction:{parts:[{text:sistema}]},
     contents:iaHistorial,
@@ -1897,9 +1980,9 @@ async function preguntarIA(pregunta){
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
 
-PRECIOS DE MERCADO ACTUALES: Tenés acceso a búsqueda en Google. Si te preguntan precios actuales de mercado (hacienda/ternero/novillo en Cañuelas o MAG, maíz pizarra Rosario, cebolla, insumos, dólar), BUSCÁ el dato real de hoy en Google y respondé con el precio encontrado citando la fuente y fecha. NUNCA inventes ni estimes un precio de memoria: si no encontrás el dato, decilo.
+${usarGroq()?'SIN BÚSQUEDA WEB: No tenés acceso a internet en este modo. Si te preguntan un precio de mercado actual o histórico, aclarále que en este modo no podés consultarlo y sugerí que cambie el asistente a Gemini desde la misma pantalla. NUNCA inventes ni estimes un precio de memoria.':`PRECIOS DE MERCADO ACTUALES: Tenés acceso a búsqueda en Google. Si te preguntan precios actuales de mercado (hacienda/ternero/novillo en Cañuelas o MAG, maíz pizarra Rosario, cebolla, insumos, dólar), BUSCÁ el dato real de hoy en Google y respondé con el precio encontrado citando la fuente y fecha. NUNCA inventes ni estimes un precio de memoria: si no encontrás el dato, decilo.
 
-PRECIOS DE MERCADO HISTÓRICOS: Si te preguntan a cuánto estaba algo en una fecha pasada (ej: "el ternero en marzo 2024", "el maíz cuando lo vendimos"), buscá en Google el precio de ESE período (fuentes útiles: Mercado Agroganadero de Cañuelas, entresurcosycorrales.com, Bolsa de Comercio de Rosario, revista Márgenes Agropecuarios) y aclarár fuente y fecha del dato. Si el campo tiene cantidades cargadas (sección VENTAS Y COMPRAS CON CANTIDADES), compará el precio promedio por unidad del campo contra el mercado de esa misma época. OJO CON LA MONEDA: fijate en qué moneda están los datos del campo (lo dice el encabezado del resumen). Si están en pesos corrientes, compará contra precios en pesos de esa misma época, nunca contra precios de hoy.
+PRECIOS DE MERCADO HISTÓRICOS: Si te preguntan a cuánto estaba algo en una fecha pasada (ej: "el ternero en marzo 2024", "el maíz cuando lo vendimos"), buscá en Google el precio de ESE período (fuentes útiles: Mercado Agroganadero de Cañuelas, entresurcosycorrales.com, Bolsa de Comercio de Rosario, revista Márgenes Agropecuarios) y aclarár fuente y fecha del dato. Si el campo tiene cantidades cargadas (sección VENTAS Y COMPRAS CON CANTIDADES), compará el precio promedio por unidad del campo contra el mercado de esa misma época. OJO CON LA MONEDA: fijate en qué moneda están los datos del campo (lo dice el encabezado del resumen). Si están en pesos corrientes, compará contra precios en pesos de esa misma época, nunca contra precios de hoy.`}
 
 LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
@@ -1910,14 +1993,14 @@ ${resumenParaIA()}${dolarInfo}`;
 
   try{
     let data=await llamarGemini(sistema,true);
-    if(data.error&&/search|tool|not supported|INVALID_ARGUMENT/i.test(data.error.message||'')){
+    if(!usarGroq()&&data.error&&/search|tool|not supported|INVALID_ARGUMENT/i.test(data.error.message||'')){
       data=await llamarGemini(sistema,false);
     }
     pensando.remove();
     if(data.error){
       let msg=data.error.message||'Error desconocido';
-      if(/API key not valid|API_KEY_INVALID/i.test(msg))msg='La clave de Gemini no es válida. Tocá "Cambiar clave" y cargá una correcta desde aistudio.google.com/apikey';
-      else if(/quota|RESOURCE_EXHAUSTED/i.test(msg))msg='Se agotó la cuota gratuita por hoy. Probá de nuevo mañana.';
+      if(/API key not valid|API_KEY_INVALID|invalid_api_key|Invalid API Key/i.test(msg))msg=usarGroq()?'La clave de Groq no es válida. Tocá "Cambiar clave" y cargá una correcta desde console.groq.com/keys':'La clave de Gemini no es válida. Tocá "Cambiar clave" y cargá una correcta desde aistudio.google.com/apikey';
+      else if(/quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(msg))msg=usarGroq()?'Se agotó la cuota de Groq por ahora. Esperá un rato o cambiá el asistente a Gemini.':'Se agotó la cuota gratuita de Gemini por hoy. Podés cambiar el asistente a Groq (botón "Cambiar asistente") y seguir trabajando.';
       else if(/no longer available|not found|not supported/i.test(msg))msg='El modelo de IA cambió de nombre en Google. Avisale a Santi para que actualice la app.';
       agregarMsg('bot','⚠️ '+msg);
       iaHistorial.pop();
