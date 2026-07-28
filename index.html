@@ -173,6 +173,13 @@ tr:hover td{background:var(--papel-hondo)}
 .vacio h3{color:var(--tinta);margin-bottom:6px}
 
 .tabs{display:flex;gap:6px;margin-bottom:18px;background:var(--papel-hondo);padding:5px;border-radius:12px}
+.subtabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.subtabs button{padding:8px 16px;border-radius:20px;font-size:13.5px;font-weight:600;background:var(--blanco);color:var(--tinta-suave);border:1px solid var(--linea);transition:.15s}
+.subtabs button.on{background:var(--campo);color:#fff;border-color:var(--campo)}
+.subtabs button:hover:not(.on){background:var(--papel-hondo)}
+.ggrupo{display:none}
+.ggrupo.on{display:block}
+.panel.sin-datos{display:none!important}
 .tabs button{
   flex:1;padding:10px;border-radius:9px;font-size:14px;font-weight:600;
   background:none;color:var(--tinta-suave);
@@ -366,37 +373,44 @@ tr:hover td{background:var(--papel-hondo)}
       <select id="g-anio" onchange="renderGestion()"></select>
     </div>
 
-    <div class="panel">
+    <div class="subtabs">
+      <button class="on" onclick="verGrupo('resultado',this)">📊 Resultado</button>
+      <button onclick="verGrupo('plata',this)">💰 Plata</button>
+      <button onclick="verGrupo('gente',this)">👥 Gente</button>
+      <button onclick="verGrupo('control',this)">🔧 Control</button>
+    </div>
+
+    <div class="panel" data-g="plata">
       <h2><span class="pin"></span>Saldos por cuenta (hoy)</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Cuánta plata hay en cada caja según todos los movimientos cargados (incluye saldos iniciales, retiros y pases entre cuentas). Debería coincidir con el saldo real de cada cuenta — si no coincide, falta cargar algo.</p>
       <div id="g-cuentas"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="resultado">
       <h2><span class="pin"></span>Margen por actividad</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Ingresos menos costos directos de cada actividad, incluyendo transferencias internas (ej: maíz propio que consume la hacienda cuenta como ingreso de Agricultura y costo de Ganadería). Los costos de estructura van aparte.</p>
       <div id="g-margen"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="resultado">
       <h2><span class="pin"></span>Precios promedio (rubros con cantidad)</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Monto dividido por las cantidades cargadas (cabezas, kg, litros, qq). Sirve para comparar contra el mercado de esa época — preguntale al asesor.</p>
       <div id="g-precios"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="gente">
       <h2><span class="pin"></span>Clientes y proveedores</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">A quién le vendés y a quién le comprás, ordenado por plata. Se carga con el campo Cliente/Proveedor al anotar un movimiento, o desde la columna "Clientes-Proveedores" del Excel.</p>
       <div id="g-provs"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="gente">
       <h2><span class="pin"></span>Costos de estructura (no atribuidos)</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Gastos que sirven a todo el campo y no se cargan a una actividad puntual. Un contador los reparte o los mira aparte.</p>
       <div id="g-estructura"></div>
     </div>
 
-    <div class="panel" id="panel-maq">
+    <div class="panel" id="panel-maq" data-g="resultado">
       <h2><span class="pin"></span>Costo de maquinaria propia</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Lo que te cuesta tener y hacer andar la maquinaria propia (gasoil, repuestos, reparaciones, service). Cargá esos gastos con la actividad "Maquinaria propia". Poné las hectáreas que trabajaste para ver el costo por hectárea y compararlo con lo que cobra un contratista.</p>
       <div class="filtros" style="margin-bottom:14px">
@@ -406,29 +420,29 @@ tr:hover td{background:var(--papel-hondo)}
       <div id="g-maquinaria"></div>
     </div>
 
-    <div class="panel" id="panel-fin">
+    <div class="panel" id="panel-fin" data-g="plata">
       <h2><span class="pin"></span>Inversiones y movimientos financieros</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Plazos fijos, dólares, plazos y demás. Están fuera del resultado del campo, pero conviene tenerlos a la vista.</p>
       <div id="g-financiero"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="control">
       <h2><span class="pin"></span>Alertas</h2>
       <div id="g-alertas"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="resultado">
       <h2><span class="pin"></span>Cierre del ejercicio</h2>
       <div id="g-cierre"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="plata">
       <h2><span class="pin"></span>Cuentas a cobrar y pagar</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Lo que te deben y lo que debés, que todavía no se cobró ni pagó. Cuando se salda, tocá "Ya se cobró / pagó" y pasa a ser un movimiento normal con su fecha real.</p>
       <div id="g-pendientes"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-g="control">
       <h2><span class="pin"></span>Copias de seguridad</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Todo lo que cargás vive únicamente en esta computadora. Si se rompe, si la formatean o si se borran los datos del navegador, se pierde. Guardá una copia cada tanto y <b>mandátela por WhatsApp o subila a tu Drive</b>: si la dejás solo en esta misma PC, no te salva de nada.</p>
       <div id="estado-backup" style="margin-bottom:14px"></div>
@@ -795,9 +809,23 @@ function verTab(t,btn){
   document.querySelector('.fab').style.display=(t==='ia')?'none':'flex';
   if(t==='dash')render();
   if(t==='mov')renderTabla();
-  if(t==='gestion')renderGestion();
+  if(t==='gestion'){renderGestion();aplicarGrupo()}
   if(t==='proj')renderProj();
   if(t==='ia')initIA();
+}
+// Sub-pestañas de Gestión: muestran solo los paneles del grupo elegido.
+let grupoGestion='resultado';
+function verGrupo(g,btn){
+  grupoGestion=g;
+  document.querySelectorAll('.subtabs button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  aplicarGrupo();
+}
+function aplicarGrupo(){
+  document.querySelectorAll('#v-gestion .panel[data-g]').forEach(p=>{
+    const visible=p.getAttribute('data-g')===grupoGestion && !p.classList.contains('sin-datos');
+    p.style.display=visible?'':'none';
+  });
 }
 
 // ============ TEMA ============
@@ -2193,8 +2221,8 @@ function maquinariaPanel(soloResultado){
   const panel=document.getElementById('panel-maq');
   const costo=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
-  if(!d.length){panel.style.display='none';return}
-  panel.style.display='block';
+  if(!d.length){panel.classList.add('sin-datos');aplicarGrupo();return}
+  panel.classList.remove('sin-datos');aplicarGrupo();
   const k=claveEjercicio();
   if(!soloResultado)document.getElementById('maq-has').value=hasMaq[k]||'';
   const has=hasMaq[k]||0;
@@ -2220,8 +2248,8 @@ function financieroPanel(){
   const d=datos.filter(x=>x.financiero&&x.tipo!=='transfer'&&(!document.getElementById('g-anio').value||x.fecha.slice(0,4)===document.getElementById('g-anio').value));
   const el=document.getElementById('g-financiero');
   const panel=document.getElementById('panel-fin');
-  if(!d.length){panel.style.display='none';return}
-  panel.style.display='block';
+  if(!d.length){panel.classList.add('sin-datos');aplicarGrupo();return}
+  panel.classList.remove('sin-datos');aplicarGrupo();
   const salida=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   const entrada=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
   let html=`<div class="cierre-grid">
