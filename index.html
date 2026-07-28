@@ -283,6 +283,7 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="Ganadería">Cría / invernada</option>
         <option value="Agricultura">Agricultura</option>
         <option value="Cebolla">Alquiler cebolla</option>
+        <option value="Maquinaria">Maquinaria propia</option>
         <option value="General">General / estructura</option>
       </select>
       <span class="lbl">Moneda:</span>
@@ -393,6 +394,22 @@ tr:hover td{background:var(--papel-hondo)}
       <h2><span class="pin"></span>Costos de estructura (no atribuidos)</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Gastos que sirven a todo el campo y no se cargan a una actividad puntual. Un contador los reparte o los mira aparte.</p>
       <div id="g-estructura"></div>
+    </div>
+
+    <div class="panel" id="panel-maq">
+      <h2><span class="pin"></span>Costo de maquinaria propia</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Lo que te cuesta tener y hacer andar la maquinaria propia (gasoil, repuestos, reparaciones, service). Cargá esos gastos con la actividad "Maquinaria propia". Poné las hectáreas que trabajaste para ver el costo por hectárea y compararlo con lo que cobra un contratista.</p>
+      <div class="filtros" style="margin-bottom:14px">
+        <span class="lbl">Hectáreas trabajadas en el ejercicio:</span>
+        <input type="text" id="maq-has" inputmode="decimal" placeholder="Ej: 120" style="max-width:120px" oninput="guardarHasMaq()">
+      </div>
+      <div id="g-maquinaria"></div>
+    </div>
+
+    <div class="panel" id="panel-fin">
+      <h2><span class="pin"></span>Inversiones y movimientos financieros</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Plazos fijos, dólares, plazos y demás. Están fuera del resultado del campo, pero conviene tenerlos a la vista.</p>
+      <div id="g-financiero"></div>
     </div>
 
     <div class="panel">
@@ -562,6 +579,7 @@ tr:hover td{background:var(--papel-hondo)}
         <option value="Ganadería">Cría / invernada</option>
         <option value="Agricultura">Agricultura</option>
         <option value="Cebolla">Alquiler cebolla</option>
+        <option value="Maquinaria">Maquinaria propia</option>
         <option value="General">General / sin actividad</option>
       </select>
     </div>
@@ -602,6 +620,12 @@ tr:hover td{background:var(--papel-hondo)}
         <input type="checkbox" id="m-interno"> Es movimiento interno (retiro, ajuste, pase entre cajas)
       </label>
       <p class="mini-nota">Los internos se guardan pero no cuentan como resultado del campo. Sí afectan el saldo de la cuenta.</p>
+    </div>
+    <div class="campo" id="wrap-financiero">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+        <input type="checkbox" id="m-financiero"> Es inversión o movimiento financiero
+      </label>
+      <p class="mini-nota">Plazo fijo, compra de dólares, un plazo, ponerle plata a un negocio aparte. No es resultado del campo: se muestra separado para no ensuciar el margen productivo. Sí afecta el saldo de la cuenta.</p>
     </div>
     <div class="modal-btns">
       <button class="btn btn-sec" onclick="cerrarModal()">Cancelar</button>
@@ -675,7 +699,7 @@ let dolarMes=null, dolarUltimo=null;
 let dataVersion=0, cacheFilt={};
 
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','General':'#4A6B8A'};
+const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','Maquinaria':'#8A6B4A','General':'#4A6B8A'};
 
 function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
 function pref(){return moneda==='usd'?'US$':'$'}
@@ -795,6 +819,7 @@ function setTipo(t){
   document.getElementById('wrap-act-normal').style.display=esT?'none':'block';
   document.getElementById('wrap-act-transfer').style.display=esT?'block':'none';
   document.getElementById('wrap-interno').style.display=esT?'none':'block';
+  document.getElementById('wrap-financiero').style.display=esT?'none':'block';
   document.getElementById('wrap-cta').style.display=esT?'none':'block';
   document.getElementById('wrap-prov').style.display=esT?'none':'block';
   document.getElementById('wrap-plazo').style.display=esT?'none':'block';
@@ -834,6 +859,7 @@ function abrirModal(id){
     document.getElementById('m-cat').value=m.cat;
     document.getElementById('m-det').value=m.det||'';
     document.getElementById('m-interno').checked=!!m.interno;
+    document.getElementById('m-financiero').checked=!!m.financiero;
     document.getElementById('m-plazo').checked=!!m.plazo;
     document.getElementById('m-venc').value=m.venc||'';
     togglePlazo();
@@ -849,6 +875,7 @@ function abrirModal(id){
     document.getElementById('m-cat').value='';
     document.getElementById('m-det').value='';
     document.getElementById('m-interno').checked=false;
+    document.getElementById('m-financiero').checked=false;
     document.getElementById('m-plazo').checked=false;
     document.getElementById('m-venc').value='';
     togglePlazo();
@@ -970,7 +997,8 @@ function guardar(){
       act:document.getElementById('m-act').value,
       cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
       det:document.getElementById('m-det').value.trim(),
-      interno:document.getElementById('m-interno').checked
+      interno:document.getElementById('m-interno').checked,
+      financiero:document.getElementById('m-financiero').checked
     };
   }
   if(editandoId){datos=datos.map(d=>d.id===editandoId?obj:d)}
@@ -1007,7 +1035,7 @@ function filtrados(){
   const key=anio+'|'+act+'|'+incInt+'|'+dataVersion+'|'+moneda;
   if(cacheFilt[key])return cacheFilt[key];
   const res=datos.filter(d=>
-    !d.plazo&&
+    !d.plazo&&!d.financiero&&
     (!anio||d.fecha.slice(0,4)===anio)&&
     (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))&&
     (incInt||!d.interno)
@@ -1200,7 +1228,7 @@ function renderTabla(){
       :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
     return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
       <td>${x.fecha}</td>
-      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}${etiquetaPlazo(x)}</td>
+      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
       <td>${x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>'}</td>
       <td>${actCell}</td>
       <td>${x.cat}</td>
@@ -1216,7 +1244,7 @@ function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','C
 function renderProj(){
   chartProj();mesesFlojos();rentActividad();
 }
-function datosReales(){return datos.filter(d=>!d.interno&&!d.plazo)}
+function datosReales(){return datos.filter(d=>!d.interno&&!d.plazo&&!d.financiero)}
 function cajaMensual(lista){
   const porMes={};
   lista.forEach(x=>{
@@ -1462,7 +1490,9 @@ function mapAct(v){
 
 function clasificarRubro(rubro){
   const r=(''+(rubro||'')).toLowerCase();
-  if(/movimiento interno|retiro|saldo inicial|ajuste|inversion|prestamo|credito|movimiento entre/.test(r))
+  if(/plazo fijo|plazo\b|dolar|dólar|inversion|inversión|bono|accion|acción|criptomoneda|cripto/.test(r))
+    return {act:'General',interno:false,financiero:true};
+  if(/movimiento interno|retiro|saldo inicial|ajuste|prestamo|credito|movimiento entre/.test(r))
     return {act:'General',interno:true};
   if(/cebolla/.test(r))return {act:'Cebolla',interno:false};
   if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo|veterinari|sanidad animal/.test(r))return {act:'Ganadería',interno:false};
@@ -1511,7 +1541,7 @@ function importarDirecto(e){
       // siga reconociendo lo importado con versiones anteriores de la app
       nuevos.push({
         id:Date.now()+''+Math.random().toString(36).slice(2,8),
-        fecha,tipo,monto,cant,cta:cuenta,prov:provNom,act:clas.act,interno:clas.interno,
+        fecha,tipo,monto,cant,cta:cuenta,prov:provNom,act:clas.act,interno:clas.interno,financiero:!!clas.financiero,
         cat:rubro,
         det:[obs,cuenta?('['+cuenta+']'):''].filter(Boolean).join(' ')
       });
@@ -1569,6 +1599,7 @@ function exportar(){
     Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):d.act,
     Categoría:d.cat,
     Interno:d.interno?'Sí':'No',
+    Financiero:d.financiero?'Sí':'No',
     Estado:d.plazo?(d.tipo==='ingreso'?'A cobrar':'A pagar'):'',
     Vencimiento:d.venc||'',
     Detalle:d.det
@@ -1968,6 +1999,28 @@ function resumenParaIA(){
   });
   const estr=acts['General']?acts['General'].egr:0;
   txt+=`- Costos de estructura totales (no atribuidos a ninguna actividad): ${M(estr)}\n`;
+  // cuentas a cobrar y pagar
+  const rp=resumenPendiente();
+  if(pendientes().length){
+    txt+=`\nCUENTAS A COBRAR Y PAGAR (todavía no se movió la plata, no cuenta en el resultado):\n`;
+    txt+=`- A cobrar: ${M(rp.cobrar)}${rp.vencCobrar?` (de eso, ${M(rp.vencCobrar)} ya vencido)`:''}\n`;
+    txt+=`- A pagar: ${M(rp.pagar)}${rp.vencPagar?` (de eso, ${M(rp.vencPagar)} ya vencido)`:''}\n`;
+    txt+=`- Saldo neto pendiente: ${M(rp.neto)}\n`;
+  }
+  // maquinaria por hectárea
+  const dMaq=datosReales().filter(x=>x.act==='Maquinaria'&&x.tipo==='egreso');
+  if(dMaq.length){
+    const cMaq=dMaq.reduce((s,x)=>s+mv(x),0);
+    const kMaq=document.getElementById('g-anio')?.value||'todos';
+    const hh=hasMaq[kMaq]||hasMaq['todos']||0;
+    txt+=`\nMAQUINARIA PROPIA: costo total ${M(cMaq)}${hh?`, sobre ${hh} ha trabajadas = ${M(cMaq/hh)} por hectárea (comparable con lo que cobra un contratista)`:' (sin hectáreas cargadas para sacar costo por ha)'}\n`;
+  }
+  // financiero
+  const dFin=datos.filter(x=>x.financiero&&x.tipo!=='transfer');
+  if(dFin.length){
+    const fin=dFin.reduce((s,x)=>s+(x.tipo==='ingreso'?mv(x):-mv(x)),0);
+    txt+=`\nINVERSIONES / FINANCIERO (fuera del resultado del campo): resultado neto ${M(fin)} (plazos fijos, dólares, etc.)\n`;
+  }
   txt+=`\nRESULTADO POR AÑO:\n`;
   Object.keys(anios).sort().forEach(a=>{const v=anios[a];txt+=`- ${a}: ingresos ${M(v.ing)}, egresos ${M(v.egr)}, resultado ${M(v.ing-v.egr)}\n`});
   // saldos por cuenta y retiros: se calculan sobre TODOS los movimientos ($ corrientes)
@@ -2120,7 +2173,65 @@ function renderGestion(){
   alertas();
   cierreEjercicio();
   pendientesPanel();
+  maquinariaPanel();
+  financieroPanel();
   estadoBackup();
+}
+// ===== MAQUINARIA PROPIA (costo por hectárea) =====
+let hasMaq=JSON.parse(localStorage.getItem('campo_has_maq')||'{}');
+function claveEjercicio(){return document.getElementById('g-anio').value||'todos'}
+function guardarHasMaq(){
+  const k=claveEjercicio();
+  const v=parseMonto(document.getElementById('maq-has').value);
+  if(v>0)hasMaq[k]=v;else delete hasMaq[k];
+  localStorage.setItem('campo_has_maq',JSON.stringify(hasMaq));
+  maquinariaPanel(true);
+}
+function maquinariaPanel(soloResultado){
+  const d=datosGestion().filter(x=>x.act==='Maquinaria');
+  const el=document.getElementById('g-maquinaria');
+  const panel=document.getElementById('panel-maq');
+  const costo=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
+  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
+  if(!d.length){panel.style.display='none';return}
+  panel.style.display='block';
+  const k=claveEjercicio();
+  if(!soloResultado)document.getElementById('maq-has').value=hasMaq[k]||'';
+  const has=hasMaq[k]||0;
+  const neto=costo-ing;
+  let html=`<div class="cierre-grid">
+    <div class="cierre-box"><div class="et">Costo total maquinaria</div><div class="v" style="color:var(--ladrillo)">${fmt(costo)}</div></div>`;
+  if(ing>0)html+=`<div class="cierre-box"><div class="et">Ingresos (trabajos a terceros)</div><div class="v" style="color:var(--campo)">${fmt(ing)}</div></div>`;
+  if(has>0){
+    html+=`<div class="cierre-box"><div class="et">Costo por hectárea</div><div class="v">${fmt(neto/has)}<span style="font-size:13px;color:var(--tinta-suave)"> /ha</span></div><div class="d">${has} ha · comparalo con lo que cobra el contratista</div></div>`;
+  }else{
+    html+=`<div class="cierre-box"><div class="et">Costo por hectárea</div><div class="v" style="font-size:15px;color:var(--tinta-suave)">Cargá las hectáreas arriba</div></div>`;
+  }
+  html+='</div>';
+  // desglose de gastos
+  const rubros={};
+  d.filter(x=>x.tipo==='egreso').forEach(x=>{rubros[x.cat]=(rubros[x.cat]||0)+mv(x)});
+  const orden=Object.entries(rubros).sort((a,b)=>b[1]-a[1]);
+  if(orden.length)html+='<div style="margin-top:12px">'+orden.map(([r,v])=>`<div class="g-fila"><span>${r}</span><b>${fmt(v)}</b></div>`).join('')+'</div>';
+  el.innerHTML=html;
+}
+// ===== INVERSIONES Y FINANCIERO =====
+function financieroPanel(){
+  const d=datos.filter(x=>x.financiero&&x.tipo!=='transfer'&&(!document.getElementById('g-anio').value||x.fecha.slice(0,4)===document.getElementById('g-anio').value));
+  const el=document.getElementById('g-financiero');
+  const panel=document.getElementById('panel-fin');
+  if(!d.length){panel.style.display='none';return}
+  panel.style.display='block';
+  const salida=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
+  const entrada=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
+  let html=`<div class="cierre-grid">
+    <div class="cierre-box"><div class="et">Plata puesta / invertida</div><div class="v" style="color:var(--ladrillo)">${fmt(salida)}</div></div>
+    <div class="cierre-box"><div class="et">Plata recuperada / rescatada</div><div class="v" style="color:var(--campo)">${fmt(entrada)}</div></div>
+    <div class="cierre-box"><div class="et">Resultado financiero</div><div class="v" style="color:${entrada-salida>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(entrada-salida)}</div></div>
+  </div>`;
+  const evs=[...d].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
+  html+='<div style="margin-top:12px">'+evs.map(x=>`<div class="g-fila"><span>${x.fecha} · ${x.cat}${x.det?' · '+x.det.replace(/\\[[^\\]]+\\]/,'').trim():''}</span><b class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</b></div>`).join('')+'</div>';
+  el.innerHTML=html;
 }
 // ===== CUENTAS A COBRAR Y PAGAR =====
 function pendientes(){return datos.filter(d=>d.plazo&&d.tipo!=='transfer')}
@@ -2184,7 +2295,7 @@ function saldarPendiente(id){
   render();renderTabla();renderGestion();
 }
 
-const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla'};
+const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla','Maquinaria':'Maquinaria propia'};
 
 function cuentasPanel(){
   const el=document.getElementById('g-cuentas');
@@ -2198,7 +2309,7 @@ function cuentasPanel(){
 
 function margenActividad(){
   const agg=actAgg(datosGestion());
-  const filas=Object.entries(agg).filter(([a])=>a!=='General')
+  const filas=Object.entries(agg).filter(([a])=>a!=='General'&&a!=='Maquinaria')
     .map(([a,v])=>({a,ing:v.ing,egr:v.egr,margen:v.ing-v.egr}))
     .sort((x,y)=>y.margen-x.margen);
   const maxAbs=Math.max(...filas.map(f=>Math.abs(f.margen)),1);
