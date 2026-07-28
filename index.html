@@ -6,7 +6,6 @@
 <title>Gestión del Campo</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
 <style>
 :root{
   --tierra:#6B4A2E;
@@ -644,7 +643,7 @@ tr:hover td{background:var(--papel-hondo)}
 
 <script>
 // ============ ESTADO ============
-let datos = []; // Ahora arranca vacío y se carga asincrónicamente
+let datos = JSON.parse(localStorage.getItem('campo_datos')||'[]');
 let tipoActual='egreso';
 let editandoId=null;
 let charts={};
@@ -658,10 +657,10 @@ let dolarMes=null, dolarUltimo=null;
 // caché de filtrados (performance con muchos años)
 let dataVersion=0, cacheFilt={};
 
-function guardarLS(){ 
-  idbKeyval.set('campo_datos', datos).catch(e => console.error("Error en BD", e)); 
-  dataVersion++; cacheFilt={}; 
-}
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','General':'#4A6B8A'};
+
+function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
 function pref(){return moneda==='usd'?'US$':'$'}
 function fmt(n){return pref()+Math.round(n).toLocaleString('es-AR')}
 function fmtK(n){
@@ -1543,8 +1542,6 @@ function juntarDatosLS(){
     if(NO_RESPALDAR.includes(k))continue;
     d[k]=localStorage.getItem(k);
   }
-  // Inyectamos los movimientos pesados directamente desde la memoria
-  d['campo_datos'] = JSON.stringify(datos);
   return d;
 }
 function bajarArchivo(nombre,contenido){
@@ -1582,7 +1579,7 @@ function restaurar(e){
   e.target.value='';
   if(!f)return;
   const reader=new FileReader();
-  reader.onload=async ev=>{
+  reader.onload=ev=>{
     let j;
     try{j=JSON.parse(ev.target.result)}
     catch(_){alert('⚠️ Ese archivo no se puede leer. Tiene que ser el archivo respaldo-campo-....json que bajó esta misma app.');return}
@@ -1619,20 +1616,17 @@ function restaurar(e){
       if(k&&k.startsWith('campo_')&&!NO_RESPALDAR.includes(k))viejas.push(k);
     }
     viejas.forEach(k=>localStorage.removeItem(k));
-    
-    for (const [k, v] of Object.entries(j.datos)) {
-      if(!k||!k.startsWith('campo_')) continue;
+    Object.entries(j.datos).forEach(([k,v])=>{
+      if(!k||!k.startsWith('campo_'))return;
+      // Copias hechas con versiones anteriores pueden traer la clave de Gemini
+      // o el control del aviso: no pisamos lo que ya tiene esta PC.
       if(NO_RESPALDAR.includes(k)){
-        if((k==='campo_gemini_key'||k==='campo_groq_key')&&!localStorage.getItem(k)) localStorage.setItem(k,v);
-        continue;
+        // única excepción: si acá no hay clave cargada, aprovechamos la de la copia
+        if((k==='campo_gemini_key'||k==='campo_groq_key')&&!localStorage.getItem(k))localStorage.setItem(k,v);
+        return;
       }
-      if (k === 'campo_datos') {
-        await idbKeyval.set('campo_datos', JSON.parse(v)); // Carga la base grande
-      } else {
-        localStorage.setItem(k,v); // Configuraciones chicas
-      }
-    }
-    
+      localStorage.setItem(k,v);
+    });
     alert('✓ Listo, se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.');
     location.reload();
   };
@@ -2228,7 +2222,7 @@ function calcularAlertas(anio){
     }
   });
   if(!als.length){
-    als.push({t:'verde',i:'✅',txt:'No hay alertas para este ejercicio. La caja y margins vienen sanos.',preg:null});
+    als.push({t:'verde',i:'✅',txt:'No hay alertas para este ejercicio. La caja y los márgenes vienen sanos.',preg:null});
   }
   return als;
 }
@@ -2281,38 +2275,10 @@ function borrarTodo(){
   if(!confirm('¿Seguro? Última confirmación.'))return;
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
 }
-
 document.getElementById('f-moneda').value=moneda;
-
-// Función de arranque asincrónica (Migración blanda)
-async function iniciarApp() {
-  // 1. Intentamos buscar la base nueva
-  let almacenado = await idbKeyval.get('campo_datos');
-  
-  // 2. Si está vacía, vamos a rescatar los datos viejos
-  if (!almacenado) {
-    const viejo = localStorage.getItem('campo_datos');
-    if (viejo) {
-      almacenado = JSON.parse(viejo);
-      await idbKeyval.set('campo_datos', almacenado); // Migrado!
-    } else {
-      almacenado = [];
-    }
-  }
-  
-  datos = almacenado;
-  
-  // 3. Arranca el sistema normalmente
-  if(migrarDatos()) guardarLS();
-  actualizarAnios();
-  render();
-  cargarDolar();
-  cargarIndices();
-  chequearBackup();
-  chequearFechas();
-}
-
-iniciarApp();
+// migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
+if(migrarDatos())guardarLS();
+actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
 </script>
 </body>
 </html>
