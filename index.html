@@ -271,6 +271,7 @@ tr:hover td{background:var(--papel-hondo)}
 
   <!-- ===== ANÁLISIS ===== -->
   <div class="vista on" id="v-dash">
+    <div id="barra-pendientes" style="display:none;margin-bottom:16px"></div>
     <div id="barra-dolar" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
     </div>
     <div class="filtros">
@@ -405,6 +406,12 @@ tr:hover td{background:var(--papel-hondo)}
     </div>
 
     <div class="panel">
+      <h2><span class="pin"></span>Cuentas a cobrar y pagar</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Lo que te deben y lo que debés, que todavía no se cobró ni pagó. Cuando se salda, tocá "Ya se cobró / pagó" y pasa a ser un movimiento normal con su fecha real.</p>
+      <div id="g-pendientes"></div>
+    </div>
+
+    <div class="panel">
       <h2><span class="pin"></span>Copias de seguridad</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Todo lo que cargás vive únicamente en esta computadora. Si se rompe, si la formatean o si se borran los datos del navegador, se pierde. Guardá una copia cada tanto y <b>mandátela por WhatsApp o subila a tu Drive</b>: si la dejás solo en esta misma PC, no te salva de nada.</p>
       <div id="estado-backup" style="margin-bottom:14px"></div>
@@ -533,6 +540,16 @@ tr:hover td{background:var(--papel-hondo)}
     <div class="campo">
       <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
       <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
+    </div>
+    <div class="campo" id="wrap-plazo">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+        <input type="checkbox" id="m-plazo" onchange="togglePlazo()"> Es a plazo / todavía no se cobró ni pagó
+      </label>
+      <p class="mini-nota">Marcá esto si es algo que le deben o que debe y todavía no se movió la plata (una venta a cobrar, una factura a pagar). Queda como cuenta corriente hasta que se salde.</p>
+    </div>
+    <div class="campo" id="wrap-venc" style="display:none">
+      <label>¿Cuándo se cobra / se paga? (vencimiento)</label>
+      <input type="date" id="m-venc">
     </div>
     <div class="campo" id="wrap-cta">
       <label>Cuenta (de dónde sale / a dónde entra la plata)</label>
@@ -780,7 +797,17 @@ function setTipo(t){
   document.getElementById('wrap-interno').style.display=esT?'none':'block';
   document.getElementById('wrap-cta').style.display=esT?'none':'block';
   document.getElementById('wrap-prov').style.display=esT?'none':'block';
+  document.getElementById('wrap-plazo').style.display=esT?'none':'block';
   document.getElementById('nota-transfer').style.display=esT?'block':'none';
+  if(esT){document.getElementById('m-plazo').checked=false;document.getElementById('wrap-venc').style.display='none'}
+  else togglePlazo();
+}
+// A plazo = deuda/crédito: todavía no se movió la plata, así que no hay cuenta,
+// pero sí una fecha de vencimiento.
+function togglePlazo(){
+  const p=document.getElementById('m-plazo').checked;
+  document.getElementById('wrap-venc').style.display=p?'block':'none';
+  document.getElementById('wrap-cta').style.display=p?'none':'block';
 }
 function abrirModal(id){
   editandoId=id||null;
@@ -807,6 +834,9 @@ function abrirModal(id){
     document.getElementById('m-cat').value=m.cat;
     document.getElementById('m-det').value=m.det||'';
     document.getElementById('m-interno').checked=!!m.interno;
+    document.getElementById('m-plazo').checked=!!m.plazo;
+    document.getElementById('m-venc').value=m.venc||'';
+    togglePlazo();
   }else{
     setTipo('egreso');
     document.getElementById('m-fecha').value=new Date().toISOString().slice(0,10);
@@ -819,6 +849,9 @@ function abrirModal(id){
     document.getElementById('m-cat').value='';
     document.getElementById('m-det').value='';
     document.getElementById('m-interno').checked=false;
+    document.getElementById('m-plazo').checked=false;
+    document.getElementById('m-venc').value='';
+    togglePlazo();
   }
   actualizarCats();
   document.getElementById('modal-bg').classList.add('abierto');
@@ -910,6 +943,9 @@ function guardar(){
     return;
   }
   const cant=parseMonto(document.getElementById('m-cant').value)||null;
+  const esPlazo=tipoActual!=='transfer'&&document.getElementById('m-plazo').checked;
+  const venc=document.getElementById('m-venc').value;
+  if(esPlazo&&!venc){alert('Marcaste que es a plazo: falta la fecha de vencimiento (cuándo se cobra o se paga).');return}
   const neto=parseMonto(document.getElementById('m-neto').value)||null;
   const iva=parseMonto(document.getElementById('m-iva').value)||null;
   let obj;
@@ -928,7 +964,8 @@ function guardar(){
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
       tipo:tipoActual,fecha,monto:Math.abs(monto),cant,neto,iva,
-      cta:formaCanonica(document.getElementById('m-cta').value,'cta'),
+      plazo:esPlazo,venc:esPlazo?venc:null,
+      cta:esPlazo?'':formaCanonica(document.getElementById('m-cta').value,'cta'),
       prov:formaCanonica(document.getElementById('m-prov').value,'prov'),
       act:document.getElementById('m-act').value,
       cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
@@ -970,6 +1007,7 @@ function filtrados(){
   const key=anio+'|'+act+'|'+incInt+'|'+dataVersion+'|'+moneda;
   if(cacheFilt[key])return cacheFilt[key];
   const res=datos.filter(d=>
+    !d.plazo&&
     (!anio||d.fecha.slice(0,4)===anio)&&
     (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))&&
     (incInt||!d.interno)
@@ -1016,6 +1054,23 @@ function render(){
   document.getElementById('k-cant-d').textContent=cats+' categorías';
 
   chartMes(d);chartSaldo(d);chartAct(d);chartCat(d);chartAnios();
+  bannerPendientes();
+}
+function bannerPendientes(){
+  const el=document.getElementById('barra-pendientes');
+  if(!el)return;
+  const r=resumenPendiente();
+  if(!pendientes().length){el.style.display='none';return}
+  const venc=r.vencCobrar+r.vencPagar;
+  el.style.display='block';
+  el.innerHTML=`<div class="alerta ${venc?'roja':'amar'}" style="margin:0;align-items:center;flex-wrap:wrap">
+    <span class="ai">${venc?'⚠️':'📋'}</span>
+    <div style="flex:1;min-width:200px">
+      <b>A cobrar: ${fmt(r.cobrar)}</b> · <b>A pagar: ${fmt(r.pagar)}</b>
+      ${venc?`<span style="display:block;color:var(--ladrillo);font-size:13px;margin-top:2px">Hay ${fmt(venc)} vencido sin saldar.</span>`:''}
+    </div>
+    <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="verTab('gestion',document.querySelectorAll('.tabs button')[2])">Ver detalle</button>
+  </div>`;
 }
 
 function chartMes(d){
@@ -1113,6 +1168,15 @@ function baseOpts(legend){
 }
 
 // ============ TABLA ============
+// Etiqueta para movimientos a plazo (cuenta corriente): pendiente o vencido.
+function etiquetaPlazo(x){
+  if(!x.plazo)return '';
+  const hoy=new Date().toISOString().slice(0,10);
+  const vencido=x.venc&&x.venc<hoy;
+  const txt=x.tipo==='ingreso'?'a cobrar':'a pagar';
+  if(vencido)return ` <span class="act-tag" style="background:rgba(166,83,58,.15);color:var(--ladrillo)">⚠ ${txt} · vencido ${x.venc}</span>`;
+  return ` <span class="act-tag" style="background:rgba(201,162,75,.18);color:var(--trigo)">⏳ ${txt}${x.venc?' · vence '+x.venc:''}</span>`;
+}
 function renderTabla(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
   const ft=document.getElementById('f-tipo').value;
@@ -1136,7 +1200,7 @@ function renderTabla(){
       :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
     return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
       <td>${x.fecha}</td>
-      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}</td>
+      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}${etiquetaPlazo(x)}</td>
       <td>${x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>'}</td>
       <td>${actCell}</td>
       <td>${x.cat}</td>
@@ -1152,7 +1216,7 @@ function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','C
 function renderProj(){
   chartProj();mesesFlojos();rentActividad();
 }
-function datosReales(){return datos.filter(d=>!d.interno)}
+function datosReales(){return datos.filter(d=>!d.interno&&!d.plazo)}
 function cajaMensual(lista){
   const porMes={};
   lista.forEach(x=>{
@@ -1505,6 +1569,8 @@ function exportar(){
     Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):d.act,
     Categoría:d.cat,
     Interno:d.interno?'Sí':'No',
+    Estado:d.plazo?(d.tipo==='ingreso'?'A cobrar':'A pagar'):'',
+    Vencimiento:d.venc||'',
     Detalle:d.det
   })));
   const wb=XLSX.utils.book_new();
@@ -2053,7 +2119,69 @@ function renderGestion(){
   costosEstructura();
   alertas();
   cierreEjercicio();
+  pendientesPanel();
   estadoBackup();
+}
+// ===== CUENTAS A COBRAR Y PAGAR =====
+function pendientes(){return datos.filter(d=>d.plazo&&d.tipo!=='transfer')}
+function resumenPendiente(){
+  let cobrar=0,pagar=0,vencCobrar=0,vencPagar=0;
+  const hoy=new Date().toISOString().slice(0,10);
+  pendientes().forEach(x=>{
+    const v=mv(x),venc=x.venc&&x.venc<hoy;
+    if(x.tipo==='ingreso'){cobrar+=v;if(venc)vencCobrar+=v}
+    else{pagar+=v;if(venc)vencPagar+=v}
+  });
+  return {cobrar,pagar,vencCobrar,vencPagar,neto:cobrar-pagar};
+}
+function pendientesPanel(){
+  const el=document.getElementById('g-pendientes');
+  const lista=pendientes();
+  if(!lista.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay nada a cobrar ni a pagar cargado. Cuando cargues un movimiento, marcá "Es a plazo" si todavía no se movió la plata.</p>';return}
+  const hoy=new Date().toISOString().slice(0,10);
+  const r=resumenPendiente();
+  const cobrar=lista.filter(x=>x.tipo==='ingreso').sort((a,b)=>(a.venc||'9').localeCompare(b.venc||'9'));
+  const pagar=lista.filter(x=>x.tipo==='egreso').sort((a,b)=>(a.venc||'9').localeCompare(b.venc||'9'));
+  const fila=x=>{
+    const venc=x.venc&&x.venc<hoy;
+    const nom=x.prov?x.prov:(x.cat||'—');
+    return `<div class="g-fila">
+      <span>${nom} <span class="mini-nota" style="display:block">${x.cat}${x.det?' · '+x.det.replace(/\\[[^\\]]+\\]/,'').trim():''}${x.venc?` · ${venc?'<b style="color:var(--ladrillo)">venció '+x.venc+'</b>':'vence '+x.venc}`:''}</span></span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <b>${fmt(mv(x))}</b>
+        <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="saldarPendiente('${x.id}')">Ya se ${x.tipo==='ingreso'?'cobró':'pagó'}</button>
+      </span></div>`;
+  };
+  let html='';
+  if(cobrar.length){
+    html+=`<p style="font-size:13px;font-weight:700;margin:4px 0 4px;color:var(--campo);text-transform:uppercase;letter-spacing:.04em">A cobrar: ${fmt(r.cobrar)}${r.vencCobrar?` · <span style="color:var(--ladrillo)">vencido ${fmt(r.vencCobrar)}</span>`:''}</p>`;
+    html+=cobrar.map(fila).join('');
+  }
+  if(pagar.length){
+    html+=`<p style="font-size:13px;font-weight:700;margin:14px 0 4px;color:var(--ladrillo);text-transform:uppercase;letter-spacing:.04em">A pagar: ${fmt(r.pagar)}${r.vencPagar?` · <span style="color:var(--ladrillo)">vencido ${fmt(r.vencPagar)}</span>`:''}</p>`;
+    html+=pagar.map(fila).join('');
+  }
+  html+=`<div class="cierre-box" style="margin-top:14px"><div class="et">Saldo neto pendiente (a cobrar − a pagar)</div><div class="v" style="color:${r.neto>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(r.neto)}</div></div>`;
+  el.innerHTML=html;
+}
+// Al saldar: se marca como movido hoy (o en la fecha que confirme el usuario),
+// deja de ser a plazo y pide la cuenta por la que entró/salió la plata.
+function saldarPendiente(id){
+  const x=datos.find(d=>d.id===id);
+  if(!x)return;
+  const hoy=new Date().toISOString().slice(0,10);
+  const f=prompt(`¿En qué fecha se ${x.tipo==='ingreso'?'cobró':'pagó'}? (AAAA-MM-DD)`,hoy);
+  if(f===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert('Fecha inválida. Usá el formato AAAA-MM-DD, por ejemplo '+hoy);return}
+  const anio=parseInt(f.slice(0,4));
+  if(!(anio>=2015&&anio<=new Date().getFullYear()+1)){alert('El año '+anio+' parece mal. Revisá la fecha.');return}
+  const cta=prompt('¿Por qué cuenta entró/salió la plata? (Efectivo, Banco Rio, Echeq...)',x.cta||'');
+  x.plazo=false;
+  x.venc=null;
+  x.fecha=f;
+  if(cta)x.cta=formaCanonica(cta,'cta');
+  guardarLS();
+  render();renderTabla();renderGestion();
 }
 
 const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla'};
