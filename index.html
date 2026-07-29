@@ -1055,11 +1055,12 @@ function borrar(id){
   guardarLS();render();renderTabla();actualizarAnios();
 }
 function actualizarCats(){
-  const cats=[...new Set(datos.map(d=>d.cat))].filter(Boolean);
+  const alfa=(a,b)=>a.localeCompare(b,'es',{sensitivity:'base'});
+  const cats=[...new Set(datos.map(d=>d.cat))].filter(Boolean).sort(alfa);
   document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
-  const ctas=[...new Set(datos.map(d=>d.cta).filter(Boolean))];
+  const ctas=[...new Set(datos.map(d=>d.cta).filter(Boolean))].sort(alfa);
   document.getElementById('ctas').innerHTML=ctas.map(c=>`<option value="${c}">`).join('');
-  const provs=[...new Set(datos.map(d=>d.prov).filter(Boolean))];
+  const provs=[...new Set(datos.map(d=>d.prov).filter(Boolean))].sort(alfa);
   document.getElementById('provs').innerHTML=provs.map(c=>`<option value="${c}">`).join('');
 }
 
@@ -1196,7 +1197,7 @@ function llenarSelectRubro(d){
   if(!sel)return;
   const totales={};
   d.forEach(x=>{if(x.tipo!=='transfer')totales[x.cat]=(totales[x.cat]||0)+mv(x)});
-  const rubros=Object.keys(totales).sort((a,b)=>totales[b]-totales[a]);
+  const rubros=Object.keys(totales).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
   const actual=sel.value;
   sel.innerHTML=rubros.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
   if(actual&&rubros.includes(actual))sel.value=actual;
