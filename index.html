@@ -338,6 +338,16 @@ tr:hover td{background:var(--papel-hondo)}
         <div class="chart-box chico"><canvas id="ch-anios"></canvas></div>
       </div>
     </div>
+
+    <div class="panel">
+      <h2><span class="pin"></span>Un rubro mes a mes</h2>
+      <div class="filtros" style="margin-bottom:14px">
+        <span class="lbl">Rubro:</span>
+        <select id="f-rubro" onchange="chartRubro()"></select>
+      </div>
+      <div class="chart-box"><canvas id="ch-rubro"></canvas></div>
+      <p class="mini-nota" id="rubro-total"></p>
+    </div>
   </div>
 
   <!-- ===== MOVIMIENTOS ===== -->
@@ -1115,6 +1125,7 @@ function render(){
   document.getElementById('k-cant-d').textContent=cats+' categorías';
 
   chartMes(d);chartSaldo(d);chartAct(d);chartCat(d);chartAnios();
+  llenarSelectRubro(d);chartRubro();
   bannerPendientes();
 }
 function bannerPendientes(){
@@ -1178,6 +1189,50 @@ function chartAct(d){
     data:{labels,datasets:[{data:labels.map(l=>acts[l]),backgroundColor:labels.map(l=>COL_ACT[l]||'#888'),borderRadius:4}]},
     options:{...baseOpts(false),plugins:{legend:{display:false}}}
   });
+}
+// Llena el selector con todos los rubros del período filtrado, ordenados por peso.
+function llenarSelectRubro(d){
+  const sel=document.getElementById('f-rubro');
+  if(!sel)return;
+  const totales={};
+  d.forEach(x=>{if(x.tipo!=='transfer')totales[x.cat]=(totales[x.cat]||0)+mv(x)});
+  const rubros=Object.keys(totales).sort((a,b)=>totales[b]-totales[a]);
+  const actual=sel.value;
+  sel.innerHTML=rubros.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
+  if(actual&&rubros.includes(actual))sel.value=actual;
+}
+// Evolución mes a mes de un rubro elegido (ej: cuánto retiró Gustavo cada mes).
+function chartRubro(){
+  destruir('rubro');
+  const sel=document.getElementById('f-rubro');
+  const cv=document.getElementById('ch-rubro');
+  if(!sel||!cv)return;
+  const rubro=sel.value;
+  const d=filtrados().filter(x=>x.tipo!=='transfer'&&x.cat===rubro);
+  if(!d.length){document.getElementById('rubro-total').textContent='';return}
+  // si hay un solo año en el filtro, eje = meses; si hay varios, eje = año-mes
+  const anioSel=document.getElementById('f-anio').value;
+  const buckets={};
+  d.forEach(x=>{
+    const k=anioSel?MESES[parseInt(x.fecha.slice(5,7))-1]:x.fecha.slice(0,7);
+    buckets[k]=(buckets[k]||0)+mv(x);
+  });
+  let labels,vals;
+  if(anioSel){
+    labels=MESES;vals=MESES.map(m=>buckets[m]||0);
+  }else{
+    labels=Object.keys(buckets).sort();vals=labels.map(k=>buckets[k]);
+  }
+  const esIngreso=d[0].tipo==='ingreso';
+  const color=esIngreso?css('--campo'):css('--ladrillo');
+  charts.rubro=new Chart(cv,{
+    type:'bar',
+    data:{labels,datasets:[{label:rubro,data:vals,backgroundColor:color,borderRadius:4}]},
+    options:{...baseOpts(false),plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)}}}}
+  });
+  const total=vals.reduce((s,v)=>s+v,0);
+  const prom=total/vals.filter(v=>v>0).length||0;
+  document.getElementById('rubro-total').textContent=`Total ${rubro}: ${fmt(total)} · promedio por mes con movimiento: ${fmt(prom)}`;
 }
 function chartCat(d){
   destruir('cat');
@@ -1526,9 +1581,9 @@ function mapAct(v){
 
 function clasificarRubro(rubro){
   const r=(''+(rubro||'')).toLowerCase();
-  if(/plazo fijo|plazo\b|dolar|dólar|inversion|inversión|bono|accion|acción|criptomoneda|cripto/.test(r))
+  if(/plazo fijo|plazo\b|dolar|dólar|inversion|inversión|bono|accion|acción|criptomoneda|cripto|credito|crédito|prestamo|préstamo/.test(r))
     return {act:'General',interno:false,financiero:true};
-  if(/movimiento interno|retiro|saldo inicial|ajuste|prestamo|credito|movimiento entre/.test(r))
+  if(/movimiento interno|retiro|saldo inicial|ajuste|movimiento entre/.test(r))
     return {act:'General',interno:true};
   if(/cebolla/.test(r))return {act:'Cebolla',interno:false};
   if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo|veterinari|sanidad animal/.test(r))return {act:'Ganadería',interno:false};
@@ -1614,6 +1669,11 @@ function migrarDatos(){
     if(!d.cta&&d.det){
       const m=d.det.match(/\[([^\]]+)\]\s*$/);
       if(m){d.cta=m[1].trim();cambios++}
+    }
+    // Créditos y préstamos que quedaron como ingreso operativo en versiones
+    // anteriores: pasarlos a financiero (no son resultado del campo).
+    if(!d.financiero&&d.tipo!=='transfer'&&/credito|crédito|prestamo|préstamo/.test(norm(d.cat))){
+      d.financiero=true;d.interno=false;cambios++;
     }
   });
   if(cambios)cambios+=unificarCuentas();
