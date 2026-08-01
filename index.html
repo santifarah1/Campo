@@ -161,9 +161,11 @@ tr:hover td{background:var(--lienzo)}
 .pill.ing{background:var(--campo-suave);color:var(--campo-hondo)}
 .pill.egr{background:var(--ladrillo-suave);color:var(--ladrillo)}
 .pill.tra{background:var(--cielo-suave);color:var(--cielo)}
+.pill.tcu{background:rgba(122,107,168,.13);color:var(--violeta)}
 .monto-ing{color:var(--campo);font-weight:600}
 .monto-egr{color:var(--ladrillo);font-weight:600}
 .monto-tra{color:var(--cielo);font-weight:600}
+.monto-tcu{color:var(--violeta);font-weight:600}
 .borrar{background:none;color:var(--tinta-3);font-size:15px;padding:3px 8px;border-radius:7px;transition:.15s}
 .borrar:hover{background:var(--ladrillo-suave);color:var(--ladrillo)}
 
@@ -179,11 +181,12 @@ tr:hover td{background:var(--lienzo)}
 .campo input,.campo select,.campo textarea{width:100%;padding:11px 13px;border:1px solid var(--borde);border-radius:11px;background:var(--lienzo);color:var(--tinta);font-size:15px;transition:.15s}
 .campo input:focus,.campo select:focus,.campo textarea:focus{outline:none;border-color:var(--campo);box-shadow:0 0 0 3px var(--campo-suave);background:var(--tarjeta)}
 .campo textarea{resize:vertical;min-height:54px}
-.tipo-toggle{display:flex;gap:8px}
-.tipo-toggle button{flex:1;padding:12px;border-radius:11px;font-weight:600;font-size:14px;border:1px solid var(--borde);background:var(--lienzo);color:var(--tinta-2);transition:.15s}
+.tipo-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tipo-toggle button{padding:12px;border-radius:11px;font-weight:600;font-size:13.5px;border:1px solid var(--borde);background:var(--lienzo);color:var(--tinta-2);transition:.15s}
 .tipo-toggle button.on-ing{border-color:var(--campo);background:var(--campo-suave);color:var(--campo-hondo)}
 .tipo-toggle button.on-egr{border-color:var(--ladrillo);background:var(--ladrillo-suave);color:var(--ladrillo)}
 .tipo-toggle button.on-tra{border-color:var(--cielo);background:var(--cielo-suave);color:var(--cielo)}
+.tipo-toggle button.on-tcu{border-color:var(--violeta);background:rgba(122,107,168,.13);color:var(--violeta)}
 .modal-btns{display:flex;gap:11px;margin-top:12px}
 .modal-btns .btn{flex:1;justify-content:center}
 
@@ -321,6 +324,7 @@ tr:hover td{background:var(--lienzo)}
 .um-campo{background:var(--campo-suave);color:var(--campo-hondo)}
 .um-ladrillo{background:var(--ladrillo-suave);color:var(--ladrillo)}
 .um-cielo{background:var(--cielo-suave);color:var(--cielo)}
+.um-violeta{background:rgba(122,107,168,.13);color:var(--violeta)}
 .um-txt{flex:1;min-width:0}
 .um-nom{font-size:14px;font-weight:600;color:var(--tinta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .um-sub{font-size:12px;color:var(--tinta-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -400,11 +404,11 @@ tr:hover td{background:var(--lienzo)}
   <!-- ===== ANÁLISIS ===== -->
   <div class="vista on" id="v-dash">
     <div id="barra-pendientes" style="display:none;margin-bottom:16px"></div>
-    <div id="barra-dolar" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+    <div id="barra-dolar" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;gap:18px;flex-wrap:wrap;align-items:center">
     </div>
     <div class="filtros">
       <span class="lbl">Año:</span>
-      <select id="f-anio" onchange="render()"></select>
+      <select id="f-anio" onchange="sincroAnio(this.value)"></select>
       <span class="lbl">Actividad:</span>
       <select id="f-act" onchange="render()">
         <option value="">Todas</option>
@@ -420,9 +424,6 @@ tr:hover td{background:var(--lienzo)}
         <option value="hoy">$ de hoy (IPC)</option>
         <option value="usd">US$ oficial</option>
       </select>
-      <label class="lbl" style="display:flex;align-items:center;gap:5px;cursor:pointer">
-        <input type="checkbox" id="f-internos" onchange="render()"> Incluir internos (retiros, ajustes)
-      </label>
       <span class="mini-nota" id="nota-moneda" style="margin-top:0;flex-basis:100%"></span>
     </div>
 
@@ -485,7 +486,8 @@ tr:hover td{background:var(--lienzo)}
         <option value="">Todos</option>
         <option value="ingreso">Ingresos</option>
         <option value="egreso">Egresos</option>
-        <option value="transfer">Transferencias</option>
+        <option value="transfer">Entre actividades</option>
+        <option value="transfer_cuenta">Movimiento interno</option>
       </select>
       <select id="f-pend" onchange="renderTabla()">
         <option value="">Con pendientes</option>
@@ -684,9 +686,11 @@ tr:hover td{background:var(--lienzo)}
       <div class="tipo-toggle">
         <button id="tg-ing" onclick="setTipo('ingreso')">Ingreso</button>
         <button id="tg-egr" onclick="setTipo('egreso')">Egreso</button>
-        <button id="tg-tra" onclick="setTipo('transfer')" title="Consumo interno / pase entre actividades">Transf.</button>
+        <button id="tg-tra" onclick="setTipo('transfer')" title="Consumo propio / pase entre actividades">Entre actividades</button>
+        <button id="tg-tcu" onclick="setTipo('transfer_cuenta')" title="Mover plata entre cuentas propias">Movimiento interno</button>
       </div>
-      <p class="mini-nota" id="nota-transfer" style="display:none">Transferencia entre actividades (ej: maíz propio que come la hacienda). No mueve plata: suma como ingreso de la que entrega y como costo de la que recibe.</p>
+      <p class="mini-nota" id="nota-transfer" style="display:none">Pase de valor entre actividades (ej: maíz propio que consume la hacienda). No mueve plata entre cuentas.</p>
+      <p class="mini-nota" id="nota-transfer-cuenta" style="display:none">Movimiento interno entre cuentas propias (ej: Santander → Efectivo). No genera ingreso ni gasto: solo cambia dónde está la plata.</p>
     </div>
     <div class="campo">
       <label>Fecha</label>
@@ -710,7 +714,7 @@ tr:hover td{background:var(--lienzo)}
       </div>
       <p class="mini-nota">El total sigue siendo lo que cuenta para la gestión. El neto y el IVA se guardan aparte para armar el reporte del contador.</p>
     </details>
-    <div class="campo">
+    <div class="campo" id="wrap-cant">
       <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
       <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
     </div>
@@ -726,8 +730,18 @@ tr:hover td{background:var(--lienzo)}
     </div>
     <div class="campo" id="wrap-cta">
       <label>Cuenta (de dónde sale / a dónde entra la plata)</label>
-      <input type="text" id="m-cta" list="ctas" placeholder="Ej: Efectivo, Banco Rio, Echeq...">
+      <input type="text" id="m-cta" list="ctas" placeholder="Ej: Efectivo, Santander, Galicia...">
       <datalist id="ctas"></datalist>
+    </div>
+    <div id="wrap-cta-transfer" style="display:none">
+      <div class="campo">
+        <label>Cuenta de origen</label>
+        <input type="text" id="m-cta-origen" list="ctas" placeholder="Ej: Santander">
+      </div>
+      <div class="campo">
+        <label>Cuenta de destino</label>
+        <input type="text" id="m-cta-destino" list="ctas" placeholder="Ej: Efectivo">
+      </div>
     </div>
     <div class="campo" id="wrap-act-normal">
       <label>Actividad</label>
@@ -762,7 +776,7 @@ tr:hover td{background:var(--lienzo)}
       <input type="text" id="m-prov" list="provs" placeholder="Ej: Gilardi, YPF, consignatario...">
       <datalist id="provs"></datalist>
     </div>
-    <div class="campo">
+    <div class="campo" id="wrap-cat">
       <label>Categoría</label>
       <input type="text" id="m-cat" list="cats" placeholder="Ej: gasoil, veterinaria, venta hacienda...">
       <datalist id="cats"></datalist>
@@ -770,12 +784,6 @@ tr:hover td{background:var(--lienzo)}
     <div class="campo">
       <label>Detalle (opcional)</label>
       <textarea id="m-det" placeholder="Nota libre..."></textarea>
-    </div>
-    <div class="campo" id="wrap-interno">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
-        <input type="checkbox" id="m-interno"> Es movimiento interno (retiro, ajuste, pase entre cajas)
-      </label>
-      <p class="mini-nota">Los internos se guardan pero no cuentan como resultado del campo. Sí afectan el saldo de la cuenta.</p>
     </div>
     <div class="campo" id="wrap-financiero">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
@@ -994,10 +1002,17 @@ function verTabGrupo(t,grupo,btn){
 }
 // El selector de Ejercicio de la barra superior manda sobre el filtro de la vista.
 function sincroAnio(v){
+  const top=document.getElementById('f-anio-top');
+  if(top&&top.value!==v)top.value=v;
   const f=document.getElementById('f-anio');
   if(f){f.value=v;render()}
   const g=document.getElementById('g-anio');
-  if(g){g.value=v;renderGestion()}
+  if(g){
+    // Puede no tener opciones todavía si Gestión nunca se abrió.
+    actualizarAniosGestion();
+    g.value=v;
+    renderGestion();
+  }
 }
 // Sub-pestañas de Gestión: muestran solo los paneles del grupo elegido.
 let grupoGestion='resultado';
@@ -1026,36 +1041,55 @@ if(localStorage.getItem('campo_tema')==='1'){document.body.classList.add('oscuro
 // ============ MODAL ============
 function setTipo(t){
   tipoActual=t;
+  const esProd=t==='transfer';
+  const esCta=t==='transfer_cuenta';
+  const esNormal=!esProd&&!esCta;
+
   document.getElementById('tg-ing').className=t==='ingreso'?'on-ing':'';
   document.getElementById('tg-egr').className=t==='egreso'?'on-egr':'';
-  document.getElementById('tg-tra').className=t==='transfer'?'on-tra':'';
-  const esT=t==='transfer';
-  document.getElementById('wrap-act-normal').style.display=esT?'none':'block';
-  document.getElementById('wrap-act-transfer').style.display=esT?'block':'none';
-  document.getElementById('wrap-interno').style.display=esT?'none':'block';
-  document.getElementById('wrap-financiero').style.display=esT?'none':'block';
-  document.getElementById('wrap-cta').style.display=esT?'none':'block';
-  document.getElementById('wrap-prov').style.display=esT?'none':'block';
-  document.getElementById('wrap-plazo').style.display=esT?'none':'block';
-  document.getElementById('nota-transfer').style.display=esT?'block':'none';
-  if(esT){document.getElementById('m-plazo').checked=false;document.getElementById('wrap-venc').style.display='none'}
-  else togglePlazo();
+  document.getElementById('tg-tra').className=esProd?'on-tra':'';
+  document.getElementById('tg-tcu').className=esCta?'on-tcu':'';
+
+  document.getElementById('wrap-act-normal').style.display=esNormal?'block':'none';
+  document.getElementById('wrap-act-transfer').style.display=esProd?'block':'none';
+  document.getElementById('wrap-cta').style.display=esNormal?'block':'none';
+  document.getElementById('wrap-cta-transfer').style.display=esCta?'block':'none';
+  document.getElementById('wrap-prov').style.display=esNormal?'block':'none';
+  document.getElementById('wrap-plazo').style.display=esNormal?'block':'none';
+  document.getElementById('wrap-financiero').style.display=esNormal?'block':'none';
+  document.getElementById('wrap-cat').style.display=esCta?'none':'block';
+  document.getElementById('det-iva').style.display=esNormal?'block':'none';
+  document.getElementById('wrap-cant').style.display=esCta?'none':'block';
+  document.getElementById('nota-transfer').style.display=esProd?'block':'none';
+  document.getElementById('nota-transfer-cuenta').style.display=esCta?'block':'none';
+
+  // La foto de factura solo tiene sentido para ingresos/egresos y nunca al editar.
+  const ocr=document.getElementById('ocr-zona');
+  if(ocr)ocr.style.display=(!editandoId&&esNormal)?'block':'none';
+
+  if(!esNormal){
+    document.getElementById('m-plazo').checked=false;
+    document.getElementById('wrap-venc').style.display='none';
+  }else{
+    togglePlazo();
+  }
 }
 // A plazo = deuda/crédito: todavía no se movió la plata, así que no hay cuenta,
 // pero sí una fecha de vencimiento.
 function togglePlazo(){
-  const p=document.getElementById('m-plazo').checked;
+  const esNormal=tipoActual!=='transfer'&&tipoActual!=='transfer_cuenta';
+  const p=esNormal&&document.getElementById('m-plazo').checked;
   document.getElementById('wrap-venc').style.display=p?'block':'none';
-  document.getElementById('wrap-cta').style.display=p?'none':'block';
+  document.getElementById('wrap-cta').style.display=esNormal&&!p?'block':'none';
 }
 function abrirModal(id){
   editandoId=id||null;
   document.getElementById('modal-titulo').textContent=id?'Editar movimiento':'Nuevo movimiento';
-  document.getElementById('ocr-zona').style.display=id?'none':'block';
   const est=document.getElementById('ocr-estado');est.style.display='none';est.style.color='var(--tinta-suave)';
   document.getElementById('det-iva').open=false;
   if(id){
     const m=datos.find(d=>d.id===id);
+    if(!m)return;
     setTipo(m.tipo);
     document.getElementById('m-fecha').value=m.fecha;
     document.getElementById('m-monto').value=m.monto;
@@ -1063,16 +1097,17 @@ function abrirModal(id){
     document.getElementById('m-iva').value=m.iva||'';
     document.getElementById('m-cant').value=m.cant||'';
     document.getElementById('m-cta').value=m.cta||'';
+    document.getElementById('m-cta-origen').value=m.ctaOrigen||'';
+    document.getElementById('m-cta-destino').value=m.ctaDestino||'';
     document.getElementById('m-prov').value=m.prov||'';
     if(m.tipo==='transfer'){
       document.getElementById('m-origen').value=m.actOrigen;
       document.getElementById('m-destino').value=m.actDestino;
-    }else{
+    }else if(m.tipo!=='transfer_cuenta'){
       document.getElementById('m-act').value=m.act;
     }
-    document.getElementById('m-cat').value=m.cat;
+    document.getElementById('m-cat').value=m.tipo==='transfer_cuenta'?'':(m.cat||'');
     document.getElementById('m-det').value=m.det||'';
-    document.getElementById('m-interno').checked=!!m.interno;
     document.getElementById('m-financiero').checked=!!m.financiero;
     document.getElementById('m-plazo').checked=!!m.plazo;
     document.getElementById('m-venc').value=m.venc||'';
@@ -1085,10 +1120,11 @@ function abrirModal(id){
     document.getElementById('m-iva').value='';
     document.getElementById('m-cant').value='';
     document.getElementById('m-cta').value='';
+    document.getElementById('m-cta-origen').value='';
+    document.getElementById('m-cta-destino').value='';
     document.getElementById('m-prov').value='';
     document.getElementById('m-cat').value='';
     document.getElementById('m-det').value='';
-    document.getElementById('m-interno').checked=false;
     document.getElementById('m-financiero').checked=false;
     document.getElementById('m-plazo').checked=false;
     document.getElementById('m-venc').value='';
@@ -1099,12 +1135,17 @@ function abrirModal(id){
 }
 function cerrarModal(){document.getElementById('modal-bg').classList.remove('abierto')}
 function formaCanonica(v,campo){
-  // Si ya existe un valor escrito "parecido" (mismo sin mayúsculas/acentos), usar esa forma
+  // Si ya existe un valor escrito parecido, reutilizar la forma más frecuente.
   const nrm=campo==='cta'?normCta:norm;
   const k=nrm(v);
   if(!k)return '';
   const conteo={};
-  datos.forEach(d=>{if(d[campo]&&nrm(d[campo])===k)conteo[d[campo]]=(conteo[d[campo]]||0)+1});
+  datos.forEach(d=>{
+    const valores=campo==='cta'?[d.cta,d.ctaOrigen,d.ctaDestino]:[d[campo]];
+    valores.filter(Boolean).forEach(valor=>{
+      if(nrm(valor)===k)conteo[valor]=(conteo[valor]||0)+1;
+    });
+  });
   const formas=Object.keys(conteo);
   if(formas.length)return formas.sort((a,b)=>conteo[b]-conteo[a])[0];
   return (''+v).trim();
@@ -1175,21 +1216,22 @@ function guardar(){
   const monto=parseMonto(document.getElementById('m-monto').value);
   if(!fecha){alert('Falta la fecha.');return}
   if(!monto){alert('Falta el monto, o no se entiende lo que escribiste.\n\nPodés escribirlo como quieras: 1500 · 1500,50 · 1.500,50');return}
-  // Un año mal tipeado (2206 en vez de 2026) entra sin chistar y descoloca
-  // los gráficos por mes, la proyección y el cierre de ejercicio.
   const anio=parseInt(fecha.slice(0,4));
   const maxAnio=new Date().getFullYear()+1;
   if(!(anio>=2015&&anio<=maxAnio)){
     alert('La fecha parece estar mal: el año es '+anio+'. Revisala.');
     return;
   }
+
   const cant=parseMonto(document.getElementById('m-cant').value)||null;
-  const esPlazo=tipoActual!=='transfer'&&document.getElementById('m-plazo').checked;
+  const esNormal=tipoActual!=='transfer'&&tipoActual!=='transfer_cuenta';
+  const esPlazo=esNormal&&document.getElementById('m-plazo').checked;
   const venc=document.getElementById('m-venc').value;
   if(esPlazo&&!venc){alert('Marcaste que es a plazo: falta la fecha de vencimiento (cuándo se cobra o se paga).');return}
   const neto=parseMonto(document.getElementById('m-neto').value)||null;
   const iva=parseMonto(document.getElementById('m-iva').value)||null;
   let obj;
+
   if(tipoActual==='transfer'){
     const o=document.getElementById('m-origen').value, de=document.getElementById('m-destino').value;
     if(o===de){alert('La actividad que entrega y la que recibe no pueden ser la misma');return}
@@ -1201,7 +1243,28 @@ function guardar(){
       det:document.getElementById('m-det').value.trim(),
       interno:false
     };
+  }else if(tipoActual==='transfer_cuenta'){
+    const origen=formaCanonica(document.getElementById('m-cta-origen').value,'cta');
+    const destino=formaCanonica(document.getElementById('m-cta-destino').value,'cta');
+    if(!origen||!destino){alert('Elegí la cuenta de origen y la cuenta de destino.');return}
+    if(normCta(origen)===normCta(destino)){alert('La cuenta de origen y la de destino no pueden ser la misma.');return}
+    if(esCuentaDolares(origen)!==esCuentaDolares(destino)){
+      alert('La cuenta Dolares está expresada en USD y las demás cuentas están en pesos. Una transferencia entre monedas necesita dos importes distintos y un tipo de cambio, así que no se puede cargar como “Movimiento interno”.\n\nPor ahora cargá la salida y la entrada como dos movimientos separados, respetando la moneda de cada cuenta.');
+      return;
+    }
+    obj={
+      id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
+      tipo:'transfer_cuenta',fecha,monto:Math.abs(monto),
+      ctaOrigen:origen,ctaDestino:destino,
+      cat:'Movimiento interno',
+      det:document.getElementById('m-det').value.trim(),
+      interno:true
+    };
   }else{
+    const cat=document.getElementById('m-cat').value.trim()||'Sin categoría';
+    const clas=clasificarRubro(cat);
+    const anterior=editandoId?datos.find(d=>d.id===editandoId):null;
+    const internoLegacy=!!(anterior&&anterior.interno&&norm(anterior.cat)===norm(cat));
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
       tipo:tipoActual,fecha,monto:Math.abs(monto),cant,neto,iva,
@@ -1209,27 +1272,29 @@ function guardar(){
       cta:esPlazo?'':formaCanonica(document.getElementById('m-cta').value,'cta'),
       prov:formaCanonica(document.getElementById('m-prov').value,'prov'),
       act:document.getElementById('m-act').value,
-      cat:document.getElementById('m-cat').value.trim()||'Sin categoría',
+      cat,
       det:document.getElementById('m-det').value.trim(),
-      interno:document.getElementById('m-interno').checked,
+      // Sin checkbox manual: retiros, ajustes y saldos iniciales se reconocen por categoría.
+      // Si se edita un interno viejo con la misma categoría, se conserva para no cambiar datos históricos sin querer.
+      interno:!!clas.interno||internoLegacy,
       financiero:document.getElementById('m-financiero').checked
     };
   }
   if(editandoId){datos=datos.map(d=>d.id===editandoId?obj:d)}
   else{datos.push(obj)}
   guardarLS();cerrarModal();
-  render();renderTabla();actualizarAnios();
+  actualizarAnios();renderTodo();
 }
 function borrar(id){
   if(!confirm('¿Borrar este movimiento?'))return;
   datos=datos.filter(d=>d.id!==id);
-  guardarLS();render();renderTabla();actualizarAnios();
+  guardarLS();actualizarAnios();renderTodo();
 }
 function actualizarCats(){
   const alfa=(a,b)=>a.localeCompare(b,'es',{sensitivity:'base'});
   const cats=[...new Set(datos.map(d=>d.cat))].filter(Boolean).sort(alfa);
   document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
-  const ctas=[...new Set(datos.map(d=>d.cta).filter(Boolean))].sort(alfa);
+  const ctas=[...new Set(datos.flatMap(d=>[d.cta,d.ctaOrigen,d.ctaDestino]).filter(Boolean))].sort(alfa);
   document.getElementById('ctas').innerHTML=ctas.map(c=>`<option value="${c}">`).join('');
   const provs=[...new Set(datos.map(d=>d.prov).filter(Boolean))].sort(alfa);
   document.getElementById('provs').innerHTML=provs.map(c=>`<option value="${c}">`).join('');
@@ -1245,17 +1310,28 @@ function actualizarAnios(){
   const top=document.getElementById('f-anio-top');
   if(top){top.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');top.value=sel.value}
 }
+// En el Resumen mostramos TODOS los movimientos ya realizados (como hacía el viejo
+// checkbox "Incluir internos"), pero mostrar un movimiento no significa que deba
+// alterar ingresos, egresos o resultado. Esas dos decisiones quedan separadas.
+function esRetiroGustavo(d){
+  const c=norm(d&&d.cat);
+  return c==='retiro gustavo'||c==='retiros gustavo';
+}
+function esEfectivo(cta){return normCta(cta)==='efectivo'}
+function esCuentaDolares(cta){return normCta(cta)==='dolares'}
+function esOperativo(d){
+  return !!d&&!d.interno&&!d.plazo&&!d.financiero&&(d.tipo==='ingreso'||d.tipo==='egreso');
+}
+function visibleEnResumen(d){return !!d&&!d.plazo&&!d.financiero}
 function filtrados(){
   const anio=document.getElementById('f-anio').value;
   const act=document.getElementById('f-act').value;
-  const incInt=document.getElementById('f-internos').checked;
-  const key=anio+'|'+act+'|'+incInt+'|'+dataVersion+'|'+moneda;
+  const key=anio+'|'+act+'|'+dataVersion+'|'+moneda;
   if(cacheFilt[key])return cacheFilt[key];
   const res=datos.filter(d=>
-    !d.plazo&&!d.financiero&&
+    visibleEnResumen(d)&&
     (!anio||d.fecha.slice(0,4)===anio)&&
-    (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))&&
-    (incInt||!d.interno)
+    (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))
   );
   cacheFilt[key]=res;
   return res;
@@ -1265,6 +1341,7 @@ function filtrados(){
 function actAgg(lista){
   const acts={};
   lista.forEach(x=>{
+    if(x.tipo==='transfer_cuenta')return;
     const v=mv(x);
     if(x.tipo==='transfer'){
       if(!acts[x.actOrigen])acts[x.actOrigen]={ing:0,egr:0,n:0};
@@ -1284,22 +1361,29 @@ function css(v){return getComputedStyle(document.body).getPropertyValue(v).trim(
 function destruir(k){if(charts[k]){charts[k].destroy();delete charts[k]}}
 
 function render(){
-  const d=filtrados();
-  const ing=d.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
-  const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
+  const todos=filtrados();
+  // KPIs y gráficos económicos usan solo ingresos/egresos operativos. Los internos
+  // siguen visibles y cuentan como movimientos, pero no contaminan el resultado.
+  const operativos=todos.filter(esOperativo);
+  const paraActividad=todos.filter(x=>esOperativo(x)||x.tipo==='transfer');
+  const ing=operativos.filter(x=>x.tipo==='ingreso').reduce((s,x)=>s+mv(x),0);
+  const egr=operativos.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   document.getElementById('k-ing').textContent=fmtK(ing);
   document.getElementById('k-egr').textContent=fmtK(egr);
   document.getElementById('k-res').textContent=fmtK(ing-egr);
   document.getElementById('k-res').style.color=ing-egr>=0?css('--campo'):css('--ladrillo');
-  document.getElementById('k-cant').textContent=d.length;
+  document.getElementById('k-cant').textContent=todos.length;
   document.getElementById('k-ing-d').textContent=fmt(ing);
   document.getElementById('k-egr-d').textContent=fmt(egr);
   document.getElementById('k-res-d').textContent=(ing-egr>=0?'Positivo':'Negativo');
-  const cats=[...new Set(d.map(x=>x.cat))].length;
+  const cats=[...new Set(todos.map(x=>x.cat).filter(Boolean))].length;
   document.getElementById('k-cant-d').textContent=cats+' categorías';
 
-  chartMes(d);chartSaldo(d);chartAct(d);chartCat(d);chartAnios();
-  llenarSelectRubro(d);chartRubro();
+  chartMes(operativos);chartSaldo(operativos);chartAct(paraActividad);chartCat(operativos);chartAnios();
+  // El análisis "Un rubro mes a mes" es un detalle histórico, no un KPI de resultado.
+  // Por eso incluye también categorías internas visibles (ej: Retiro Gustavo),
+  // aunque esas categorías no afecten Ingresos/Egresos/Resultado.
+  llenarSelectRubro(todos);chartRubro();
   ultimosMov();
   bannerPendientes();
 }
@@ -1307,17 +1391,41 @@ function render(){
 function ultimosMov(){
   const el=document.getElementById('ultimos-mov');
   if(!el)return;
-  const d=[...filtrados()].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,7);
+  const anio=document.getElementById('f-anio').value;
+  const act=document.getElementById('f-act').value;
+  // Acá sí mostramos todos los movimientos ya realizados: operativos, internos,
+  // financieros, transferencias productivas y transferencias entre cuentas.
+  // Los pendientes quedan fuera porque todavía no hubo movimiento real de dinero.
+  const d=datos.filter(x=>
+    !x.plazo&&
+    (!anio||x.fecha.slice(0,4)===anio)&&
+    (!act||x.act===act||(x.tipo==='transfer'&&(x.actOrigen===act||x.actDestino===act)))
+  ).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,7);
   if(!d.length){el.innerHTML='<p class="mini-nota">Todavía no hay movimientos este ejercicio.</p>';return}
-  const ICO={ingreso:{c:'campo',s:'\u2197'},egreso:{c:'ladrillo',s:'\u2198'},transfer:{c:'cielo',s:'\u21c4'}};
+  const ICO={
+    ingreso:{c:'campo',s:'\u2197'},
+    egreso:{c:'ladrillo',s:'\u2198'},
+    transfer:{c:'cielo',s:'\u21c4'},
+    transfer_cuenta:{c:'violeta',s:'\u21c6'}
+  };
   el.innerHTML=d.map(x=>{
-    const i=ICO[x.tipo]||ICO.egreso;
-    const nom=x.prov||x.cat||'Movimiento';
-    const sub=x.cat+(x.cta?' \u00b7 '+x.cta:'');
+    const esTC=x.tipo==='transfer_cuenta';
+    const esRet=esRetiroGustavo(x);
+    const retiraAEfectivo=esRet&&x.tipo==='egreso'&&x.cta&&!esEfectivo(x.cta)&&!esCuentaDolares(x.cta);
+    const esInt=!!x.interno&&!esTC;
+    const i=retiraAEfectivo||esInt?{c:'cielo',s:'\u21c6'}:(ICO[x.tipo]||ICO.egreso);
+    const nom=esTC?(x.det||'Movimiento interno'):(x.prov||x.cat||'Movimiento');
+    const sub=esTC
+      ?`${x.ctaOrigen||'—'} → ${x.ctaDestino||'—'}`
+      :retiraAEfectivo
+        ?`${x.cta} → Efectivo`
+        :x.cat+(x.cta?' · '+x.cta:'');
+    const claseMonto=esTC||retiraAEfectivo?'monto-tcu':esInt?'monto-tra':x.tipo==='ingreso'?'monto-ing':x.tipo==='egreso'?'monto-egr':'monto-tra';
+    const signo=esTC||retiraAEfectivo?'':(x.tipo==='egreso'?'−':x.tipo==='ingreso'?'+':'');
     return `<div class="um-fila" onclick="verTab('mov',document.querySelectorAll('.nav-item')[1])">
       <div class="um-ico um-${i.c}">${i.s}</div>
       <div class="um-txt"><div class="um-nom">${nom}</div><div class="um-sub">${sub}</div></div>
-      <div class="um-monto monto-${x.tipo==='ingreso'?'ing':x.tipo==='transfer'?'tra':'egr'}">${x.tipo==='egreso'?'\u2212':x.tipo==='ingreso'?'+':''}${fmt(mv(x))}</div>
+      <div class="um-monto ${claseMonto}">${signo}${fmt(mv(x))}</div>
     </div>`;
   }).join('');
 }
@@ -1388,7 +1496,10 @@ function llenarSelectRubro(d){
   const sel=document.getElementById('f-rubro');
   if(!sel)return;
   const totales={};
-  d.forEach(x=>{if(x.tipo!=='transfer')totales[x.cat]=(totales[x.cat]||0)+mv(x)});
+  d.forEach(x=>{
+    if(x.tipo==='transfer'||x.tipo==='transfer_cuenta'||!x.cat)return;
+    totales[x.cat]=(totales[x.cat]||0)+mv(x);
+  });
   const rubros=Object.keys(totales).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
   const actual=sel.value;
   sel.innerHTML=rubros.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
@@ -1401,8 +1512,19 @@ function chartRubro(){
   const cv=document.getElementById('ch-rubro');
   if(!sel||!cv)return;
   const rubro=sel.value;
-  const d=filtrados().filter(x=>x.tipo!=='transfer'&&x.cat===rubro);
-  if(!d.length){document.getElementById('rubro-total').textContent='';return}
+  // A diferencia de los KPIs, acá sí queremos poder analizar categorías internas
+  // como "Retiro Gustavo" mes a mes. Solo excluimos transferencias, porque
+  // no representan un rubro económico con signo propio.
+  const base=filtrados().filter(x=>x.tipo!=='transfer'&&x.tipo!=='transfer_cuenta'&&x.cat===rubro);
+  // La cuenta histórica "Dolares" está expresada en USD. No mezclamos esas
+  // unidades con montos en pesos dentro de una misma barra; se informan aparte.
+  const dUsd=base.filter(x=>esCuentaDolares(x.cta));
+  const d=base.filter(x=>!esCuentaDolares(x.cta));
+  if(!d.length){
+    const usd=dUsd.reduce((s,x)=>s+Math.abs(x.monto||0),0);
+    document.getElementById('rubro-total').textContent=usd?`Total ${rubro}: US$ ${Math.round(usd).toLocaleString('es-AR')} (cuenta Dolares)`:'';
+    return;
+  }
   // si hay un solo año en el filtro, eje = meses; si hay varios, eje = año-mes
   const anioSel=document.getElementById('f-anio').value;
   const buckets={};
@@ -1416,8 +1538,10 @@ function chartRubro(){
   }else{
     labels=Object.keys(buckets).sort();vals=labels.map(k=>buckets[k]);
   }
+  const esInterno=d.some(x=>x.interno);
   const esIngreso=d[0].tipo==='ingreso';
-  const color=esIngreso?css('--campo'):css('--ladrillo');
+  // Los internos se muestran en azul para no sugerir visualmente que son gasto operativo.
+  const color=esInterno?css('--cielo'):(esIngreso?css('--campo'):css('--ladrillo'));
   charts.rubro=new Chart(cv,{
     type:'bar',
     data:{labels,datasets:[{label:rubro,data:vals,backgroundColor:color,borderRadius:4}]},
@@ -1425,7 +1549,8 @@ function chartRubro(){
   });
   const total=vals.reduce((s,v)=>s+v,0);
   const prom=total/vals.filter(v=>v>0).length||0;
-  document.getElementById('rubro-total').textContent=`Total ${rubro}: ${fmt(total)} · promedio por mes con movimiento: ${fmt(prom)}`;
+  const usd=dUsd.reduce((s,x)=>s+Math.abs(x.monto||0),0);
+  document.getElementById('rubro-total').textContent=`Total ${rubro}: ${fmt(total)} · promedio por mes con movimiento: ${fmt(prom)}`+(usd?` · además US$ ${Math.round(usd).toLocaleString('es-AR')} desde Dolares`:'');
 }
 function chartCat(d){
   destruir('cat');
@@ -1442,10 +1567,9 @@ function chartCat(d){
 function chartAnios(){
   destruir('anios');
   const act=document.getElementById('f-act').value;
-  const incInt=document.getElementById('f-internos').checked;
   const base=datos.filter(d=>
-    (!act||d.act===act||(d.tipo==='transfer'&&(d.actOrigen===act||d.actDestino===act)))&&
-    (incInt||!d.interno)
+    esOperativo(d)&&
+    (!act||d.act===act)
   );
   const anios={};
   base.forEach(x=>{
@@ -1494,28 +1618,64 @@ function renderTabla(){
   if(ft)d=d.filter(x=>x.tipo===ft);
   if(fp==='ocultar')d=d.filter(x=>!x.plazo);
   else if(fp==='solo')d=d.filter(x=>x.plazo);
-  if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.cta||'')+(x.prov||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
+  if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.cta||'')+(x.ctaOrigen||'')+(x.ctaDestino||'')+(x.prov||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
   const body=document.getElementById('tabla-body');
-  document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
-  document.getElementById('tabla').style.display=datos.length?'table':'none';
+  const vacio=document.getElementById('tabla-vacia');
+  const tabla=document.getElementById('tabla');
+  vacio.style.display=d.length?'none':'block';
+  tabla.style.display=d.length?'table':'none';
+  if(!d.length){
+    vacio.innerHTML=datos.length
+      ?'<div class="ico">⌕</div><h3>No encontré movimientos</h3><p>Probá cambiar la búsqueda o los filtros.</p>'
+      :'<div class="ico">🌾</div><h3>Todavía no hay movimientos</h3><p>Cargá el primero con “Nuevo movimiento” o importá el Excel.</p>';
+  }
   body.innerHTML=d.map(x=>{
     const esT=x.tipo==='transfer';
-    // si el detalle termina en [Cuenta] y ya tenemos la cuenta aparte, no lo repetimos
+    const esTC=x.tipo==='transfer_cuenta';
+    const esRet=esRetiroGustavo(x);
+    const retiraAEfectivo=esRet&&x.tipo==='egreso'&&x.cta&&!esEfectivo(x.cta)&&!esCuentaDolares(x.cta);
+    const esInt=!!x.interno&&!esTC;
     let detTxt=x.det||'';
     if(x.cta&&detTxt.endsWith('['+x.cta+']'))detTxt=detTxt.slice(0,-(x.cta.length+2)).trim();
+
     const actCell=esT
       ?`<span class="act-tag">${nombreAct(x.actOrigen)} → ${nombreAct(x.actDestino)}</span>`
-      :`<span class="act-tag">${nombreAct(x.act)}</span>`;
-    const pill=esT?'<span class="pill tra">Transf.</span>':`<span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span>`;
-    const monto=esT
-      ?`<td style="text-align:right" class="monto-tra">${fmt(mv(x))}</td>`
-      :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
-    return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer${x.interno?';opacity:.6':''}">
+      :esTC
+        ?'<span style="color:var(--tinta-suave)">—</span>'
+        :`<span class="act-tag">${nombreAct(x.act)}</span>`;
+
+    const cuentaCell=esTC
+      ?`<span class="act-tag">${x.ctaOrigen||'—'} → ${x.ctaDestino||'—'}</span>`
+      :retiraAEfectivo
+        ?`<span class="act-tag">${x.cta} → Efectivo</span>`
+        :(x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>');
+
+    const pill=esT
+      ?'<span class="pill tra">Entre actividades</span>'
+      :esTC
+        ?'<span class="pill tcu">Interno</span>'
+        :esRet
+          ?'<span class="pill tcu">Retiro</span>'
+          :esInt
+            ?'<span class="pill tra">Interno</span>'
+            :`<span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span>`;
+
+    let monto;
+    if(esT||esTC||retiraAEfectivo){
+      monto=`<td style="text-align:right" class="${esTC||retiraAEfectivo?'monto-tcu':'monto-tra'}">${fmt(mv(x))}</td>`;
+    }else if(esInt){
+      monto=`<td style="text-align:right" class="monto-tra">${x.tipo==='ingreso'?'+':x.tipo==='egreso'?'−':''}${fmt(mv(x))}</td>`;
+    }else{
+      monto=`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
+    }
+
+    const etiquetaInt=esInt?` <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">${esRet?'retiro / caja':'interno'}</span>`:'';
+    return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
       <td>${x.fecha}</td>
-      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo)">interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
-      <td>${x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>'}</td>
+      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${etiquetaInt}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
+      <td>${cuentaCell}</td>
       <td>${actCell}</td>
-      <td>${x.cat}</td>
+      <td>${esTC?'Movimiento interno':(x.cat||'—')}</td>
       <td>${pill}</td>
       ${monto}
       <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
@@ -1528,11 +1688,11 @@ function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','C
 function renderProj(){
   chartProj();mesesFlojos();rentActividad();
 }
-function datosReales(){return datos.filter(d=>!d.interno&&!d.plazo&&!d.financiero)}
+function datosReales(){return datos.filter(d=>d.tipo!=='transfer_cuenta'&&!d.interno&&!d.plazo&&!d.financiero)}
 function cajaMensual(lista){
   const porMes={};
   lista.forEach(x=>{
-    if(x.tipo==='transfer')return;
+    if(x.tipo!=='ingreso'&&x.tipo!=='egreso')return;
     const k=x.fecha.slice(0,7);
     porMes[k]=(porMes[k]||0)+(x.tipo==='ingreso'?mv(x):-mv(x));
   });
@@ -1544,7 +1704,20 @@ function chartProj(){
   if(!cv)return;
   const porMes=cajaMensual(datosReales());
   const keys=Object.keys(porMes).sort();
-  if(keys.length<2){cv.parentElement.innerHTML='<p style="color:var(--tinta-suave);text-align:center;padding:40px">Cargá al menos 2 meses de datos para ver la proyección.</p>';return}
+  let aviso=cv.parentElement.querySelector('.proj-sin-datos');
+  if(keys.length<2){
+    cv.style.display='none';
+    if(!aviso){
+      aviso=document.createElement('p');
+      aviso.className='proj-sin-datos';
+      aviso.style.cssText='color:var(--tinta-suave);text-align:center;padding:40px';
+      aviso.textContent='Cargá al menos 2 meses de datos para ver la proyección.';
+      cv.parentElement.appendChild(aviso);
+    }
+    return;
+  }
+  cv.style.display='block';
+  if(aviso)aviso.remove();
   let ac=0;const reales=keys.map(k=>{ac+=porMes[k];return ac});
   const ult=keys.slice(-3).map(k=>porMes[k]);
   const prom=ult.reduce((s,v)=>s+v,0)/ult.length;
@@ -1601,7 +1774,7 @@ function leerArchivo(e){
     adivinar('map-prov',['cliente','proveedor','prov']);
     adivinar('map-cant',['cantidad','kg','cabez','qq']);
     adivinar('map-act',['actividad','rubro','sector']);
-    adivinar('map-cat',['categoria','categoría','detalle','concepto','descripcion']);
+    adivinar('map-cat',['categoria','categoría','rubro','detalle','concepto','descripcion']);
     document.getElementById('mapeo').style.display='block';
     document.getElementById('btn-importar').style.display='inline-flex';
     document.getElementById('preview-nota').textContent=rawImport.length+' filas detectadas.';
@@ -1691,14 +1864,23 @@ function unificarRubros(){
 }
 function unificarCuentas(){
   const grupos={};
-  datos.forEach(d=>{if(d.cta){const k=normCta(d.cta);(grupos[k]=grupos[k]||[]).push(d.cta)}});
+  datos.forEach(d=>{
+    [d.cta,d.ctaOrigen,d.ctaDestino].filter(Boolean).forEach(c=>{
+      const k=normCta(c);
+      (grupos[k]=grupos[k]||[]).push(c);
+    });
+  });
   let cambios=0;
   Object.entries(grupos).forEach(([k,lista])=>{
     const conteo={};lista.forEach(c=>conteo[c]=(conteo[c]||0)+1);
     const formas=Object.keys(conteo);
     if(formas.length<2)return;
     const canon=formas.sort((a,b)=>conteo[b]-conteo[a])[0];
-    datos.forEach(d=>{if(d.cta&&normCta(d.cta)===k&&d.cta!==canon){d.cta=canon;cambios++}});
+    datos.forEach(d=>{
+      ['cta','ctaOrigen','ctaDestino'].forEach(campo=>{
+        if(d[campo]&&normCta(d[campo])===k&&d[campo]!==canon){d[campo]=canon;cambios++}
+      });
+    });
   });
   return cambios;
 }
@@ -1745,15 +1927,19 @@ function confirmarImport(){
       const t=(''+fila[cTipo]).toLowerCase();
       tipo=/egr|gasto|pago|salida|compra|debito|débito/.test(t)?'egreso':'ingreso';
     }
+    const cat=cCat&&fila[cCat]?(''+fila[cCat]).trim():'Sin categoría';
+    const clas=clasificarRubro(cat);
     nuevos.push({
       id:Date.now()+''+Math.random().toString(36).slice(2,8),
       fecha,tipo,monto,
       cta:cCta&&fila[cCta]?(''+fila[cCta]).trim():'',
       prov:cProv&&fila[cProv]?(''+fila[cProv]).trim():'',
       cant:cCant&&fila[cCant]?(Math.abs(parseMonto(fila[cCant]))||null):null,
-      act:mapAct(cAct?fila[cAct]:''),
-      cat:cCat&&fila[cCat]?(''+fila[cCat]).trim():'Sin categoría',
-      det:cDet&&fila[cDet]?(''+fila[cDet]).trim():''
+      act:cAct&&fila[cAct]?mapAct(fila[cAct]):clas.act,
+      cat,
+      det:cDet&&fila[cDet]?(''+fila[cDet]).trim():'',
+      interno:!!clas.interno,
+      financiero:!!clas.financiero
     });
   });
   if(!nuevos.length){alert('No se pudo importar ninguna fila. Revisá el mapeo de columnas.');return}
@@ -1762,13 +1948,20 @@ function confirmarImport(){
   datos=datos.concat(limpios);
   const unif=unificarRubros()+unificarCuentas()+unificarProv();
   guardarLS();
-  cerrarImport();actualizarAnios();render();renderTabla();
+  cerrarImport();actualizarAnios();renderTodo();
   alert(`Importados ${limpios.length} movimientos.`
     +(dupes?`\n${dupes} duplicados salteados (misma fecha, monto, rubro y detalle).`:'')
     +(unif?`\n${unif} rubros/cuentas escritos distinto se unificaron.`:'')
     +(errores?`\n${errores} filas sin fecha válida se saltearon.`:''));
 }
 function mapAct(v){
+  const n=norm(v);
+  // Si el archivo ya trae una columna Actividad, respetar nombres explícitos.
+  if(/ganader|cria|cría|invernada/.test(n))return 'Ganadería';
+  if(/agricultur/.test(n))return 'Agricultura';
+  if(/cebolla/.test(n))return 'Cebolla';
+  if(/maquinaria/.test(n))return 'Maquinaria';
+  if(/general|estructura/.test(n))return 'General';
   return clasificarRubro(v).act;
 }
 
@@ -1834,14 +2027,14 @@ function importarDirecto(e){
     const {limpios,dupes}=filtrarDuplicados(nuevos);
     if(!limpios.length){
       // igual unificamos cuentas por si la base vieja no tenía el campo
-      migrarDatos();guardarLS();renderGestion();
+      migrarDatos();guardarLS();renderTodo();
       alert('Todas las filas de esta planilla ya estaban cargadas. No se importó nada nuevo (anti-duplicados).');return;
     }
     datos=datos.concat(limpios);
     migrarDatos();
     const unif=unificarRubros()+unificarCuentas()+unificarProv();
     guardarLS();
-    cerrarImport();actualizarAnios();render();renderTabla();
+    cerrarImport();actualizarAnios();renderTodo();
     const internos=limpios.filter(n=>n.interno).length;
     const conCant=limpios.filter(n=>n.cant).length;
     alert(`✓ Importados ${limpios.length} movimientos.`
@@ -1859,7 +2052,7 @@ function importarDirecto(e){
 function migrarDatos(){
   let cambios=0;
   datos.forEach(d=>{
-    if(!d.cta&&d.det){
+    if(d.tipo!=='transfer_cuenta'&&!d.cta&&d.det){
       const m=d.det.match(/\[([^\]]+)\]\s*$/);
       if(m){d.cta=m[1].trim();cambios++}
     }
@@ -1878,20 +2071,22 @@ function exportar(){
   if(!datos.length){alert('No hay datos para exportar');return}
   const ws=XLSX.utils.json_to_sheet(datos.map(d=>({
     Fecha:d.fecha,
-    Tipo:d.tipo==='transfer'?'transferencia':d.tipo,
+    Tipo:d.tipo==='transfer'?'transferencia entre actividades':d.tipo==='transfer_cuenta'?'movimiento interno':d.tipo,
     Monto:d.monto,
     Neto:d.neto||'',
     IVA:d.iva||'',
     Cantidad:d.cant||'',
     Cuenta:d.cta||'',
+    'Cuenta origen':d.ctaOrigen||'',
+    'Cuenta destino':d.ctaDestino||'',
     'Cliente/Proveedor':d.prov||'',
-    Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):d.act,
-    Categoría:d.cat,
+    Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):(d.act||''),
+    Categoría:d.tipo==='transfer_cuenta'?'Movimiento interno':(d.cat||''),
     Interno:d.interno?'Sí':'No',
     Financiero:d.financiero?'Sí':'No',
     Estado:d.plazo?(d.tipo==='ingreso'?'A cobrar':'A pagar'):'',
     Vencimiento:d.venc||'',
-    Detalle:d.det
+    Detalle:d.det||''
   })));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Movimientos');
@@ -1909,7 +2104,7 @@ function chequearFechas(){
   return rotas;
 }
 // ============ RESPALDO Y RESTAURACIÓN ============
-const RESPALDO_VERSION=1;
+const RESPALDO_VERSION=2;
 const RESPALDO_MARCA='gestion-campo';
 // Claves que NO van al respaldo:
 // - campo_ipc / campo_tc: caché que se rebaja sola de internet.
@@ -2217,18 +2412,46 @@ function descMoneda(){
 }
 function saldosPorCuenta(){
   const ctas={};
+  const efectivo=formaCanonica('Efectivo','cta')||'Efectivo';
+  const sumar=(cta,delta)=>{
+    if(!cta)return;
+    if(!ctas[cta])ctas[cta]=0;
+    ctas[cta]+=delta;
+  };
   datos.forEach(x=>{
+    if(x.tipo==='transfer_cuenta'){
+      sumar(x.ctaOrigen,-Math.abs(x.monto||0));
+      sumar(x.ctaDestino,Math.abs(x.monto||0));
+      return;
+    }
     if(x.tipo==='transfer'||!x.cta)return;
-    if(!ctas[x.cta])ctas[x.cta]=0;
-    ctas[x.cta]+=(x.tipo==='ingreso'?x.monto:-x.monto);
+
+    // En la planilla histórica, "Retiro Gustavo" mezcla dos usos. Cuando sale
+    // de un banco lo interpretamos como retiro de efectivo: baja el banco y sube
+    // Efectivo. Si ya sale de Efectivo, sí baja la caja (pudo ser uso personal o
+    // una compra todavía sin clasificar), pero nunca entra al resultado operativo.
+    if(esRetiroGustavo(x)&&x.tipo==='egreso'){
+      const monto=Math.abs(x.monto||0);
+      sumar(x.cta,-monto);
+      // La cuenta histórica "Dolares" está expresada en USD. No podemos sumar
+      // el mismo número a Efectivo (pesos) sin conocer el tipo de cambio real.
+      if(!esEfectivo(x.cta)&&!esCuentaDolares(x.cta))sumar(efectivo,monto);
+      return;
+    }
+
+    if(x.tipo==='ingreso')sumar(x.cta,x.monto);
+    else if(x.tipo==='egreso')sumar(x.cta,-x.monto);
   });
   return Object.entries(ctas).sort((a,b)=>b[1]-a[1]);
 }
 function retirosNetos(lista){
   let r=0;
   lista.forEach(x=>{
-    if(x.tipo==='transfer')return;
-    if(/retiro/.test(norm(x.cat)))r+=(x.tipo==='egreso'?x.monto:-x.monto);
+    if(x.tipo==='transfer'||x.tipo==='transfer_cuenta')return;
+    // Los retiros desde banco son pases a Efectivo, no plata que salió del campo.
+    // Solo contamos los que ya salieron desde Efectivo; siguen siendo "sin clasificar"
+    // porque históricamente pueden mezclar uso personal y compras del campo.
+    if(esRetiroGustavo(x)&&x.tipo==='egreso'&&esEfectivo(x.cta))r+=Math.abs(x.monto||0);
   });
   return r;
 }
@@ -2316,21 +2539,21 @@ function resumenParaIA(){
   const saldos=saldosPorCuenta();
   if(saldos.length){
     txt+=`\nSALDOS ACTUALES POR CUENTA (en $ corrientes, incluye internos porque los retiros y pases afectan la caja):\n`;
-    saldos.slice(0,10).forEach(([c,s])=>txt+=`- ${c}: $${Math.round(s).toLocaleString('es-AR')}\n`);
-    const tot=saldos.reduce((s,[,v])=>s+v,0);
-    txt+=`- TOTAL DISPONIBLE: $${Math.round(tot).toLocaleString('es-AR')}\n`;
+    saldos.slice(0,10).forEach(([c,s])=>txt+=`- ${c}: ${esCuentaDolares(c)?'US$ ':'$'}${Math.round(s).toLocaleString('es-AR')}\n`);
+    const tot=saldos.filter(([c])=>!esCuentaDolares(c)).reduce((s,[,v])=>s+v,0);
+    txt+=`- TOTAL DISPONIBLE EN PESOS (sin sumar la cuenta Dolares): $${Math.round(tot).toLocaleString('es-AR')}\n`;
   }
   const retAnios={};
   datos.forEach(x=>{
-    if(x.tipo==='transfer')return;
-    if(/retiro/.test(norm(x.cat))){
+    if(esRetiroGustavo(x)&&x.tipo==='egreso'&&esEfectivo(x.cta)){
       const a=x.fecha.slice(0,4);
-      retAnios[a]=(retAnios[a]||0)+(x.tipo==='egreso'?x.monto:-x.monto);
+      retAnios[a]=(retAnios[a]||0)+Math.abs(x.monto||0);
     }
   });
   const kRet=Object.keys(retAnios).sort();
   if(kRet.length){
-    txt+=`\nRETIROS DEL PRODUCTOR POR AÑO (plata que sacó del campo para uso personal, en $ corrientes):\n`;
+    txt+=`\nSALIDAS DESDE EFECTIVO CARGADAS COMO "RETIRO GUSTAVO" (en $ corrientes):\n`;
+    txt+=`Estos movimientos históricos pueden mezclar uso personal y compras del campo sin clasificar; NO los trates automáticamente como gasto operativo. Los retiros desde banco se interpretan como pase a Efectivo y no aparecen acá.\n`;
     kRet.forEach(a=>txt+=`- ${a}: $${Math.round(retAnios[a]).toLocaleString('es-AR')}\n`);
   }
   const pa=provAgg(d);
@@ -2576,24 +2799,36 @@ function saldarPendiente(id){
   const anio=parseInt(f.slice(0,4));
   if(!(anio>=2015&&anio<=new Date().getFullYear()+1)){alert('El año '+anio+' parece mal. Revisá la fecha.');return}
   const cta=prompt('¿Por qué cuenta entró/salió la plata? (Efectivo, Banco Rio, Echeq...)',x.cta||'');
+  if(cta===null)return;
+  if(!cta.trim()){alert('Falta la cuenta por la que se cobró o pagó.');return}
   x.plazo=false;
   x.venc=null;
   x.fecha=f;
-  if(cta)x.cta=formaCanonica(cta,'cta');
+  x.cta=formaCanonica(cta,'cta');
   guardarLS();
-  render();renderTabla();renderGestion();
+  actualizarAnios();renderTodo();
 }
 
 const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla','Maquinaria':'Maquinaria propia'};
 
 function cuentasPanel(){
   const el=document.getElementById('g-cuentas');
-  const saldos=saldosPorCuenta(); // $ corrientes siempre (es plata de hoy en la cuenta)
+  const saldos=saldosPorCuenta();
   if(!saldos.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay cuentas cargadas. Vienen de la columna "Cuenta" del Excel o del campo Cuenta al cargar a mano.</p>';return}
-  const total=saldos.reduce((s,[,v])=>s+v,0);
+  // El Excel histórico tiene una cuenta "Dolares" expresada en unidades USD.
+  // No debe sumarse numéricamente al total de cuentas en pesos.
+  const pesos=saldos.filter(([c])=>!esCuentaDolares(c));
+  const dolares=saldos.filter(([c])=>esCuentaDolares(c));
+  const total=pesos.reduce((s,[,v])=>s+v,0);
   const F=n=>'$'+Math.round(n).toLocaleString('es-AR');
-  el.innerHTML=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Total disponible (todas las cuentas)</div><div class="v" style="color:${total>=0?'var(--campo)':'var(--ladrillo)'}">${F(total)}</div><div class="d">Siempre en $ corrientes — es la plata de hoy</div></div>`+
-    saldos.map(([c,s])=>`<div class="g-fila"><span>${c}</span><b style="color:${s>=0?'var(--tinta)':'var(--ladrillo)'}">${F(s)}</b></div>`).join('');
+  const FU=n=>'US$ '+Math.round(n).toLocaleString('es-AR');
+  let html=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Total disponible en pesos</div><div class="v" style="color:${total>=0?'var(--campo)':'var(--ladrillo)'}">${F(total)}</div><div class="d">Suma las cuentas expresadas en $ corrientes; Dólares se muestra aparte.</div></div>`;
+  if(dolares.length){
+    const usd=dolares.reduce((s,[,v])=>s+v,0);
+    html+=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Tenencia en dólares</div><div class="v" style="color:${usd>=0?'var(--cielo)':'var(--ladrillo)'}">${FU(usd)}</div><div class="d">No se suma al total en pesos porque falta una cotización de conversión por movimiento.</div></div>`;
+  }
+  html+=saldos.map(([c,s])=>`<div class="g-fila"><span>${c}</span><b style="color:${s>=0?'var(--tinta)':'var(--ladrillo)'}">${esCuentaDolares(c)?FU(s):F(s)}</b></div>`).join('');
+  el.innerHTML=html;
 }
 
 function margenActividad(){
@@ -2744,8 +2979,9 @@ function calcularAlertas(anio){
   // cuenta con saldo negativo: falta cargar algo o hay un error
   saldosPorCuenta().forEach(([c,s])=>{
     if(s<-1000){
+      const saldoTxt=(esCuentaDolares(c)?'US$ ':'$')+Math.round(s).toLocaleString('es-AR');
       als.push({t:'amar',i:'🏦',
-        txt:`La cuenta <b>${c}</b> da saldo negativo ($${Math.round(s).toLocaleString('es-AR')}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
+        txt:`La cuenta <b>${c}</b> da saldo negativo (${saldoTxt}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
         preg:null});
     }
   });
@@ -2766,7 +3002,7 @@ function cierreEjercicio(){
   const egr=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
   const anio=document.getElementById('g-anio').value;
   const el=document.getElementById('g-cierre');
-  // retiros del ejercicio (siempre $ corrientes: es plata que salió del campo)
+  // salidas históricas desde Efectivo cargadas como Retiro Gustavo ($ corrientes)
   const baseRet=datos.filter(x=>!anio||x.fecha.slice(0,4)===anio);
   const ret=retirosNetos(baseRet);
   let comp='';
@@ -2791,17 +3027,31 @@ function cierreEjercicio(){
     <div class="cierre-box"><div class="et">Ingresos ${anio||'(todos)'}</div><div class="v" style="color:var(--campo)">${fmt(ing)}</div></div>
     <div class="cierre-box"><div class="et">Egresos ${anio||'(todos)'}</div><div class="v" style="color:var(--ladrillo)">${fmt(egr)}</div></div>
     <div class="cierre-box"><div class="et">Resultado del ejercicio</div><div class="v" style="color:${ing-egr>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(ing-egr)}</div></div>
-    <div class="cierre-box"><div class="et">Retiros del productor ${anio||'(todos)'}</div><div class="v" style="color:var(--cielo)">$${Math.round(ret).toLocaleString('es-AR')}</div><div class="d">Plata que salió del campo para uso personal ($ corrientes). No es gasto del campo, pero sale de la caja.</div></div>
+    <div class="cierre-box"><div class="et">Retiros / salidas desde efectivo ${anio||'(todos)'}</div><div class="v" style="color:var(--cielo)">$${Math.round(ret).toLocaleString('es-AR')}</div><div class="d">Históricos cargados como “Retiro Gustavo” desde Efectivo. No cuentan como gasto operativo porque pueden mezclar uso personal y compras todavía sin clasificar.</div></div>
     ${comp}
   </div>`;
 }
 
 // ============ INIT ============
 function borrarTodo(){
-  if(!datos.length){alert('No hay datos.');return}
-  if(!confirm(`¿Borrar TODOS los ${datos.length} movimientos? Esto no se puede deshacer.\n\nSi querés poder recuperarlos, cancelá y primero guardá una copia de seguridad (pestaña Gestión, abajo de todo).`))return;
-  if(!confirm('¿Seguro? Última confirmación.'))return;
-  datos=[];guardarLS();actualizarAnios();render();renderTabla();
+  if(!datos.length){window.alert('No hay datos para borrar.');return}
+  const cantidad=datos.length;
+  if(!window.confirm(`¿Borrar TODOS los ${cantidad} movimientos? Esto no se puede deshacer.
+
+Si querés poder recuperarlos, cancelá y primero guardá una copia de seguridad desde Alertas y respaldo.`))return;
+  if(!window.confirm('¿Seguro? Última confirmación.'))return;
+  try{
+    // Vaciar la base y recargar evita depender de que cada panel soporte
+    // correctamente un render inmediato con cero movimientos.
+    datos=[];
+    localStorage.setItem('campo_datos','[]');
+    dataVersion++;
+    cacheFilt={};
+    window.alert(`✓ Se borraron ${cantidad} movimientos.`);
+    window.location.reload();
+  }catch(err){
+    window.alert('No pude borrar los movimientos. El navegador devolvió este error: '+err.message);
+  }
 }
 document.getElementById('f-moneda').value=moneda;
 // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
