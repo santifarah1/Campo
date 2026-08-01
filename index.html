@@ -330,6 +330,476 @@ tr:hover td{background:var(--lienzo)}
 .um-sub{font-size:12px;color:var(--tinta-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .um-monto{font-family:"Space Grotesk";font-weight:600;font-size:14.5px;white-space:nowrap}
 
+
+
+/* ====================================================================
+   CAMPO — VISUAL V1
+   Rediseño visual sin modificar lógica ni modelo de datos.
+   ==================================================================== */
+:root{
+  --lienzo:#F4F5EF;
+  --lienzo-2:#ECEFE6;
+  --tarjeta:#FFFEFA;
+  --tinta:#18241D;
+  --tinta-2:#667069;
+  --tinta-3:#98A099;
+  --borde:#E0E4DB;
+  --borde-vivo:#C9D0C5;
+  --campo:#2F6B4F;
+  --campo-hondo:#1E4D38;
+  --campo-suave:#E4F0E9;
+  --trigo:#B98C3E;
+  --trigo-suave:#F7EDD9;
+  --ladrillo:#B75C47;
+  --ladrillo-suave:#F6E7E2;
+  --cielo:#52768E;
+  --cielo-suave:#E6EEF3;
+  --violeta:#7568A7;
+  --s1:0 1px 2px rgba(22,42,31,.04),0 4px 14px rgba(22,42,31,.045);
+  --s2:0 10px 35px rgba(22,42,31,.09),0 2px 7px rgba(22,42,31,.04);
+  --s3:0 22px 60px rgba(22,42,31,.14);
+  --radio:20px;
+  --tierra:#75513B;--tierra-claro:#96745E;--campo-claro:#6F9A80;
+  --papel:#F4F5EF;--papel-hondo:#ECEFE6;--blanco:#FFFEFA;
+  --linea:#E0E4DB;--tinta-suave:#667069;--primario:#2F6B4F;--primario-claro:#6F9A80;
+}
+body{
+  background:
+    radial-gradient(circle at 8% 5%, rgba(47,107,79,.07), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(185,140,62,.055), transparent 28rem),
+    var(--lienzo);
+  letter-spacing:-.005em;
+}
+body.oscuro{
+  --lienzo:#141A16;--lienzo-2:#1A211C;--tarjeta:#1D251F;
+  --tinta:#EFF4EE;--tinta-2:#A8B2AA;--tinta-3:#78827A;
+  --borde:#2B352E;--borde-vivo:#3B493F;
+  --campo:#63A980;--campo-hondo:#9ED0AE;--campo-suave:#20372A;
+  --trigo:#D0AA62;--trigo-suave:#342D1E;--ladrillo:#D37B66;--ladrillo-suave:#372620;
+  --cielo:#78A1B8;--cielo-suave:#203039;
+  --papel:#141A16;--papel-hondo:#1A211C;--blanco:#1D251F;--linea:#2B352E;--tinta-suave:#A8B2AA;
+}
+
+/* Global top bar */
+.topbar-global{
+  height:72px;
+  padding:0 28px;
+  background:color-mix(in srgb,var(--tarjeta) 92%,transparent);
+  backdrop-filter:blur(18px) saturate(1.25);
+  -webkit-backdrop-filter:blur(18px) saturate(1.25);
+  border-bottom:1px solid color-mix(in srgb,var(--borde) 78%,transparent);
+  box-shadow:0 6px 24px rgba(23,44,32,.04);
+}
+.app{padding-top:72px}
+.sidebar{top:72px}
+.tg-izq{gap:12px}
+.tg-logo{
+  width:42px;height:42px;border-radius:13px;
+  background:linear-gradient(145deg,#3E7B5E,#1F513A 72%);
+  box-shadow:0 8px 20px rgba(31,81,58,.22),inset 0 1px 0 rgba(255,255,255,.22);
+  font-size:20px;
+}
+.tg-marca{display:flex;flex-direction:column;line-height:1.05;gap:3px}
+.tg-marca span{font-family:"Space Grotesk";font-size:17px;font-weight:650;letter-spacing:-.025em;color:var(--tinta)}
+.tg-marca small{font-family:"Inter";font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--tinta-3);font-weight:700}
+.tg-der{gap:8px}
+.tg-icon{
+  width:42px;height:42px;border-radius:12px;background:var(--tarjeta);
+  border:1px solid var(--borde);box-shadow:0 2px 8px rgba(23,44,32,.035);
+}
+.tg-icon:hover{transform:translateY(-1px);box-shadow:var(--s1)}
+.tg-nuevo{
+  height:42px;padding:0 18px;border-radius:12px;
+  background:linear-gradient(145deg,var(--campo),var(--campo-hondo));
+  box-shadow:0 8px 20px rgba(47,107,79,.19);
+}
+
+/* Sidebar */
+.sidebar{
+  width:252px;
+  background:color-mix(in srgb,var(--tarjeta) 91%,var(--lienzo));
+  border-right:1px solid var(--borde);
+  box-shadow:8px 0 28px rgba(28,48,35,.025);
+}
+.contenido{margin-left:252px}
+.sidebar .nav{padding:18px 14px 20px;gap:5px}
+.nav-rotulo{
+  padding:20px 12px 7px;font-size:9.5px;letter-spacing:.15em;color:var(--tinta-3);
+}
+.nav-rotulo:first-child{padding-top:4px}
+.nav-item{
+  position:relative;gap:10px;padding:9px 11px;border-radius:13px;
+  font-size:14px;color:var(--tinta-2);font-weight:550;
+}
+.nav-item .ni-ico{
+  width:31px;height:31px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  background:transparent;color:var(--tinta-3);font-size:15px;transition:.16s;
+}
+.nav-item:hover{background:rgba(47,107,79,.055)}
+.nav-item:hover .ni-ico{background:var(--tarjeta);color:var(--campo);box-shadow:0 2px 7px rgba(23,44,32,.06)}
+.nav-item.on{
+  background:linear-gradient(90deg,var(--campo-suave),color-mix(in srgb,var(--campo-suave) 58%,transparent));
+  color:var(--campo-hondo);font-weight:650;
+}
+.nav-item.on::before{
+  content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--campo);
+}
+.nav-item.on .ni-ico{background:var(--campo);color:#fff;box-shadow:0 5px 14px rgba(47,107,79,.22)}
+.nav-item.peligro{margin-top:4px}
+
+/* Page heading */
+.topbar{padding:34px 40px 20px;align-items:center}
+.pag-titulo{font-size:32px;font-weight:650;letter-spacing:-.035em;color:var(--tinta)}
+.pag-sub{font-size:13.5px;margin-top:6px;color:var(--tinta-2)}
+.topbar-sel{
+  padding:7px 8px 7px 13px;border-radius:13px;background:var(--tarjeta);box-shadow:var(--s1);
+}
+.topbar-sel select{padding:3px 6px;font-size:14px;min-width:82px}
+main{padding:8px 40px 120px;max-width:1480px}
+
+/* Filters */
+.filtros{
+  gap:8px;margin-bottom:22px;padding:6px;
+  background:color-mix(in srgb,var(--tarjeta) 78%,transparent);
+  border:1px solid var(--borde);border-radius:15px;width:max-content;max-width:100%;
+  box-shadow:0 4px 14px rgba(23,44,32,.025);
+}
+.filtros .lbl{margin-left:5px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--tinta-3)}
+.filtros select,.filtros input{
+  background:var(--tarjeta);border-color:transparent;border-radius:10px;padding:9px 12px;box-shadow:none;
+}
+.filtros select:hover,.filtros input:hover{background:var(--lienzo)}
+.filtros select:focus,.filtros input:focus{border-color:var(--campo);background:var(--tarjeta);box-shadow:0 0 0 3px color-mix(in srgb,var(--campo-suave) 72%,transparent)}
+#nota-moneda{padding:0 6px 2px}
+
+/* KPI cards */
+.kpis{gap:14px;margin-bottom:18px}
+.kpi{
+  min-height:142px;border:1px solid color-mix(in srgb,var(--borde) 88%,transparent);
+  border-radius:20px;padding:20px 20px 18px;background:linear-gradient(145deg,var(--tarjeta),color-mix(in srgb,var(--tarjeta) 89%,var(--lienzo)));
+  box-shadow:var(--s1);overflow:hidden;
+}
+.kpi::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:3px;opacity:.92;
+}
+.kpi.ingreso::before{background:linear-gradient(90deg,var(--campo),transparent 72%)}
+.kpi.egreso::before{background:linear-gradient(90deg,var(--ladrillo),transparent 72%)}
+.kpi.saldo::before{background:linear-gradient(90deg,var(--trigo),transparent 72%)}
+.kpi.proj::before{background:linear-gradient(90deg,var(--cielo),transparent 72%)}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--s2);border-color:var(--borde-vivo)}
+.kpi .et{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--tinta-3);font-weight:750}
+.kpi .val{font-size:31px;margin-top:10px;letter-spacing:-.045em}
+.kpi .det{font-size:12px;margin-top:9px;color:var(--tinta-3)}
+.kpi .franja{width:40px;height:40px;right:17px;top:17px;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.kpi .franja::after{font-size:18px}
+
+/* Panels */
+.panel{
+  border:1px solid color-mix(in srgb,var(--borde) 90%,transparent);
+  border-radius:20px;padding:22px 22px 20px;margin-bottom:16px;
+  background:linear-gradient(150deg,var(--tarjeta),color-mix(in srgb,var(--tarjeta) 92%,var(--lienzo)));
+  box-shadow:var(--s1);
+}
+.panel:hover{border-color:var(--borde-vivo)}
+.panel h2{font-size:15px;margin-bottom:18px;letter-spacing:-.02em}
+.panel h2 .pin{width:9px;height:9px;background:linear-gradient(145deg,var(--campo),var(--campo-claro));box-shadow:0 0 0 5px var(--campo-suave)}
+.grid-hero{grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr);gap:16px}
+.chart-box{height:310px}.chart-box.chico{height:255px}
+
+/* Latest movements */
+.um-fila{gap:12px;padding:11px 2px;border-bottom:1px solid color-mix(in srgb,var(--borde) 78%,transparent);border-radius:10px}
+.um-fila:hover{padding-left:7px;padding-right:5px;background:color-mix(in srgb,var(--campo-suave) 36%,transparent)}
+.um-ico{width:39px;height:39px;border-radius:12px;font-size:16px}
+.um-nom{font-size:13.5px}.um-sub{font-size:11.5px;margin-top:1px}
+.um-monto{font-size:14px}
+
+/* Buttons */
+.btn{border-radius:12px;font-weight:650;letter-spacing:-.012em}
+.btn-primario{background:linear-gradient(145deg,var(--campo),var(--campo-hondo));box-shadow:0 7px 18px rgba(47,107,79,.16)}
+.btn-primario:hover{box-shadow:0 10px 24px rgba(47,107,79,.22)}
+.btn-sec{background:var(--tarjeta);border-color:var(--borde);box-shadow:none}
+.btn-sec:hover{box-shadow:var(--s1)}
+
+/* Movements table */
+#v-mov>.panel{border-radius:20px;box-shadow:var(--s1)}
+.tabla-wrap{max-height:calc(100vh - 255px);overflow:auto}
+table{font-size:13.5px}
+thead{position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--tarjeta) 96%,transparent);backdrop-filter:blur(8px)}
+th{padding:13px 15px;font-size:9.5px;letter-spacing:.09em;color:var(--tinta-3)}
+td{padding:14px 15px;border-bottom-color:color-mix(in srgb,var(--borde) 76%,transparent)}
+tbody tr:hover td{background:color-mix(in srgb,var(--campo-suave) 32%,var(--tarjeta))}
+.pill{padding:5px 10px;font-size:10.5px;letter-spacing:.015em;border:1px solid transparent}
+.pill.ing{border-color:color-mix(in srgb,var(--campo) 18%,transparent)}
+.pill.egr{border-color:color-mix(in srgb,var(--ladrillo) 18%,transparent)}
+.pill.tra{border-color:color-mix(in srgb,var(--cielo) 18%,transparent)}
+.act-tag{padding:4px 9px;border-radius:8px;background:var(--lienzo-2);font-size:10.5px}
+.borrar{width:30px;height:30px;padding:0;border-radius:9px}
+
+/* Management cards */
+.cierre-grid{gap:12px}
+.cierre-box{
+  border:1px solid var(--borde);border-radius:15px;padding:17px;background:color-mix(in srgb,var(--lienzo) 72%,var(--tarjeta));
+}
+.cierre-box .et{font-size:9.5px;letter-spacing:.09em}
+.cierre-box .v{font-size:25px;margin-top:7px}
+.g-fila{padding:13px 2px}
+.g-barra{height:6px}
+.alerta{border-radius:14px;padding:14px 16px}
+
+/* Modal */
+.modal-bg{background:rgba(15,27,20,.52);backdrop-filter:blur(8px)}
+.modal{
+  max-width:570px;border-radius:24px 24px 0 0;padding:28px 30px 30px;
+  box-shadow:var(--s3);border:1px solid color-mix(in srgb,var(--borde) 65%,transparent);
+}
+@media(min-width:600px){.modal{border-radius:24px}}
+.modal h3{font-size:22px;margin-bottom:20px;letter-spacing:-.035em}
+.campo{margin-bottom:17px}
+.campo label{font-size:11.5px;text-transform:none;color:var(--tinta-2);margin-bottom:7px}
+.campo input,.campo select,.campo textarea{
+  padding:12px 13px;border-radius:12px;background:color-mix(in srgb,var(--lienzo) 75%,var(--tarjeta));border-color:var(--borde)
+}
+.campo input:focus,.campo select:focus,.campo textarea:focus{background:var(--tarjeta);box-shadow:0 0 0 4px color-mix(in srgb,var(--campo-suave) 72%,transparent)}
+.tipo-toggle{gap:6px;padding:5px;background:var(--lienzo-2);border-radius:14px}
+.tipo-toggle button{border:none;background:transparent;border-radius:10px;padding:11px 8px;font-size:12.5px}
+.tipo-toggle button.on-ing,.tipo-toggle button.on-egr,.tipo-toggle button.on-tra{box-shadow:0 3px 10px rgba(22,42,31,.07)}
+.modal-btns{padding-top:6px}
+
+/* Chat */
+.msg .burb{border-radius:16px}
+.msg.bot .burb{background:color-mix(in srgb,var(--tarjeta) 80%,var(--lienzo));border-color:var(--borde)}
+.sug{border-radius:11px;padding:9px 12px}
+
+/* Empty states */
+.vacio{padding:72px 20px}
+.vacio .ico{width:62px;height:62px;margin:0 auto 16px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--campo-suave);font-size:28px;opacity:1}
+
+/* Scrollbars */
+*{scrollbar-width:thin;scrollbar-color:var(--borde-vivo) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--borde-vivo);border:3px solid transparent;background-clip:padding-box;border-radius:999px}
+
+/* Responsive polish */
+@media(max-width:1000px){
+  .sidebar{width:228px}.contenido{margin-left:228px}
+  main,.topbar{padding-left:24px;padding-right:24px}
+  .pag-titulo{font-size:28px}
+}
+@media(max-width:760px){
+  .topbar-global{height:64px;padding:0 14px}.app{padding-top:64px}.sidebar{top:64px;width:248px}
+  .tg-logo{width:38px;height:38px}.tg-nuevo{height:38px;padding:0 13px}.tg-icon{width:38px;height:38px}
+  .contenido{margin-left:0}
+  .topbar{padding:24px 18px 15px;align-items:flex-start}.pag-titulo{font-size:26px}.pag-sub{font-size:12.5px}
+  main{padding:5px 16px 100px}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{min-height:122px;padding:17px 15px}.kpi .val{font-size:25px}.kpi .franja{width:34px;height:34px}
+  .grid-hero{grid-template-columns:1fr}.panel{border-radius:17px;padding:18px}
+  .filtros{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:7px}.filtros .lbl{display:none}.filtros select,.filtros input{width:100%;min-width:0}
+  .tabla-wrap{max-height:none}
+  .modal{padding:22px 18px 24px}
+}
+@media(max-width:440px){
+  .kpis{grid-template-columns:1fr 1fr}.kpi .val{font-size:22px}.kpi .det{font-size:10.5px}
+  .tg-der .tg-icon:first-child{display:none}
+}
+
+
+
+/* ====================================================================
+   CAMPO — VISUAL V2 / FINANCIAL COCKPIT
+   Full-page application shell, higher density, no "card inside a page" feel.
+   ==================================================================== */
+:root{
+  --lienzo:#F3F5F0;
+  --lienzo-2:#E9EDE6;
+  --tarjeta:#FCFDF9;
+  --tinta:#142019;
+  --tinta-2:#59675E;
+  --tinta-3:#8A958D;
+  --borde:#DCE3DA;
+  --borde-vivo:#C3CEC2;
+  --campo:#2E6E50;
+  --campo-hondo:#173D2C;
+  --campo-suave:#E3EFE7;
+  --trigo:#B58A39;
+  --trigo-suave:#F5ECD8;
+  --ladrillo:#B65C47;
+  --ladrillo-suave:#F5E6E1;
+  --cielo:#4B7390;
+  --cielo-suave:#E4EDF3;
+  --violeta:#6E65A4;
+  --sidebar:#163C2B;
+  --sidebar-2:#1C4834;
+  --sidebar-text:#F1F7F2;
+  --sidebar-muted:#9FB7A8;
+  --s1:0 1px 2px rgba(15,36,24,.03),0 7px 18px rgba(15,36,24,.035);
+  --s2:0 12px 34px rgba(15,36,24,.07);
+  --s3:0 24px 70px rgba(7,22,14,.22);
+  --radio:14px;
+  --papel:#F3F5F0;--papel-hondo:#E9EDE6;--blanco:#FCFDF9;
+  --linea:#DCE3DA;--tinta-suave:#59675E;--primario:#2E6E50;--primario-claro:#6F9A80;
+}
+body{
+  background:var(--lienzo);
+  font-family:"Inter",system-ui,-apple-system,sans-serif;
+  letter-spacing:-.008em;
+}
+body.oscuro{
+  --lienzo:#111714;--lienzo-2:#171F1A;--tarjeta:#1B241E;
+  --tinta:#EEF4EF;--tinta-2:#AAB7AD;--tinta-3:#758178;
+  --borde:#29352D;--borde-vivo:#39483E;
+  --campo:#65A983;--campo-hondo:#A8D1B7;--campo-suave:#20372A;
+  --trigo:#D0A85B;--trigo-suave:#342C1C;--ladrillo:#D47A66;--ladrillo-suave:#38251F;
+  --cielo:#7BA2B9;--cielo-suave:#20313A;--sidebar:#0E261B;--sidebar-2:#143423;
+  --papel:#111714;--papel-hondo:#171F1A;--blanco:#1B241E;--linea:#29352D;--tinta-suave:#AAB7AD;
+}
+
+h1,h2,h3,.pag-titulo{font-family:"Inter",system-ui,sans-serif}
+
+/* Application shell */
+.topbar-global{
+  height:68px;padding:0 24px 0 0;background:color-mix(in srgb,var(--tarjeta) 96%,transparent);
+  border-bottom:1px solid var(--borde);box-shadow:none;backdrop-filter:blur(14px);
+}
+.app{padding-top:68px}
+.sidebar{top:68px;width:252px;background:linear-gradient(180deg,var(--sidebar),#123322);border-right:0;box-shadow:none}
+.contenido{margin-left:252px;min-height:calc(100vh - 68px);background:var(--lienzo)}
+.tg-izq{width:252px;height:68px;padding:0 18px;background:var(--sidebar);gap:11px;align-self:stretch}
+.tg-logo{width:36px;height:36px;border-radius:10px;background:#F1F4EA;color:var(--sidebar);box-shadow:none;font-size:17px}
+.tg-marca span{color:#fff;font-size:15.5px;font-weight:720}
+.tg-marca small{color:var(--sidebar-muted);font-size:8.5px;letter-spacing:.105em}
+.tg-der{gap:6px}
+.tg-icon{width:auto;height:36px;padding:0 11px;border:0;border-radius:9px;background:transparent;box-shadow:none;color:var(--tinta-2);font-size:12px;font-weight:650}
+.tg-icon:hover{background:var(--lienzo-2);color:var(--tinta);box-shadow:none;transform:none}
+.tg-text-action{min-width:0}
+.tg-nuevo{height:38px;padding:0 15px;border-radius:9px;background:var(--campo);box-shadow:none;font-size:12.5px}
+.tg-nuevo:hover{background:var(--campo-hondo);box-shadow:none;transform:none}
+
+/* Sidebar: authoritative, app-like */
+.sidebar .nav{padding:16px 12px 22px;gap:3px}
+.nav-rotulo{padding:18px 10px 7px;color:#6F927C;font-size:9px;letter-spacing:.14em}
+.nav-rotulo:first-child{padding-top:5px}
+.nav-item{gap:10px;padding:9px 10px;border-radius:9px;color:var(--sidebar-muted);font-size:13.5px;font-weight:560}
+.nav-item .ni-ico{width:25px;height:25px;border-radius:7px;background:rgba(255,255,255,.055);color:#BFD0C4;font-family:"Inter";font-size:10px;font-weight:800;letter-spacing:-.02em}
+.nav-item:hover{background:rgba(255,255,255,.055);color:#fff}
+.nav-item:hover .ni-ico{background:rgba(255,255,255,.1);color:#fff;box-shadow:none}
+.nav-item.on{background:rgba(255,255,255,.105);color:#fff;font-weight:680}
+.nav-item.on::before{left:-12px;top:8px;bottom:8px;width:2px;background:#9ED0AE}
+.nav-item.on .ni-ico{background:#F0F4EA;color:var(--sidebar);box-shadow:none}
+.nav-item.peligro{color:#D7B0A5}
+.nav-item.peligro:hover{background:rgba(198,94,72,.13);color:#FFE5DD}
+
+/* Page canvas */
+.topbar{padding:31px 34px 20px;align-items:center;border-bottom:0}
+.pag-titulo{font-size:29px;font-weight:735;letter-spacing:-.038em}
+.pag-sub{font-size:13px;margin-top:5px;color:var(--tinta-2)}
+.topbar-sel{padding:5px 7px 5px 11px;border:1px solid var(--borde);border-radius:9px;background:var(--tarjeta);box-shadow:none}
+.topbar-sel .lbl{font-size:9px;letter-spacing:.1em}
+.topbar-sel select{font-family:"Inter";font-size:13px;font-weight:680;min-width:74px}
+main{padding:0 34px 90px;max-width:none;width:100%}
+
+/* Quote strip */
+#barra-dolar{
+  border:0!important;border-top:1px solid var(--borde)!important;border-bottom:1px solid var(--borde)!important;
+  border-radius:0!important;background:transparent!important;padding:10px 0!important;margin:0 0 20px!important;
+  box-shadow:none!important;font-size:12.5px!important;
+}
+
+/* Filters become a true toolbar, not a floating mini-card */
+.filtros{width:100%;max-width:none;margin-bottom:22px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;gap:8px 10px}
+.filtros .lbl{margin-left:0;font-size:9.5px;letter-spacing:.08em;color:var(--tinta-3)}
+.filtros select,.filtros input{min-height:38px;padding:8px 11px;background:var(--tarjeta);border:1px solid var(--borde);border-radius:9px;box-shadow:none;font-size:12.5px}
+.filtros select:hover,.filtros input:hover{border-color:var(--borde-vivo);background:var(--tarjeta)}
+.filtros select:focus,.filtros input:focus{border-color:var(--campo);box-shadow:0 0 0 3px color-mix(in srgb,var(--campo-suave) 82%,transparent)}
+
+/* KPI: editorial, flat, no decorative emoji-like boxes */
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.kpi{min-height:132px;padding:18px 18px 16px;border:1px solid var(--borde);border-radius:12px;background:var(--tarjeta);box-shadow:none}
+.kpi::before{left:16px;right:auto;top:0;width:42px;height:2px;background:var(--campo)}
+.kpi.egreso::before{background:var(--ladrillo)}.kpi.saldo::before{background:var(--trigo)}.kpi.proj::before{background:var(--cielo)}
+.kpi:hover{transform:none;box-shadow:var(--s1);border-color:var(--borde-vivo)}
+.kpi .franja{display:none}
+.kpi .et{font-size:10px;text-transform:uppercase;letter-spacing:.095em;font-weight:720;color:var(--tinta-3)}
+.kpi .val{font-size:32px;margin-top:16px;letter-spacing:-.05em;font-weight:620}
+.kpi .det{font-size:11.5px;margin-top:8px}
+
+/* Panels */
+.panel{border:1px solid var(--borde);border-radius:12px;padding:19px 20px;margin-bottom:14px;background:var(--tarjeta);box-shadow:none}
+.panel:hover{border-color:var(--borde)}
+.panel h2{font-size:13.5px;font-weight:700;margin-bottom:17px;letter-spacing:-.018em}
+.panel h2 .pin{display:none}
+.grid-hero{grid-template-columns:minmax(0,1.65fr) minmax(330px,.8fr);gap:14px}
+.grid-2{gap:14px}
+.chart-box{height:300px}.chart-box.chico{height:250px}
+
+/* Latest activity */
+.um-fila{padding:10px 0;gap:11px;border-radius:0;border-bottom:1px solid var(--borde)}
+.um-fila:hover{padding-left:0;padding-right:0;background:transparent}
+.um-ico{width:30px;height:30px;border-radius:8px;font-size:13px}
+.um-nom{font-size:12.8px}.um-sub{font-size:10.8px}.um-monto{font-size:13px}
+
+/* Tables: full-page data grid. No nested scrolling card. */
+#v-mov>.panel{padding:0;margin:0;background:transparent;border:0;border-radius:0;box-shadow:none!important;overflow:visible!important}
+#v-mov>.filtros{padding-bottom:14px;margin-bottom:0;border-bottom:1px solid var(--borde)}
+.tabla-wrap{max-height:none!important;overflow-x:auto;overflow-y:visible;border:0;border-radius:0;background:transparent}
+table{font-size:12.7px;background:transparent}
+thead{position:sticky;top:68px;z-index:4;background:color-mix(in srgb,var(--lienzo) 95%,transparent);backdrop-filter:blur(12px)}
+th{padding:12px 10px;font-size:8.8px;letter-spacing:.11em;color:var(--tinta-3);border-bottom:1px solid var(--borde)}
+td{padding:14px 10px;border-bottom:1px solid var(--borde);background:transparent}
+tbody tr:hover td{background:color-mix(in srgb,var(--campo-suave) 33%,transparent)}
+.pill{padding:4px 8px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:.02em}
+.act-tag{padding:3px 7px;border-radius:6px;font-size:9.8px;background:var(--lienzo-2)}
+.borrar{width:28px;height:28px;border-radius:7px;font-size:13px}
+#tabla-vacia{background:var(--tarjeta);border:1px dashed var(--borde);border-radius:12px;margin-top:18px}
+
+/* Management */
+.cierre-box{border:1px solid var(--borde);border-radius:10px;padding:15px;background:transparent}
+.cierre-box .et{font-size:9px}.cierre-box .v{font-size:23px}
+.g-fila{padding:12px 0}.g-barra{height:5px}
+
+/* Alerts: remove emoji visual language; use disciplined status markers */
+.alerta{position:relative;padding:13px 15px 13px 38px;border-radius:10px;border-left:0!important;font-size:13px}
+.alerta .ai{position:absolute;left:15px;top:17px;width:8px;height:8px;border-radius:50%;font-size:0;background:var(--trigo)}
+.alerta.roja .ai{background:var(--ladrillo)}.alerta.verde .ai{background:var(--campo)}.alerta.amar .ai{background:var(--trigo)}
+
+/* Modal becomes a professional side sheet on desktop */
+.modal-bg{align-items:stretch;justify-content:flex-end;background:rgba(8,20,13,.46);backdrop-filter:blur(5px)}
+.modal{width:min(560px,100%);max-width:560px;height:100vh;max-height:100vh;border-radius:0!important;padding:28px 30px 32px;border:0;border-left:1px solid var(--borde);box-shadow:var(--s3);animation:entraDerecha .24s cubic-bezier(.2,.8,.2,1)}
+@keyframes entraDerecha{from{transform:translateX(28px);opacity:.4}to{transform:translateX(0);opacity:1}}
+.modal h3{font-size:20px;font-weight:740;margin-bottom:20px}
+.campo{margin-bottom:15px}.campo label{font-size:11px;font-weight:650;color:var(--tinta-2);margin-bottom:6px}
+.campo input,.campo select,.campo textarea{padding:11px 12px;border-radius:9px;background:var(--lienzo);border:1px solid var(--borde);font-size:13px}
+.tipo-toggle{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;border-radius:10px;background:var(--lienzo-2)}
+.tipo-toggle button{min-height:38px;border-radius:7px;padding:8px 9px;font-size:11.5px;text-align:center}
+.modal-btns{position:sticky;bottom:-32px;margin:20px -30px -32px;padding:14px 30px 18px;background:color-mix(in srgb,var(--tarjeta) 96%,transparent);border-top:1px solid var(--borde);backdrop-filter:blur(10px)}
+
+/* Buttons */
+.btn{border-radius:9px;font-size:12.5px;font-weight:680;box-shadow:none}
+.btn-primario{background:var(--campo);box-shadow:none}.btn-primario:hover{background:var(--campo-hondo);box-shadow:none;transform:none}
+.btn-sec{background:var(--tarjeta);border:1px solid var(--borde)}
+
+/* Chat: less playful */
+.msg .av{border-radius:8px;font-size:0}.msg.bot .av::after{content:"C";font-size:12px;font-weight:800}.msg.user .av::after{content:"U";font-size:11px;font-weight:800}
+.msg .burb{border-radius:10px}
+.sug{border-radius:8px;box-shadow:none;font-size:11.5px}
+
+/* Mobile */
+@media(max-width:1000px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-hero{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .topbar-global{padding-right:10px}.tg-izq{width:auto;background:transparent;padding-left:8px}.tg-logo{background:var(--sidebar);color:#fff}.tg-marca{display:none}
+  .sidebar{width:238px;top:68px}
+  .contenido{margin-left:0}
+  .topbar{padding:22px 16px 16px}.pag-titulo{font-size:24px}main{padding:0 16px 70px}
+  .kpis{grid-template-columns:1fr 1fr;gap:9px}.kpi{min-height:112px;padding:15px}.kpi .val{font-size:25px;margin-top:13px}
+  .tg-text-action{display:none}.tg-nuevo{height:36px;padding:0 11px}
+  thead{top:68px}
+  .modal{width:100%;max-width:none;height:auto;max-height:92vh;align-self:flex-end;border-radius:16px 16px 0 0!important;border-left:0;border-top:1px solid var(--borde);animation:sube .24s cubic-bezier(.2,.8,.2,1)}
+  .tipo-toggle{grid-template-columns:1fr 1fr}
+  .modal-btns{bottom:-32px}
+}
+@media(max-width:440px){.kpis{grid-template-columns:1fr}.topbar-sel{display:none}}
 </style>
 </head>
 <body>
@@ -338,13 +808,13 @@ tr:hover td{background:var(--lienzo)}
   <div class="tg-izq">
     <button class="tg-menu" onclick="document.querySelector('.sidebar').classList.toggle('abierta')" title="Menú">☰</button>
     <div class="tg-logo">C</div>
-    <div class="tg-marca">Gestión del Campo</div>
+    <div class="tg-marca"><span>Campo</span><small>Gestión financiera agropecuaria</small></div>
   </div>
   <div class="tg-der">
-    <button class="tg-icon" onclick="exportar()" title="Exportar a Excel">↓</button>
-    <button class="tg-icon" onclick="abrirImport()" title="Importar Excel">📥</button>
+    <button class="tg-icon tg-text-action" onclick="exportar()" title="Exportar a Excel">Exportar</button>
+    <button class="tg-icon tg-text-action" onclick="abrirImport()" title="Importar Excel">Importar</button>
     <button class="btn btn-primario tg-nuevo" onclick="abrirModal()">＋ Nuevo movimiento</button>
-    <button class="tg-icon" onclick="toggleTema()" id="btn-tema" title="Modo oscuro">🌙</button>
+    <button class="tg-icon tg-text-action" onclick="toggleTema()" id="btn-tema" title="Cambiar tema">Tema</button>
   </div>
 </div>
 
@@ -352,19 +822,19 @@ tr:hover td{background:var(--lienzo)}
 <aside class="sidebar">
   <nav class="nav">
     <div class="nav-rotulo">Panel</div>
-    <button class="nav-item on" onclick="verTab('dash',this)"><span class="ni-ico">◧</span> Resumen</button>
-    <button class="nav-item" onclick="verTab('mov',this)"><span class="ni-ico">▤</span> Movimientos</button>
-    <button class="nav-item" onclick="verTab('proj',this)"><span class="ni-ico">◔</span> Proyección</button>
-    <button class="nav-item" onclick="verTab('ia',this)"><span class="ni-ico">◈</span> Asesor</button>
+    <button class="nav-item on" onclick="verTab('dash',this)"><span class="ni-ico">⌂</span> Resumen</button>
+    <button class="nav-item" onclick="verTab('mov',this)"><span class="ni-ico">≡</span> Movimientos</button>
+    <button class="nav-item" onclick="verTab('proj',this)"><span class="ni-ico">↗</span> Proyección</button>
+    <button class="nav-item" onclick="verTab('ia',this)"><span class="ni-ico">✦</span> Asesor</button>
 
     <div class="nav-rotulo">Gestión</div>
-    <button class="nav-item" onclick="verTabGrupo('gestion','plata',this)"><span class="ni-ico">◉</span> Saldos y cuentas</button>
-    <button class="nav-item" onclick="verTabGrupo('gestion','resultado',this)"><span class="ni-ico">◑</span> Resultado</button>
-    <button class="nav-item" onclick="verTabGrupo('gestion','gente',this)"><span class="ni-ico">◍</span> Clientes y costos</button>
+    <button class="nav-item" onclick="verTabGrupo('gestion','plata',this)"><span class="ni-ico">◎</span> Saldos y cuentas</button>
+    <button class="nav-item" onclick="verTabGrupo('gestion','resultado',this)"><span class="ni-ico">◒</span> Resultado</button>
+    <button class="nav-item" onclick="verTabGrupo('gestion','gente',this)"><span class="ni-ico">◌</span> Clientes y costos</button>
 
     <div class="nav-rotulo">Herramientas</div>
-    <button class="nav-item" onclick="verTabGrupo('gestion','control',this)"><span class="ni-ico">◇</span> Alertas y respaldo</button>
-    <button class="nav-item peligro" onclick="borrarTodo()"><span class="ni-ico">⌫</span> Borrar todo</button>
+    <button class="nav-item" onclick="verTabGrupo('gestion','control',this)"><span class="ni-ico">◆</span> Alertas y respaldo</button>
+    <button class="nav-item peligro" onclick="borrarTodo()"><span class="ni-ico">×</span> Borrar todo</button>
   </nav>
 </aside>
 
@@ -591,8 +1061,8 @@ tr:hover td{background:var(--lienzo)}
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Todo lo que cargás vive únicamente en esta computadora. Si se rompe, si la formatean o si se borran los datos del navegador, se pierde. Guardá una copia cada tanto y <b>mandátela por WhatsApp o subila a tu Drive</b>: si la dejás solo en esta misma PC, no te salva de nada.</p>
       <div id="estado-backup" style="margin-bottom:14px"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primario" onclick="respaldar()">💾 Guardar copia de seguridad</button>
-        <button class="btn btn-sec" onclick="document.getElementById('file-restaurar').click()">📂 Restaurar desde una copia</button>
+        <button class="btn btn-primario" onclick="respaldar()">Guardar copia de seguridad</button>
+        <button class="btn btn-sec" onclick="document.getElementById('file-restaurar').click()">Restaurar desde una copia</button>
         <input type="file" id="file-restaurar" accept=".json,application/json" style="display:none" onchange="restaurar(event)">
       </div>
       <p class="mini-nota">La copia se baja como un archivo <b>respaldo-campo-fecha.json</b>. Guardalo bien: con ese archivo se recupera todo tal cual estaba. Al restaurar, la app guarda primero una copia de lo que había ahora, por las dudas.</p>
@@ -677,7 +1147,7 @@ tr:hover td{background:var(--lienzo)}
   <div class="modal">
     <h3 id="modal-titulo">Nuevo movimiento</h3>
     <div id="ocr-zona" style="margin-bottom:16px">
-      <button class="btn btn-sec" style="width:100%;justify-content:center;border-style:dashed" onclick="document.getElementById('file-factura').click()">📷 Cargar desde foto de factura</button>
+      <button class="btn btn-sec" style="width:100%;justify-content:center;border-style:dashed" onclick="document.getElementById('file-factura').click()">Cargar desde foto de factura</button>
       <input type="file" id="file-factura" accept="image/*" capture="environment" style="display:none" onchange="leerFactura(event)">
       <div id="ocr-estado" style="display:none;margin-top:10px;font-size:13px;color:var(--tinta-suave);text-align:center"></div>
     </div>
@@ -690,7 +1160,7 @@ tr:hover td{background:var(--lienzo)}
         <button id="tg-tcu" onclick="setTipo('transfer_cuenta')" title="Mover plata entre cuentas propias">Movimiento interno</button>
       </div>
       <p class="mini-nota" id="nota-transfer" style="display:none">Pase de valor entre actividades (ej: maíz propio que consume la hacienda). No mueve plata entre cuentas.</p>
-      <p class="mini-nota" id="nota-transfer-cuenta" style="display:none">Movimiento interno entre cuentas propias (ej: Santander → Efectivo). No genera ingreso ni gasto: solo cambia dónde está la plata.</p>
+      <p class="mini-nota" id="nota-transfer-cuenta" style="display:none">Movimiento interno entre cuentas propias (ej: Galicia → Efectivo). No genera ingreso ni gasto: solo cambia dónde está la plata. Elegí una categoría —por ejemplo Retiro Gustavo— si querés seguirla mes a mes.</p>
     </div>
     <div class="campo">
       <label>Fecha</label>
@@ -777,8 +1247,8 @@ tr:hover td{background:var(--lienzo)}
       <datalist id="provs"></datalist>
     </div>
     <div class="campo" id="wrap-cat">
-      <label>Categoría</label>
-      <input type="text" id="m-cat" list="cats" placeholder="Ej: gasoil, veterinaria, venta hacienda...">
+      <label>Categoría / rubro</label>
+      <input type="text" id="m-cat" list="cats" placeholder="Ej: Retiro Gustavo, gasoil, veterinaria...">
       <datalist id="cats"></datalist>
     </div>
     <div class="campo">
@@ -1033,10 +1503,10 @@ function aplicarGrupo(){
 function toggleTema(){
   document.body.classList.toggle('oscuro');
   localStorage.setItem('campo_tema',document.body.classList.contains('oscuro')?'1':'0');
-  document.getElementById('btn-tema').textContent=document.body.classList.contains('oscuro')?'☀️':'🌙';
+  document.getElementById('btn-tema').textContent=document.body.classList.contains('oscuro')?'Claro':'Tema';
   render();renderProj();
 }
-if(localStorage.getItem('campo_tema')==='1'){document.body.classList.add('oscuro');document.getElementById('btn-tema').textContent='☀️'}
+if(localStorage.getItem('campo_tema')==='1'){document.body.classList.add('oscuro');document.getElementById('btn-tema').textContent='Claro'}
 
 // ============ MODAL ============
 function setTipo(t){
@@ -1057,7 +1527,7 @@ function setTipo(t){
   document.getElementById('wrap-prov').style.display=esNormal?'block':'none';
   document.getElementById('wrap-plazo').style.display=esNormal?'block':'none';
   document.getElementById('wrap-financiero').style.display=esNormal?'block':'none';
-  document.getElementById('wrap-cat').style.display=esCta?'none':'block';
+  document.getElementById('wrap-cat').style.display='block';
   document.getElementById('det-iva').style.display=esNormal?'block':'none';
   document.getElementById('wrap-cant').style.display=esCta?'none':'block';
   document.getElementById('nota-transfer').style.display=esProd?'block':'none';
@@ -1106,7 +1576,7 @@ function abrirModal(id){
     }else if(m.tipo!=='transfer_cuenta'){
       document.getElementById('m-act').value=m.act;
     }
-    document.getElementById('m-cat').value=m.tipo==='transfer_cuenta'?'':(m.cat||'');
+    document.getElementById('m-cat').value=m.cat||'';
     document.getElementById('m-det').value=m.det||'';
     document.getElementById('m-financiero').checked=!!m.financiero;
     document.getElementById('m-plazo').checked=!!m.plazo;
@@ -1256,7 +1726,7 @@ function guardar(){
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
       tipo:'transfer_cuenta',fecha,monto:Math.abs(monto),
       ctaOrigen:origen,ctaDestino:destino,
-      cat:'Movimiento interno',
+      cat:document.getElementById('m-cat').value.trim()||'Movimiento interno',
       det:document.getElementById('m-det').value.trim(),
       interno:true
     };
@@ -1414,7 +1884,7 @@ function ultimosMov(){
     const retiraAEfectivo=esRet&&x.tipo==='egreso'&&x.cta&&!esEfectivo(x.cta)&&!esCuentaDolares(x.cta);
     const esInt=!!x.interno&&!esTC;
     const i=retiraAEfectivo||esInt?{c:'cielo',s:'\u21c6'}:(ICO[x.tipo]||ICO.egreso);
-    const nom=esTC?(x.det||'Movimiento interno'):(x.prov||x.cat||'Movimiento');
+    const nom=esTC?((x.cat&&norm(x.cat)!=='movimiento interno')?x.cat:(x.det||'Movimiento interno')):(x.prov||x.cat||'Movimiento');
     const sub=esTC
       ?`${x.ctaOrigen||'—'} → ${x.ctaDestino||'—'}`
       :retiraAEfectivo
@@ -1497,7 +1967,7 @@ function llenarSelectRubro(d){
   if(!sel)return;
   const totales={};
   d.forEach(x=>{
-    if(x.tipo==='transfer'||x.tipo==='transfer_cuenta'||!x.cat)return;
+    if(x.tipo==='transfer'||!x.cat)return;
     totales[x.cat]=(totales[x.cat]||0)+mv(x);
   });
   const rubros=Object.keys(totales).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
@@ -1515,7 +1985,7 @@ function chartRubro(){
   // A diferencia de los KPIs, acá sí queremos poder analizar categorías internas
   // como "Retiro Gustavo" mes a mes. Solo excluimos transferencias, porque
   // no representan un rubro económico con signo propio.
-  const base=filtrados().filter(x=>x.tipo!=='transfer'&&x.tipo!=='transfer_cuenta'&&x.cat===rubro);
+  const base=filtrados().filter(x=>x.tipo!=='transfer'&&x.cat===rubro);
   // La cuenta histórica "Dolares" está expresada en USD. No mezclamos esas
   // unidades con montos en pesos dentro de una misma barra; se informan aparte.
   const dUsd=base.filter(x=>esCuentaDolares(x.cta));
@@ -1538,7 +2008,7 @@ function chartRubro(){
   }else{
     labels=Object.keys(buckets).sort();vals=labels.map(k=>buckets[k]);
   }
-  const esInterno=d.some(x=>x.interno);
+  const esInterno=d.some(x=>x.interno||x.tipo==='transfer_cuenta');
   const esIngreso=d[0].tipo==='ingreso';
   // Los internos se muestran en azul para no sugerir visualmente que son gasto operativo.
   const color=esInterno?css('--cielo'):(esIngreso?css('--campo'):css('--ladrillo'));
@@ -1675,7 +2145,7 @@ function renderTabla(){
       <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${etiquetaInt}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
       <td>${cuentaCell}</td>
       <td>${actCell}</td>
-      <td>${esTC?'Movimiento interno':(x.cat||'—')}</td>
+      <td>${x.cat||(esTC?'Movimiento interno':'—')}</td>
       <td>${pill}</td>
       ${monto}
       <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
@@ -2081,7 +2551,7 @@ function exportar(){
     'Cuenta destino':d.ctaDestino||'',
     'Cliente/Proveedor':d.prov||'',
     Actividad:d.tipo==='transfer'?(d.actOrigen+' → '+d.actDestino):(d.act||''),
-    Categoría:d.tipo==='transfer_cuenta'?'Movimiento interno':(d.cat||''),
+    Categoría:d.cat||(d.tipo==='transfer_cuenta'?'Movimiento interno':''),
     Interno:d.interno?'Sí':'No',
     Financiero:d.financiero?'Sí':'No',
     Estado:d.plazo?(d.tipo==='ingreso'?'A cobrar':'A pagar'):'',
