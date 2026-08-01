@@ -800,6 +800,29 @@ tbody tr:hover td{background:color-mix(in srgb,var(--campo-suave) 33%,transparen
   .modal-btns{bottom:-32px}
 }
 @media(max-width:440px){.kpis{grid-template-columns:1fr}.topbar-sel{display:none}}
+
+/* ===== FIX V2.1 — cabecera de Movimientos sin superposición =====
+   El sticky estaba aplicado al <thead> dentro de un contenedor con overflow-x:auto.
+   En algunos navegadores eso desplazaba la cabecera y dejaba la primera fila por encima. */
+#v-mov .tabla-wrap{
+  overflow:visible!important;
+}
+#v-mov thead{
+  position:static!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+}
+#v-mov thead th{
+  position:sticky;
+  top:68px;
+  z-index:8;
+  background:var(--lienzo);
+  box-shadow:0 1px 0 var(--borde);
+}
+@media(max-width:760px){
+  #v-mov .tabla-wrap{overflow-x:auto!important;overflow-y:visible!important}
+  #v-mov thead th{position:static;box-shadow:none}
+}
 </style>
 </head>
 <body>
