@@ -1209,6 +1209,12 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
     <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="document.getElementById('banner-fechas').style.display='none'">Entendido</button>
   </div>
 
+  <div class="alerta amar" id="banner-conversion" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span class="ai">💱</span>
+    <div style="flex:1;min-width:220px" id="txt-conversion"></div>
+    <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="cargarIndices()">Reintentar</button>
+  </div>
+
   <div class="alerta amar" id="banner-backup" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai"></span>
     <div style="flex:1;min-width:220px" id="txt-backup"></div>
@@ -1305,6 +1311,7 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
   <div class="vista" id="v-mov">
     <div class="filtros">
       <input type="text" id="busca" placeholder="Buscar (rubro, detalle, cuenta, cliente...)" oninput="renderTabla()" style="flex:1;min-width:150px">
+      <select id="f-anio-mov" onchange="sincroAnio(this.value)" title="Ejercicio"></select>
       <select id="f-tipo" onchange="renderTabla()">
         <option value="">Todos</option>
         <option value="ingreso">Ingresos</option>
@@ -1350,6 +1357,7 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
     <div class="panel" data-g="plata">
       <h2><span class="pin"></span>Saldos por cuenta (hoy)</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Cuánta plata hay en cada caja según todos los movimientos cargados (incluye saldos iniciales, retiros y pases entre cuentas). Debería coincidir con el saldo real de cada cuenta — si no coincide, falta cargar algo.</p>
+      <div id="g-cuentas-parecidas"></div>
       <div id="g-cuentas"></div>
     </div>
 
@@ -1419,6 +1427,13 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
         <input type="file" id="file-restaurar" accept=".json,application/json" style="display:none" onchange="restaurar(event)">
       </div>
       <p class="mini-nota">La copia se baja como un archivo <b>respaldo-campo-fecha.json</b>. Guardalo bien: con ese archivo se recupera todo tal cual estaba. Al restaurar, la app guarda primero una copia de lo que había ahora, por las dudas.</p>
+      <div id="rescate-previo" style="display:none;margin-top:14px;padding:12px 14px;background:var(--papel-hondo);border-radius:12px">
+        <p style="font-size:13.5px;margin-bottom:10px" id="rescate-texto"></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-sec" onclick="bajarPrevioRestauracion()">Bajar esa copia</button>
+          <button class="btn btn-sec" onclick="descartarPrevioRestauracion()">Ya no la necesito</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1636,6 +1651,27 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
   </div>
 </div>
 
+<!-- MODAL SALDAR PENDIENTE -->
+<div class="modal-bg" id="saldar-bg" onclick="if(event.target===this)cerrarSaldar()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="saldar-titulo">
+    <h3 id="saldar-titulo">Marcar como cobrado</h3>
+    <p class="mini-nota" id="saldar-detalle" style="margin-top:-6px;margin-bottom:16px"></p>
+    <div class="campo">
+      <label for="saldar-fecha" id="saldar-lbl-fecha">¿En qué fecha se cobró?</label>
+      <input type="date" id="saldar-fecha">
+    </div>
+    <div class="campo">
+      <label for="saldar-cta">¿Por qué cuenta entró la plata?</label>
+      <input type="text" id="saldar-cta" list="ctas" placeholder="Efectivo, Banco Rio, Echeq...">
+    </div>
+    <div id="saldar-error" style="display:none;color:var(--ladrillo);font-size:13px;margin-bottom:12px"></div>
+    <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-sec" onclick="cerrarSaldar()">Cancelar</button>
+      <button class="btn btn-primario" onclick="confirmarSaldar()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL IMPORT -->
 <div class="modal-bg" id="import-bg" onclick="if(event.target===this)cerrarImport()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-titulo">
@@ -1740,6 +1776,8 @@ function norm(s){return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[\u
 function normCta(s){return norm(s).replace(/\s+/g,'')}
 
 function texto(v,max=500){return (''+(v==null?'':v)).trim().slice(0,max)}
+// Saca el sufijo "[Cuenta]" que la importación agrega al detalle.
+function limpiarDet(d){return (''+(d||'')).replace(/\s*\[[^\]]+\]\s*$/,'').trim()}
 function fechaValida(s,minAnio=1900,maxAnio=2100){
   const m=(''+(s||'')).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!m)return false;
@@ -1838,11 +1876,29 @@ async function cargarIndices(){
       cache={t:Date.now(),mes};
       localStorage.setItem('campo_tc',JSON.stringify(cache));
     }
+    const mesesTC=Object.keys(cache.mes).sort();
+    if(!mesesTC.length)throw new Error('El histórico del dólar vino vacío');
     dolarMes=cache.mes;
-    dolarUltimo=dolarMes[Object.keys(dolarMes).sort().pop()];
+    dolarUltimo=dolarMes[mesesTC[mesesTC.length-1]];
   }catch(e){}
   notaMoneda();
   if(moneda!=='corriente'||datos.some(x=>monedaMovimiento(x)==='usd'))renderTodo();
+}
+// Si falta el IPC o el histórico del dólar, los montos que se muestran no son
+// los reales: los movimientos en USD se cuentan como 0 en los totales en pesos.
+// Antes eso solo se avisaba en una nota chica del Resumen, así que en Gestión y
+// en Proyección los números salían mal sin ninguna advertencia.
+function avisoConversion(){
+  const el=document.getElementById('banner-conversion');
+  if(!el)return;
+  const txt=document.getElementById('txt-conversion');
+  const hayUsd=datos.some(x=>monedaMovimiento(x)==='usd');
+  let m='';
+  if(moneda==='hoy'&&!ipcIdx)m='<b>No se pudo bajar el índice de inflación.</b> Los montos se muestran en $ corrientes, sin ajustar. Revisá la conexión y tocá Reintentar.';
+  else if(moneda==='usd'&&!dolarMes)m='<b>No se pudo bajar el histórico del dólar.</b> No se puede convertir nada a US$: los montos se muestran en $ corrientes. Revisá la conexión y tocá Reintentar.';
+  else if(hayUsd&&!dolarMes)m='<b>Faltan cotizaciones del dólar.</b> Los movimientos de la cuenta Dolares están contando como $0 en todos los totales en pesos (Resumen, Gestión y Proyección). Los números de abajo están incompletos hasta que se recupere la cotización.';
+  if(m){txt.innerHTML=m;el.style.display='flex'}
+  else el.style.display='none';
 }
 function notaMoneda(){
   const el=document.getElementById('nota-moneda');if(!el)return;
@@ -1850,6 +1906,7 @@ function notaMoneda(){
   else if(moneda==='usd')el.textContent=dolarMes?('Cada movimiento convertido al oficial de su mes (último: $'+Math.round(dolarUltimo).toLocaleString('es-AR')+').'):'⚠️ No pude bajar el histórico del dólar. Se muestran $ corrientes.';
   else if(datos.some(x=>monedaMovimiento(x)==='usd'))el.textContent=dolarMes?'Los movimientos de la cuenta Dolares se convierten a pesos al oficial de su mes.':'⚠️ No pude convertir los movimientos de la cuenta Dolares; se excluyen de los totales en pesos hasta recuperar la cotización.';
   else el.textContent='';
+  avisoConversion();
 }
 function cambiarMoneda(){
   moneda=document.getElementById('f-moneda').value;
@@ -1866,9 +1923,14 @@ function prepararAccesibilidad(){
     const label=c.querySelector('label');
     if(control&&label&&control.id&&!label.htmlFor&&!label.contains(control))label.htmlFor=control.id;
   });
+  ['saldar-fecha','saldar-cta'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmarSaldar()}});
+  });
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
     if(document.getElementById('borrar-bg').classList.contains('abierto'))cerrarBorrarTodo();
+    else if(document.getElementById('saldar-bg').classList.contains('abierto'))cerrarSaldar();
     else if(document.getElementById('import-bg').classList.contains('abierto'))cerrarImport();
     else if(document.getElementById('modal-bg').classList.contains('abierto'))cerrarModal();
   });
@@ -1928,8 +1990,11 @@ function verTabGrupo(t,grupo,btn){
 function sincroAnio(v){
   const top=document.getElementById('f-anio-top');
   if(top&&top.value!==v)top.value=v;
+  const mov=document.getElementById('f-anio-mov');
+  if(mov&&mov.value!==v){mov.value=v}
   const f=document.getElementById('f-anio');
   if(f){f.value=v;render()}
+  renderTabla();
   const g=document.getElementById('g-anio');
   if(g){
     // Puede no tener opciones todavía si Gestión nunca se abrió.
@@ -2148,7 +2213,9 @@ function guardar(){
     return;
   }
 
-  const cant=parseMonto(document.getElementById('m-cant').value)||null;
+  // La cantidad es siempre positiva: el signo lo da el tipo (ingreso/egreso).
+  // Sin esto se podía guardar cant:-30 y el precio por unidad salía negativo.
+  const cant=Math.abs(parseMonto(document.getElementById('m-cant').value))||null;
   const esNormal=tipoActual!=='transfer'&&tipoActual!=='transfer_cuenta';
   const esPlazo=esNormal&&document.getElementById('m-plazo').checked;
   const venc=document.getElementById('m-venc').value;
@@ -2236,8 +2303,13 @@ function actualizarAnios(){
   const actual=sel.value;
   sel.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
   if(actual&&anios.includes(actual))sel.value=actual;
+  const opciones='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
   const top=document.getElementById('f-anio-top');
-  if(top){top.innerHTML='<option value="">Todos</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');top.value=sel.value}
+  if(top){top.innerHTML=opciones;top.value=sel.value}
+  // El mismo ejercicio manda en la tabla de Movimientos: antes la tabla
+  // ignoraba el selector de arriba y mostraba todos los años igual.
+  const mov=document.getElementById('f-anio-mov');
+  if(mov){mov.innerHTML=opciones;mov.value=sel.value}
 }
 // En el Resumen mostramos TODOS los movimientos ya realizados (como hacía el viejo
 // checkbox "Incluir internos"), pero mostrar un movimiento no significa que deba
@@ -2484,7 +2556,8 @@ function chartRubro(){
     options:{...baseOpts(false),plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)}}}}
   });
   const total=vals.reduce((s,v)=>s+v,0);
-  const prom=total/vals.filter(v=>v>0).length||0;
+  const mesesConMov=vals.filter(v=>v!==0).length;
+  const prom=mesesConMov?total/mesesConMov:0;
   const usd=dUsd.reduce((s,x)=>s+Math.abs(x.monto||0),0);
   document.getElementById('rubro-total').textContent=`Total ${rubro}: ${fmt(total)} · promedio por mes con movimiento: ${fmt(prom)}`+(usd?` · además US$ ${Math.round(usd).toLocaleString('es-AR')} desde Dolares`:'');
 }
@@ -2552,7 +2625,9 @@ function renderTabla(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
   const ft=document.getElementById('f-tipo').value;
   const fp=document.getElementById('f-pend').value;
+  const anioMov=(document.getElementById('f-anio-mov')||{}).value||'';
   let d=[...datos].sort(ordenarMovRecientes);
+  if(anioMov)d=d.filter(x=>x.fecha.slice(0,4)===anioMov);
   if(ft)d=d.filter(x=>x.tipo===ft);
   if(fp==='ocultar')d=d.filter(x=>!x.plazo);
   else if(fp==='solo')d=d.filter(x=>x.plazo);
@@ -2564,7 +2639,7 @@ function renderTabla(){
   tabla.style.display=d.length?'table':'none';
   if(!d.length){
     vacio.innerHTML=datos.length
-      ?'<div class="ico">⌕</div><h3>No encontré movimientos</h3><p>Probá cambiar la búsqueda o los filtros.</p>'
+      ?`<div class="ico">⌕</div><h3>No encontré movimientos</h3><p>Probá cambiar la búsqueda o los filtros${anioMov?', o poné el ejercicio en "Todos" (ahora está filtrado por '+anioMov+')':''}.</p>`
       :'<div class="ico ico-empty"></div><h3>Todavía no hay movimientos</h3><p>Cargá el primero con “Nuevo movimiento” o importá el Excel.</p>';
   }
   body.innerHTML=d.map(x=>{
@@ -2860,6 +2935,7 @@ function confirmarImport(){
   const cAct=document.getElementById('map-act').value;
   const cCat=document.getElementById('map-cat').value;
   const cDet=document.getElementById('map-det').value;
+  if(!rawImport||!rawImport.length){alert('No hay ninguna planilla cargada. Elegí el archivo de nuevo.');return}
   if(!cFecha||!cMonto){alert('Necesito al menos la columna de fecha y la de monto');return}
   if(modo==='col'&&!cTipo){alert('Elegiste distinguir por una columna de tipo: indicá cuál columna dice ingreso o egreso.');return}
   if(modo==='dos'&&!cEgr){alert('Elegiste usar dos columnas: indicá también la columna de egresos.');return}
@@ -3100,9 +3176,23 @@ function chequearFechas(){
     const mo=+(''+d.fecha).slice(5,7);
     return !(mo>=1&&mo<=12);
   }).length;
-  document.getElementById('banner-fechas').style.display=rotas?'flex':'none';
+  // Ojo: normalizarMovimientos() ya aparta estas filas al arrancar, así que
+  // esto casi nunca da > 0. Solo mostramos, nunca ocultamos: el aviso de
+  // avisarDescartados() usa el mismo banner y no se debe pisar.
+  if(rotas)document.getElementById('banner-fechas').style.display='flex';
   return rotas;
 }
+// Si el arranque tuvo que descartar movimientos (fecha imposible, monto roto,
+// archivo a medio escribir), el usuario tiene que enterarse: antes se borraban
+// en silencio y la única copia quedaba escondida en campo_datos_recuperacion.
+function avisarDescartados(n){
+  const el=document.getElementById('banner-fechas');
+  if(!el)return;
+  const cuerpo=el.querySelector('div');
+  if(cuerpo)cuerpo.innerHTML='<b>Se apart'+(n===1?'ó':'aron')+' '+n+' movimiento'+(n===1?'':'s')+' con datos imposibles</b> (fecha o monto inválidos, normalmente de una importación vieja que leía mal las fechas del Excel). No se muestran ni suman en ningún total. Quedó una copia de todo lo que había en el navegador (clave <code>campo_datos_recuperacion</code>). <b>Lo recomendable:</b> guardá una copia de seguridad, borrá todo con 🗑️ y reimportá la planilla original.';
+  el.style.display='flex';
+}
+
 // ============ RESPALDO Y RESTAURACIÓN ============
 const RESPALDO_VERSION=2;
 const RESPALDO_MARCA='gestion-campo';
@@ -3111,7 +3201,7 @@ const RESPALDO_MARCA='gestion-campo';
 // - campo_gemini_key / campo_groq_key: son credenciales y el archivo se comparte por WhatsApp/Drive.
 // - campo_backup*: control interno del aviso; si viajaran, restaurar una copia
 //   vieja haría saltar "hace X días" al instante.
-const NO_RESPALDAR=['campo_ipc','campo_tc','campo_gemini_key','campo_groq_key','campo_backup','campo_backup_snooze','campo_backup_primera','campo_restore_stage'];
+const NO_RESPALDAR=['campo_ipc','campo_tc','campo_gemini_key','campo_groq_key','campo_backup','campo_backup_snooze','campo_backup_primera','campo_restore_stage','campo_previo_restauracion'];
 
 // Junta dinámicamente todas las claves campo_* (menos la caché),
 // así una función nueva queda respaldada sola sin tocar esto.
@@ -3148,7 +3238,12 @@ function prepararDatosRestauracion(j){
   if(!j.datos.campo_datos)throw new Error('La copia no contiene la lista de movimientos.');
   let lista;
   try{lista=JSON.parse(j.datos.campo_datos)}catch(_){throw new Error('La lista de movimientos de la copia está dañada.')}
-  const normalizados=normalizarMovimientos(lista,true);
+  // Antes esto usaba modo estricto: un solo movimiento inválido hacía imposible
+  // restaurar la copia completa. Los respaldos hechos con la versión que leía
+  // mal las fechas del Excel quedaban inservibles para siempre. Ahora
+  // informamos cuántos se descartan y decide el usuario.
+  const normalizados=normalizarMovimientos(lista,false);
+  const descartados=lista.length-normalizados.length;
   const preparados={};
   Object.entries(j.datos).forEach(([k,v])=>{
     if(!k||!k.startsWith('campo_')||NO_RESPALDAR.includes(k))return;
@@ -3165,7 +3260,7 @@ function prepararDatosRestauracion(j){
   }
   if(preparados.campo_moneda&&!['corriente','hoy','usd'].includes(preparados.campo_moneda))preparados.campo_moneda='corriente';
   if(preparados.campo_ia_prov&&!['gemini','groq'].includes(preparados.campo_ia_prov))preparados.campo_ia_prov='gemini';
-  return preparados;
+  return {preparados,descartados,total:lista.length,validos:normalizados.length};
 }
 function reemplazarDatosLocales(preparados){
   const anteriores=juntarDatosLS();
@@ -3184,6 +3279,46 @@ function reemplazarDatosLocales(preparados){
     try{limpiar();Object.entries(anteriores).forEach(([k,v])=>localStorage.setItem(k,v))}catch(_){ }
     throw new Error('No hubo espacio para completar la restauración. Se conservaron los datos anteriores.');
   }
+}
+// El archivo "respaldo-anterior" que se baja antes de restaurar depende de que
+// el navegador permita una segunda descarga automática, y a.click() no tira
+// error cuando la bloquea. Guardamos además una copia dentro del navegador,
+// que se puede bajar después desde Alertas y respaldo.
+function guardarPrevioRestauracion(){
+  try{
+    localStorage.setItem('campo_previo_restauracion',JSON.stringify({fecha:new Date().toISOString(),movimientos:datos.length,contenido:armarRespaldo()}));
+    return true;
+  }catch(_){return false}
+}
+function leerPrevioRestauracion(){
+  try{
+    const raw=localStorage.getItem('campo_previo_restauracion');
+    if(!raw)return null;
+    const o=JSON.parse(raw);
+    return o&&o.contenido?o:null;
+  }catch(_){return null}
+}
+function panelPrevioRestauracion(){
+  const caja=document.getElementById('rescate-previo');
+  if(!caja)return;
+  const o=leerPrevioRestauracion();
+  if(!o){caja.style.display='none';return}
+  let f=o.fecha;
+  const d=new Date(o.fecha);
+  if(!isNaN(d))f=d.toLocaleDateString('es-AR')+' a las '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('rescate-texto').innerHTML='🛟 <b>Copia de rescate disponible.</b> Es lo que tenías cargado ('+o.movimientos+' movimientos) justo antes de la última restauración, del '+f+'. Si restauraste el archivo equivocado, bajala y volvé a restaurar con ella.';
+  caja.style.display='block';
+}
+function bajarPrevioRestauracion(){
+  const o=leerPrevioRestauracion();
+  if(!o){alert('Ya no hay copia de rescate guardada.');panelPrevioRestauracion();return}
+  bajarArchivo('rescate-antes-de-restaurar.json',o.contenido);
+  alert('✓ Se bajó la copia de rescate.\n\nSi era la que buscabas, restaurala con "Restaurar desde una copia".');
+}
+function descartarPrevioRestauracion(){
+  if(!confirm('¿Borrar la copia de rescate guardada en el navegador? Solo hacelo si ya confirmaste que la restauración salió bien.'))return;
+  localStorage.removeItem('campo_previo_restauracion');
+  panelPrevioRestauracion();
 }
 function respaldar(){
   if(!datos.length&&!confirm('Todavía no hay movimientos cargados. ¿Guardar igual la copia?'))return;
@@ -3213,9 +3348,15 @@ function restaurar(e){
       alert('⚠️ Esa copia se hizo con una versión más nueva de la app. Actualizá la app antes de restaurarla.');
       return;
     }
-    let preparados;
-    try{preparados=prepararDatosRestauracion(j)}
+    let info;
+    try{info=prepararDatosRestauracion(j)}
     catch(err){alert('⚠️ No se puede restaurar esta copia: '+err.message);return}
+    const preparados=info.preparados;
+    if(!info.validos){
+      alert('⚠️ Esa copia no tiene ningún movimiento utilizable: los '+info.total+' que trae tienen la fecha o el monto rotos. No se tocó nada.');
+      return;
+    }
+    if(info.descartados&&!confirm('⚠️ Esta copia trae '+info.total+' movimientos, pero '+info.descartados+' tienen datos imposibles (fecha o monto inválidos) y no se pueden recuperar.\n\nSe van a restaurar los '+info.validos+' que sí están bien.\n\n¿Seguimos?'))return;
     let fTxt='desconocida';
     if(j.fecha){
       const d=new Date(j.fecha);
@@ -3224,18 +3365,21 @@ function restaurar(e){
     const movs=JSON.parse(preparados.campo_datos).length;
     const ahora=datos.length;
     if(!confirm(`COPIA DEL ${fTxt}\nTiene ${movs!=null?movs:'?'} movimientos.\n\nAhora en la app hay ${ahora} movimientos, y se van a REEMPLAZAR por los de la copia.\n\nAntes de hacerlo se va a bajar automáticamente una copia de lo que tenés ahora, por si te arrepentís.\n\n¿Seguimos?`))return;
-    // copia de seguridad de lo que había, por si se equivocó de archivo
-    try{
-      bajarArchivo('respaldo-anterior-'+new Date().toISOString().slice(0,10)+'.json',armarRespaldo());
-    }catch(err){
-      if(!confirm('⚠️ No se pudo generar la copia de lo que tenés ahora (puede ser que el navegador haya bloqueado la descarga).\n\nSi seguís, los datos actuales se van a reemplazar sin red de seguridad: si esta copia no era la que buscabas, no hay vuelta atrás.\n\n¿Querés continuar igual?')){
+    // Doble red: una copia dentro del navegador (no depende de que el navegador
+    // deje descargar) y además el archivo bajado.
+    const enNavegador=guardarPrevioRestauracion();
+    let bajoArchivo=true;
+    try{bajarArchivo('respaldo-anterior-'+new Date().toISOString().slice(0,10)+'.json',armarRespaldo())}
+    catch(err){bajoArchivo=false}
+    if(!enNavegador&&!bajoArchivo){
+      if(!confirm('⚠️ No se pudo guardar ninguna copia de lo que tenés ahora.\n\nSi seguís, los datos actuales se reemplazan sin red de seguridad: si esta copia no era la que buscabas, no hay vuelta atrás.\n\n¿Querés continuar igual?')){
         alert('No se tocó nada. Tus datos siguen como estaban.');
         return;
       }
     }
     try{reemplazarDatosLocales(preparados)}
     catch(err){alert('⚠️ '+err.message);return}
-    alert('✓ Listo, se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.');
+    alert('✓ Listo, se restauraron '+info.validos+' movimientos de la copia del '+fTxt+'.\n\nSi te equivocaste de archivo, en "Alertas y respaldo" quedó una copia de rescate con lo que tenías antes.\n\nLa app se va a recargar.');
     location.reload();
   };
   reader.readAsText(f);
@@ -3246,6 +3390,7 @@ function diasSinBackup(){
   return Math.floor((Date.now()-ult)/864e5);
 }
 function estadoBackup(){
+  panelPrevioRestauracion();
   const el=document.getElementById('estado-backup');
   if(!el)return;
   const d=diasSinBackup();
@@ -3711,7 +3856,9 @@ function actualizarAniosGestion(){
   if(!sel)return;
   const actual=sel.value;
   sel.innerHTML='<option value="">Todos los años</option>'+anios.map(a=>`<option value="${a}">${a}</option>`).join('');
-  if(actual)sel.value=actual;
+  // Solo restauramos el año si sigue existiendo; si no, el select se iba a
+  // "Todos los años" sin que se notara y los paneles cambiaban de alcance.
+  if(actual&&anios.includes(actual))sel.value=actual;
 }
 function datosGestion(){
   const anio=document.getElementById('g-anio').value;
@@ -3785,7 +3932,7 @@ function financieroPanel(){
     <div class="cierre-box"><div class="et">Resultado financiero</div><div class="v" style="color:${entrada-salida>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(entrada-salida)}</div></div>
   </div>`;
   const evs=[...d].sort(ordenarMovRecientes).slice(0,15);
-  html+='<div style="margin-top:12px">'+evs.map(x=>`<div class="g-fila"><span>${esc(x.fecha)} · ${esc(x.cat)}${x.det?' · '+esc(x.det.replace(/\\[[^\\]]+\\]/,'').trim()):''}</span><b class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</b></div>`).join('')+'</div>';
+  html+='<div style="margin-top:12px">'+evs.map(x=>`<div class="g-fila"><span>${esc(x.fecha)} · ${esc(x.cat)}${x.det?' · '+esc(limpiarDet(x.det)):''}</span><b class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</b></div>`).join('')+'</div>';
   el.innerHTML=html;
 }
 // ===== CUENTAS A COBRAR Y PAGAR =====
@@ -3812,7 +3959,7 @@ function pendientesPanel(){
     const venc=x.venc&&x.venc<hoy;
     const nom=x.prov?x.prov:(x.cat||'—');
     return `<div class="g-fila">
-      <span>${esc(nom)} <span class="mini-nota" style="display:block">${esc(x.cat)}${x.det?' · '+esc(x.det.replace(/\\[[^\\]]+\\]/,'').trim()):''}${x.venc?` · ${venc?'<b style="color:var(--ladrillo)">venció '+esc(x.venc)+'</b>':'vence '+esc(x.venc)}`:''}</span></span>
+      <span>${esc(nom)} <span class="mini-nota" style="display:block">${esc(x.cat)}${x.det?' · '+esc(limpiarDet(x.det)):''}${x.venc?` · ${venc?'<b style="color:var(--ladrillo)">venció '+esc(x.venc)+'</b>':'vence '+esc(x.venc)}`:''}</span></span>
       <span style="display:flex;align-items:center;gap:10px">
         <b>${fmt(mv(x))}</b>
         <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="saldarPendiente('${x.id}')">Ya se ${x.tipo==='ingreso'?'cobró':'pagó'}</button>
@@ -3832,30 +3979,142 @@ function pendientesPanel(){
 }
 // Al saldar: se marca como movido hoy (o en la fecha que confirme el usuario),
 // deja de ser a plazo y pide la cuenta por la que entró/salió la plata.
+let saldandoId=null;
 function saldarPendiente(id){
   const x=datos.find(d=>d.id===id);
   if(!x)return;
-  const hoy=new Date().toISOString().slice(0,10);
-  const f=prompt(`¿En qué fecha se ${x.tipo==='ingreso'?'cobró':'pagó'}? (AAAA-MM-DD)`,hoy);
-  if(f===null)return;
-  if(!fechaValida(f,2015,new Date().getFullYear()+1)){alert('Fecha inválida o inexistente. Usá el formato AAAA-MM-DD, por ejemplo '+hoy);return}
-  const anio=parseInt(f.slice(0,4));
-  if(!(anio>=2015&&anio<=new Date().getFullYear()+1)){alert('El año '+anio+' parece mal. Revisá la fecha.');return}
-  const cta=prompt('¿Por qué cuenta entró/salió la plata? (Efectivo, Banco Rio, Echeq...)',x.cta||'');
-  if(cta===null)return;
-  if(!cta.trim()){alert('Falta la cuenta por la que se cobró o pagó.');return}
+  saldandoId=id;
+  const cobro=x.tipo==='ingreso';
+  document.getElementById('saldar-titulo').textContent=cobro?'Marcar como cobrado':'Marcar como pagado';
+  document.getElementById('saldar-lbl-fecha').textContent=cobro?'¿En qué fecha se cobró?':'¿En qué fecha se pagó?';
+  document.getElementById('saldar-detalle').textContent=(x.prov?x.prov+' · ':'')+(x.cat||'')+' · '+fmt(mv(x))+(x.venc?' · vencía '+x.venc:'');
+  document.getElementById('saldar-fecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('saldar-cta').value=x.cta||'';
+  const err=document.getElementById('saldar-error');err.style.display='none';err.textContent='';
+  actualizarCats();
+  document.getElementById('saldar-bg').classList.add('abierto');
+  setTimeout(()=>document.getElementById('saldar-cta').focus(),50);
+}
+function cerrarSaldar(){
+  saldandoId=null;
+  document.getElementById('saldar-bg').classList.remove('abierto');
+}
+function errorSaldar(msg){
+  const err=document.getElementById('saldar-error');
+  err.textContent=msg;err.style.display='block';
+}
+function confirmarSaldar(){
+  const x=datos.find(d=>d.id===saldandoId);
+  if(!x){cerrarSaldar();return}
+  const f=document.getElementById('saldar-fecha').value;
+  const maxAnio=new Date().getFullYear()+1;
+  if(!f){errorSaldar('Falta la fecha en la que se movió la plata.');return}
+  if(!fechaValida(f,2015,maxAnio)){errorSaldar('Esa fecha no existe o está fuera del rango permitido (2015 a '+maxAnio+').');return}
+  const cta=document.getElementById('saldar-cta').value.trim();
+  if(!cta){errorSaldar('Falta la cuenta por la que entró o salió la plata.');return}
   x.plazo=false;
   x.venc=null;
   x.fecha=f;
   x.cta=formaCanonica(cta,'cta');
   x.monedaOriginal=esCuentaDolares(x.cta)?'usd':'ars';
   guardarLS();
+  cerrarSaldar();
   actualizarAnios();renderTodo();
 }
 
 const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla','Maquinaria':'Maquinaria propia'};
 
+// ===== CUENTAS ESCRITAS CON ERROR DE TIPEO =====
+// normCta() solo une lo que difiere en mayúsculas, tildes o espacios. En la
+// planilla real conviven "Banco Rio", "Bnaco Rio" y "Bsnco rio": son la misma
+// caja pero quedan como cuentas distintas y parten el saldo en pedazos.
+// Acá las detectamos y las unimos SOLO si el usuario confirma: no adivinamos
+// solos, porque "Banco Rio" y "Banco Galicia" sí son cuentas distintas.
+function distancia(a,b){
+  if(a===b)return 0;
+  if(Math.abs(a.length-b.length)>2)return 99;
+  const m=a.length,n=b.length;
+  let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++){
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    }
+    prev=cur;
+  }
+  return prev[n];
+}
+function tokensOrdenados(c){return norm(c).split(' ').filter(Boolean).sort().join(' ')}
+function usoCuentas(){
+  const uso={};
+  datos.forEach(d=>{
+    [d.cta,d.ctaOrigen,d.ctaDestino].filter(Boolean).forEach(c=>{uso[c]=(uso[c]||0)+1});
+  });
+  return uso;
+}
+function cuentasParecidas(){
+  const uso=usoCuentas();
+  const nombres=Object.keys(uso);
+  const usadas=new Set();
+  const grupos=[];
+  for(let i=0;i<nombres.length;i++){
+    if(usadas.has(nombres[i]))continue;
+    const grupo=[nombres[i]];
+    const ki=normCta(nombres[i]),ti=tokensOrdenados(nombres[i]);
+    for(let j=i+1;j<nombres.length;j++){
+      if(usadas.has(nombres[j]))continue;
+      const kj=normCta(nombres[j]),tj=tokensOrdenados(nombres[j]);
+      // mismas palabras en otro orden, o un typo de hasta 2 letras
+      const mismoSet=ti===tj&&ti.includes(' ');
+      const typo=ki.length>=5&&distancia(ki,kj)<=2;
+      if(mismoSet||typo){grupo.push(nombres[j]);usadas.add(nombres[j])}
+    }
+    if(grupo.length>1){
+      usadas.add(nombres[i]);
+      grupo.sort((a,b)=>uso[b]-uso[a]);
+      grupos.push(grupo.map(c=>({nombre:c,n:uso[c]})));
+    }
+  }
+  return grupos;
+}
+function unificarCuentaManual(indice){
+  const grupos=cuentasParecidas();
+  const g=grupos[indice];
+  if(!g)return;
+  const canon=g[0].nombre;
+  const otras=g.slice(1).map(o=>o.nombre);
+  if(!confirm('Se van a pasar a «'+canon+'»:\n\n'+g.slice(1).map(o=>'· '+o.nombre+' ('+o.n+' movimiento'+(o.n===1?'':'s')+')').join('\n')+'\n\nLos movimientos no se borran: solo cambia el nombre de la cuenta. ¿Confirmás?'))return;
+  let cambios=0;
+  datos.forEach(d=>{
+    ['cta','ctaOrigen','ctaDestino'].forEach(campo=>{
+      if(d[campo]&&otras.includes(d[campo])){d[campo]=canon;cambios++}
+    });
+    d.monedaOriginal=esCuentaDolares(d.cta)||esCuentaDolares(d.ctaOrigen)||esCuentaDolares(d.ctaDestino)?'usd':'ars';
+  });
+  guardarLS();renderTodo();
+  alert('✓ Listo: '+cambios+' movimiento'+(cambios===1?'':'s')+' quedaron en «'+canon+'».');
+}
+function panelCuentasParecidas(){
+  const el=document.getElementById('g-cuentas-parecidas');
+  if(!el)return;
+  const grupos=cuentasParecidas();
+  if(!grupos.length){el.innerHTML='';return}
+  el.innerHTML=grupos.map((g,i)=>{
+    const canon=g[0];
+    const resto=g.slice(1);
+    return `<div class="alerta amar" style="margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <span class="ai">🔤</span>
+      <div style="flex:1;min-width:220px">
+        <b>Estas cuentas parecen la misma escrita distinto.</b> El saldo está partido entre
+        ${g.map(o=>'«'+esc(o.nombre)+'» ('+o.n+')').join(' y ')}.
+        Si es la misma caja, unificalas para que el saldo cierre; si son cuentas distintas, ignorá el aviso.
+      </div>
+      <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="unificarCuentaManual(${i})">Unificar en «${esc(canon.nombre)}»</button>
+    </div>`;
+  }).join('');
+}
 function cuentasPanel(){
+  panelCuentasParecidas();
   const el=document.getElementById('g-cuentas');
   const saldos=saldosPorCuenta();
   if(!saldos.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay cuentas cargadas. Vienen de la columna "Cuenta" del Excel o del campo Cuenta al cargar a mano.</p>';return}
@@ -4116,13 +4375,16 @@ document.getElementById('f-moneda').value=moneda;
 // Validar antes de renderizar: una copia o un localStorage dañado no debe bloquear la app.
 const datosAntesDeNormalizar=datos;
 datos=normalizarMovimientos(datos);
-if(datos.length!==datosAntesDeNormalizar.length){
+const descartados=datosAntesDeNormalizar.length-datos.length;
+if(descartados>0){
   try{localStorage.setItem('campo_datos_recuperacion',JSON.stringify(datosAntesDeNormalizar))}catch(_){ }
   guardarLS();
+  avisarDescartados(descartados);
 }
 // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
 if(migrarDatos())guardarLS();
-actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
+actualizarAnios();render();renderTabla();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
+avisoConversion();panelPrevioRestauracion();
 prepararAccesibilidad();
 </script>
 </body>
