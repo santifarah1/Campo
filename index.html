@@ -1187,6 +1187,7 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
 
     <div class="nav-rotulo">Herramientas</div>
     <button class="nav-item" onclick="verTabGrupo('gestion','control',this)"><span class="ni-ico"><svg class="ui-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span> Alertas y respaldo</button>
+    <button class="nav-item" onclick="verTabGrupo('gestion','config',this)"><span class="ni-ico"><svg class="ui-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/></svg></span> Rubros y cuentas</button>
     <button class="nav-item peligro" onclick="borrarTodo()"><span class="ni-ico"><svg class="ui-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg></span> Borrar todo</button>
   </nav>
 </aside>
@@ -1310,16 +1311,16 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
   <!-- ===== MOVIMIENTOS ===== -->
   <div class="vista" id="v-mov">
     <div class="filtros">
-      <input type="text" id="busca" placeholder="Buscar (rubro, detalle, cuenta, cliente...)" oninput="renderTabla()" style="flex:1;min-width:150px">
+      <input type="text" id="busca" placeholder="Buscar (rubro, detalle, cuenta, cliente...)" oninput="reiniciarFilas()" style="flex:1;min-width:150px">
       <select id="f-anio-mov" onchange="sincroAnio(this.value)" title="Ejercicio"></select>
-      <select id="f-tipo" onchange="renderTabla()">
+      <select id="f-tipo" onchange="reiniciarFilas()">
         <option value="">Todos</option>
         <option value="ingreso">Ingresos</option>
         <option value="egreso">Egresos</option>
         <option value="transfer">Entre actividades</option>
         <option value="transfer_cuenta">Movimiento interno</option>
       </select>
-      <select id="f-pend" onchange="renderTabla()">
+      <select id="f-pend" onchange="reiniciarFilas()">
         <option value="">Con pendientes</option>
         <option value="ocultar">Solo lo cobrado/pagado</option>
         <option value="solo">Solo pendientes</option>
@@ -1331,6 +1332,13 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
           <thead><tr><th>Fecha</th><th>Detalle</th><th>Cuenta</th><th>Actividad</th><th>Categoría</th><th>Tipo</th><th style="text-align:right">Monto</th><th></th></tr></thead>
           <tbody id="tabla-body"></tbody>
         </table>
+      </div>
+      <div id="tabla-pie" style="display:none;padding:14px 18px;border-top:1px solid var(--linea);display:none;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="mini-nota" id="tabla-conteo" style="margin:0"></span>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="verMasFilas(200)">Mostrar 200 más</button>
+          <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="verTodasLasFilas()">Mostrar todos</button>
+        </div>
       </div>
       <div class="vacio" id="tabla-vacia" style="display:none">
         <div class="ico ico-empty"><svg class="ui-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v12H4z"/><path d="M4 14h4l2 3h4l2-3h4"/></svg></div>
@@ -1352,6 +1360,41 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
       <button data-grp="plata" onclick="verGrupo('plata',this)">Saldos y cuentas</button>
       <button data-grp="gente" onclick="verGrupo('gente',this)">Clientes y costos</button>
       <button data-grp="control" onclick="verGrupo('control',this)">Alertas y respaldo</button>
+      <button data-grp="config" onclick="verGrupo('config',this)">Rubros y cuentas</button>
+    </div>
+
+    <div class="panel" data-g="config">
+      <h2><span class="pin"></span>Actividades</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Las líneas de negocio del campo. Cada rubro se asigna a una de estas, y de acá salen los márgenes por actividad. Si tenés otra producción (apicultura, forestal, tambo...), agregala.</p>
+      <div id="cfg-actividades"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <input type="text" id="cfg-act-nueva" placeholder="Nombre de la actividad nueva" style="flex:1;min-width:200px">
+        <button class="btn btn-sec" onclick="agregarActividad()">Agregar actividad</button>
+      </div>
+    </div>
+
+    <div class="panel" data-g="config">
+      <h2><span class="pin"></span>Rubros</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Cada rubro dice a qué actividad pertenece y si es plata que entra y sale de verdad. <b>Interno</b> = retiros, saldos iniciales y pases entre cajas: mueven el saldo pero no son ganancia ni gasto. <b>Financiero</b> = plazos fijos, créditos e inversiones: se muestran aparte del resultado del campo.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <input type="text" id="cfg-rubro-busca" placeholder="Buscar rubro..." oninput="renderConfig()" style="flex:1;min-width:180px">
+        <select id="cfg-rubro-filtro" onchange="renderConfig()"></select>
+      </div>
+      <div id="cfg-rubros"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <input type="text" id="cfg-rubro-nuevo" placeholder="Nombre del rubro nuevo" style="flex:1;min-width:200px">
+        <button class="btn btn-sec" onclick="agregarRubro()">Agregar rubro</button>
+      </div>
+    </div>
+
+    <div class="panel" data-g="config">
+      <h2><span class="pin"></span>Cuentas / cajas</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Dónde está la plata. Marcá las que llevás en dólares para que la app no las mezcle con los pesos.</p>
+      <div id="cfg-cuentas"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        <input type="text" id="cfg-cuenta-nueva" placeholder="Nombre de la cuenta nueva" style="flex:1;min-width:200px">
+        <button class="btn btn-sec" onclick="agregarCuenta()">Agregar cuenta</button>
+      </div>
     </div>
 
     <div class="panel" data-g="plata">
@@ -1753,6 +1796,93 @@ let dataVersion=0, cacheFilt={};
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','Maquinaria':'#8A6B4A','General':'#4A6B8A'};
 
+// ============ CATÁLOGO EDITABLE (rubros, cuentas, actividades) ============
+// Antes los rubros salían solos de los movimientos y la actividad se adivinaba
+// con expresiones regulares fijas ("ternero" -> Ganadería). Eso funciona para
+// este campo y para ningún otro. Ahora hay un catálogo guardado que se puede
+// editar a mano; las reglas automáticas quedan solo como sugerencia inicial.
+const ACT_BASE=[
+  {id:'Ganadería',   nombre:'Cría / invernada',      color:'#6B4A2E'},
+  {id:'Agricultura', nombre:'Agricultura',           color:'#5C7A3D'},
+  {id:'Cebolla',     nombre:'Alquiler cebolla',      color:'#C9A24B'},
+  {id:'Maquinaria',  nombre:'Maquinaria propia',     color:'#8A6B4A'},
+  {id:'General',     nombre:'General / estructura',  color:'#4A6B8A'}
+];
+const PALETA_ACT=['#6B4A2E','#5C7A3D','#C9A24B','#8A6B4A','#4A6B8A','#7A4A6B','#3D7A6E','#A85C3D','#5A5A8A','#7A6B3D'];
+let catalogo={rubros:[],cuentas:[],actividades:[]};
+
+function cargarCatalogo(){
+  let c=null;
+  try{c=JSON.parse(localStorage.getItem('campo_catalogo')||'null')}catch(_){ }
+  catalogo={rubros:[],cuentas:[],actividades:[]};
+  if(c&&typeof c==='object'){
+    if(Array.isArray(c.actividades))catalogo.actividades=c.actividades
+      .filter(a=>a&&texto(a.id,40))
+      .map(a=>({id:texto(a.id,40),nombre:texto(a.nombre,60)||texto(a.id,40),color:/^#[0-9a-fA-F]{6}$/.test(a.color||'')?a.color:'#4A6B8A'}));
+    if(Array.isArray(c.rubros))catalogo.rubros=c.rubros
+      .filter(r=>r&&texto(r.nombre,80))
+      .map(r=>({nombre:texto(r.nombre,80),act:texto(r.act,40)||'General',interno:!!r.interno,financiero:!!r.financiero}));
+    if(Array.isArray(c.cuentas))catalogo.cuentas=c.cuentas
+      .filter(x=>x&&texto(x.nombre,60))
+      .map(x=>({nombre:texto(x.nombre,60),dolares:!!x.dolares}));
+  }
+  if(!catalogo.actividades.length)catalogo.actividades=ACT_BASE.map(a=>({...a}));
+  if(!catalogo.actividades.some(a=>a.id==='General'))catalogo.actividades.push({id:'General',nombre:'General / estructura',color:'#4A6B8A'});
+}
+function guardarCatalogo(){
+  try{localStorage.setItem('campo_catalogo',JSON.stringify(catalogo))}
+  catch(e){alert('No se pudo guardar la configuración: '+(e&&e.message||'error desconocido'))}
+}
+function actividadesTodas(){return catalogo.actividades}
+function actividadPorId(id){return catalogo.actividades.find(a=>a.id===id)}
+function nombreActividad(id){const a=actividadPorId(id);return a?a.nombre:(id||'General')}
+function colorActividad(id){const a=actividadPorId(id);return a?a.color:'#888'}
+function rubroDelCatalogo(nombre){
+  const k=normRubro(nombre);
+  return catalogo.rubros.find(r=>normRubro(r.nombre)===k)||null;
+}
+function cuentaDelCatalogo(nombre){
+  const k=normCta(nombre);
+  return catalogo.cuentas.find(c=>normCta(c.nombre)===k)||null;
+}
+// Mete en el catálogo todo rubro/cuenta/actividad que aparezca en los datos y
+// todavía no esté fichado, usando la regla automática como valor inicial.
+let versionSincronizada=-1;
+function sincronizarCatalogo(forzar){
+  // recorrer 4000 movimientos en cada render es al pedo: solo hace falta
+  // cuando los datos cambiaron
+  if(!forzar&&versionSincronizada===dataVersion)return false;
+  versionSincronizada=dataVersion;
+  let cambio=false;
+  const actsVistas=new Set(catalogo.actividades.map(a=>a.id));
+  datos.forEach(d=>{
+    [d.act,d.actOrigen,d.actDestino].filter(Boolean).forEach(a=>{
+      if(!actsVistas.has(a)){
+        actsVistas.add(a);
+        catalogo.actividades.push({id:a,nombre:a,color:PALETA_ACT[catalogo.actividades.length%PALETA_ACT.length]});
+        cambio=true;
+      }
+    });
+    if(d.cat&&d.tipo!=='transfer_cuenta'&&!rubroDelCatalogo(d.cat)){
+      const auto=clasificarRubroAuto(d.cat);
+      catalogo.rubros.push({nombre:d.cat,act:d.act||auto.act,interno:!!d.interno,financiero:!!d.financiero});
+      cambio=true;
+    }
+    [d.cta,d.ctaOrigen,d.ctaDestino].filter(Boolean).forEach(c=>{
+      if(!cuentaDelCatalogo(c)){
+        catalogo.cuentas.push({nombre:c,dolares:normCta(c)==='dolares'});
+        cambio=true;
+      }
+    });
+  });
+  if(cambio){
+    catalogo.rubros.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+    catalogo.cuentas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+    guardarCatalogo();
+  }
+  return cambio;
+}
+
 // Ajustes visuales globales de gráficos: más editoriales y menos 'Chart.js por defecto'.
 if(window.Chart){
   Chart.defaults.font.family='Inter, system-ui, -apple-system, sans-serif';
@@ -1774,6 +1904,9 @@ function fmtK(n){
 function norm(s){return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
 // clave de cuenta: además sin espacios, así "e cheq" y "echeq" son la misma
 function normCta(s){return norm(s).replace(/\s+/g,'')}
+// clave de rubro: igual que norm() pero sin espacios ni signos, para que
+// "Venta Terneros", "venta terneros" y "Venta-Terneros" sean el mismo rubro
+function normRubro(s){return norm(s).replace(/[^a-z0-9]/g,'')}
 
 function texto(v,max=500){return (''+(v==null?'':v)).trim().slice(0,max)}
 // Saca el sufijo "[Cuenta]" que la importación agrega al detalle.
@@ -1915,7 +2048,23 @@ function cambiarMoneda(){
   if(moneda!=='corriente'&&((moneda==='hoy'&&!ipcIdx)||(moneda==='usd'&&!dolarMes)))cargarIndices();
   renderTodo();
 }
-function renderTodo(){render();renderTabla();renderGestion();renderProj()}
+// Solo se redibuja la pantalla que se está mirando; las otras quedan marcadas
+// como "sucias" y se dibujan recién cuando entrás. Antes cada guardado
+// recalculaba las cuatro pantallas enteras aunque estuvieras en una sola.
+let vistaActual='dash';
+const pendienteRender={dash:false,mov:false,gestion:false,proj:false};
+function renderTodo(){
+  // cualquier rubro, cuenta o actividad que aparezca y no esté fichado se agrega solo
+  sincronizarCatalogo();
+  Object.keys(pendienteRender).forEach(k=>pendienteRender[k]=true);
+  refrescarVista(vistaActual);
+}
+function refrescarVista(t){
+  if(t==='dash'){render();pendienteRender.dash=false}
+  else if(t==='mov'){renderTabla();pendienteRender.mov=false}
+  else if(t==='gestion'){renderGestion();pendienteRender.gestion=false}
+  else if(t==='proj'){renderProj();pendienteRender.proj=false}
+}
 
 function prepararAccesibilidad(){
   document.querySelectorAll('.campo').forEach(c=>{
@@ -1955,18 +2104,18 @@ function verTab(t,btn){
   document.getElementById('v-'+t).classList.add('on');
   const fab=document.querySelector('.fab');if(fab)fab.style.display=(t==='ia')?'none':'flex';
   document.querySelector('.sidebar').classList.remove('abierta');
-  if(t==='dash')render();
-  if(t==='mov')renderTabla();
-  if(t==='gestion'){renderGestion();aplicarGrupo()}
-  if(t==='proj')renderProj();
-  if(t==='ia')initIA();
+  vistaActual=t;
+  if(t==='gestion'){renderGestion();pendienteRender.gestion=false;aplicarGrupo()}
+  else if(t==='ia')initIA();
+  else refrescarVista(t);
 }
 // Entra a Gestión y abre directo un grupo de sub-pestañas desde el menú lateral.
 const GRUPO_INFO={
   resultado:['Resultado','Márgenes, precios y cierre del ejercicio'],
   plata:['Saldos y cuentas','Cajas, cuentas a cobrar y pagar, inversiones'],
   gente:['Clientes y costos','Con quién operás y los costos de estructura'],
-  control:['Alertas y respaldo','Avisos del sistema y copias de seguridad']
+  control:['Alertas y respaldo','Avisos del sistema y copias de seguridad'],
+  config:['Rubros y cuentas','Definí tus actividades, rubros y cajas']
 };
 function verTabGrupo(t,grupo,btn){
   verTab(t,btn);
@@ -1984,6 +2133,7 @@ function verTabGrupo(t,grupo,btn){
     document.getElementById('pag-titulo').textContent=GRUPO_INFO[grupo][0];
     document.getElementById('pag-sub').textContent=GRUPO_INFO[grupo][1];
   }
+  renderConfig();
   aplicarGrupo();
 }
 // El selector de Ejercicio de la barra superior manda sobre el filtro de la vista.
@@ -1991,7 +2141,7 @@ function sincroAnio(v){
   const top=document.getElementById('f-anio-top');
   if(top&&top.value!==v)top.value=v;
   const mov=document.getElementById('f-anio-mov');
-  if(mov&&mov.value!==v){mov.value=v}
+  if(mov&&mov.value!==v){mov.value=v;filasVisibles=FILAS_POR_TANDA}
   const f=document.getElementById('f-anio');
   if(f){f.value=v;render()}
   renderTabla();
@@ -2007,6 +2157,7 @@ function sincroAnio(v){
 let grupoGestion='resultado';
 function verGrupo(g,btn){
   grupoGestion=g;
+  renderConfig();
   document.querySelectorAll('.subtabs button').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   aplicarGrupo();
@@ -2288,9 +2439,11 @@ function borrar(id){
 }
 function actualizarCats(){
   const alfa=(a,b)=>a.localeCompare(b,'es',{sensitivity:'base'});
-  const cats=[...new Set(datos.map(d=>d.cat))].filter(Boolean).sort(alfa);
+  // el catálogo también alimenta el autocompletado, así un rubro recién creado
+  // ya se puede elegir aunque todavía no tenga ningún movimiento
+  const cats=[...new Set([...catalogo.rubros.map(r=>r.nombre),...datos.map(d=>d.cat)])].filter(Boolean).sort(alfa);
   document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
-  const ctas=[...new Set(datos.flatMap(d=>[d.cta,d.ctaOrigen,d.ctaDestino]).filter(Boolean))].sort(alfa);
+  const ctas=[...new Set([...catalogo.cuentas.map(c=>c.nombre),...datos.flatMap(d=>[d.cta,d.ctaOrigen,d.ctaDestino])])].filter(Boolean).sort(alfa);
   document.getElementById('ctas').innerHTML=ctas.map(c=>`<option value="${esc(c)}">`).join('');
   const provs=[...new Set(datos.map(d=>d.prov).filter(Boolean))].sort(alfa);
   document.getElementById('provs').innerHTML=provs.map(c=>`<option value="${esc(c)}">`).join('');
@@ -2319,7 +2472,12 @@ function esRetiroGustavo(d){
   return c==='retiro gustavo'||c==='retiros gustavo';
 }
 function esEfectivo(cta){return normCta(cta)==='efectivo'}
-function esCuentaDolares(cta){return normCta(cta)==='dolares'}
+function esCuentaDolares(cta){
+  if(!cta)return false;
+  const fichada=cuentaDelCatalogo(cta);
+  if(fichada)return !!fichada.dolares;
+  return normCta(cta)==='dolares';
+}
 function esOperativo(d){
   return !!d&&!d.interno&&!d.plazo&&!d.financiero&&(d.tipo==='ingreso'||d.tipo==='egreso');
 }
@@ -2494,7 +2652,7 @@ function chartAct(d){
   const labels=Object.keys(acts);
   charts.act=new Chart(document.getElementById('ch-act'),{
     type:'bar',
-    data:{labels,datasets:[{data:labels.map(l=>acts[l]),backgroundColor:labels.map(l=>COL_ACT[l]||'#888'),borderRadius:4}]},
+    data:{labels,datasets:[{data:labels.map(l=>acts[l]),backgroundColor:labels.map(l=>colorActividad(l)),borderRadius:4}]},
     options:{...baseOpts(false),plugins:{legend:{display:false}}}
   });
 }
@@ -2621,7 +2779,20 @@ function etiquetaPlazo(x){
   if(vencido)return ` <span class="act-tag" style="background:rgba(166,83,58,.15);color:var(--ladrillo)">⚠ ${txt} · vencido ${x.venc}</span>`;
   return ` <span class="act-tag" style="background:rgba(201,162,75,.18);color:var(--trigo)">⏳ ${txt}${x.venc?' · vence '+x.venc:''}</span>`;
 }
-function renderTabla(){
+// La tabla dibujaba TODOS los movimientos de una. Con la planilla real
+// (4073 filas) eso son ~57.000 nodos: la pantalla tardaba 6 segundos en
+// pintarse y cada vez que se guardaba algo el navegador se congelaba 3
+// segundos. Ahora se dibuja de a tandas.
+const FILAS_POR_TANDA=200;
+let filasVisibles=FILAS_POR_TANDA;
+function reiniciarFilas(){filasVisibles=FILAS_POR_TANDA;renderTabla()}
+function verMasFilas(n){filasVisibles+=n||FILAS_POR_TANDA;renderTabla()}
+function verTodasLasFilas(){
+  const total=filtradosTabla().length;
+  if(total>2000&&!confirm('Vas a dibujar '+total.toLocaleString('es-AR')+' filas de una. En una computadora lenta la pantalla puede tardar varios segundos y quedarse dura mientras tanto.\n\n¿Seguimos?'))return;
+  filasVisibles=Infinity;renderTabla();
+}
+function filtradosTabla(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
   const ft=document.getElementById('f-tipo').value;
   const fp=document.getElementById('f-pend').value;
@@ -2632,6 +2803,14 @@ function renderTabla(){
   if(fp==='ocultar')d=d.filter(x=>!x.plazo);
   else if(fp==='solo')d=d.filter(x=>x.plazo);
   if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.cta||'')+(x.ctaOrigen||'')+(x.ctaDestino||'')+(x.prov||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
+  return d;
+}
+function renderTabla(){
+  const q=(document.getElementById('busca').value||'').toLowerCase();
+  const ft=document.getElementById('f-tipo').value;
+  const fp=document.getElementById('f-pend').value;
+  const anioMov=(document.getElementById('f-anio-mov')||{}).value||'';
+  const d=filtradosTabla();
   const body=document.getElementById('tabla-body');
   const vacio=document.getElementById('tabla-vacia');
   const tabla=document.getElementById('tabla');
@@ -2642,7 +2821,19 @@ function renderTabla(){
       ?`<div class="ico">⌕</div><h3>No encontré movimientos</h3><p>Probá cambiar la búsqueda o los filtros${anioMov?', o poné el ejercicio en "Todos" (ahora está filtrado por '+anioMov+')':''}.</p>`
       :'<div class="ico ico-empty"></div><h3>Todavía no hay movimientos</h3><p>Cargá el primero con “Nuevo movimiento” o importá el Excel.</p>';
   }
-  body.innerHTML=d.map(x=>{
+  const pie=document.getElementById('tabla-pie');
+  const conteo=document.getElementById('tabla-conteo');
+  const aMostrar=d.slice(0,filasVisibles);
+  if(pie){
+    if(d.length>aMostrar.length){
+      pie.style.display='flex';
+      conteo.textContent='Mostrando '+aMostrar.length.toLocaleString('es-AR')+' de '+d.length.toLocaleString('es-AR')+' movimientos (los más recientes primero).';
+    }else{
+      pie.style.display='none';
+      if(d.length>FILAS_POR_TANDA)conteo.textContent='';
+    }
+  }
+  body.innerHTML=aMostrar.map(x=>{
     const esT=x.tipo==='transfer';
     const esTC=x.tipo==='transfer_cuenta';
     const esRet=esRetiroGustavo(x);
@@ -2695,7 +2886,10 @@ function renderTabla(){
     </tr>`;
   }).join('');
 }
-function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','Cebolla':'Cebolla','General':'General'}[a]||a}
+function nombreAct(a){
+  const n=nombreActividad(a);
+  return n.length>14?n.slice(0,13)+'.':n;
+}
 
 // ============ PROYECCIÓN ============
 function renderProj(){
@@ -2764,7 +2958,7 @@ function rentActividad(){
   const el=document.getElementById('rent-act');
   const filas=Object.entries(agg).map(([a,v])=>({a,res:v.ing-v.egr})).sort((x,y)=>y.res-x.res);
   if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos.</p>';return}
-  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${COL_ACT[f.a]||'#888'};margin-right:7px"></span>${esc(nombreAct(f.a))}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad, con transferencias internas incluidas. Acá ves de una cuál te deja plata y cuál te la come.</p>';
+  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${colorActividad(f.a)};margin-right:7px"></span>${esc(nombreAct(f.a))}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad, con transferencias internas incluidas. Acá ves de una cuál te deja plata y cuál te la come.</p>';
 }
 
 // ============ IMPORT ============
@@ -2996,6 +3190,12 @@ function mapAct(v){
 }
 
 function clasificarRubro(rubro){
+  // Lo que diga el catálogo manda; la regla automática es solo el punto de partida.
+  const fichado=rubroDelCatalogo(rubro);
+  if(fichado)return {act:fichado.act,interno:!!fichado.interno,financiero:!!fichado.financiero};
+  return clasificarRubroAuto(rubro);
+}
+function clasificarRubroAuto(rubro){
   const r=(''+(rubro||'')).toLowerCase();
   if(/plazo fijo|plazo\b|dolar|dólar|inversion|inversión|bono|accion|acción|criptomoneda|cripto|credito|crédito|prestamo|préstamo/.test(r))
     return {act:'General',interno:false,financiero:true};
@@ -3234,6 +3434,8 @@ function armarRespaldo(){
     datos:juntarDatosLS()
   },null,2);
 }
+// El catálogo viaja en el respaldo como una clave más de localStorage; al
+// restaurar hay que releerlo para que la pantalla no quede con el anterior.
 function prepararDatosRestauracion(j){
   if(!j.datos.campo_datos)throw new Error('La copia no contiene la lista de movimientos.');
   let lista;
@@ -3262,6 +3464,8 @@ function prepararDatosRestauracion(j){
   if(preparados.campo_ia_prov&&!['gemini','groq'].includes(preparados.campo_ia_prov))preparados.campo_ia_prov='gemini';
   return {preparados,descartados,total:lista.length,validos:normalizados.length};
 }
+// Ojo: el catálogo viaja dentro del respaldo, así que después de reemplazar
+// hay que releerlo de localStorage o la pantalla sigue con el catálogo viejo.
 function reemplazarDatosLocales(preparados){
   const anteriores=juntarDatosLS();
   const limpiar=()=>{
@@ -3877,6 +4081,7 @@ function renderGestion(){
   maquinariaPanel();
   financieroPanel();
   estadoBackup();
+  renderConfig();
 }
 // ===== MAQUINARIA PROPIA (costo por hectárea) =====
 let hasMaq=leerJSONLS('campo_has_maq',{});
@@ -4113,6 +4318,245 @@ function panelCuentasParecidas(){
     </div>`;
   }).join('');
 }
+// ================== PANTALLA "RUBROS Y CUENTAS" ==================
+function usoRubro(nombre){
+  const k=normRubro(nombre);
+  return datos.filter(d=>d.cat&&normRubro(d.cat)===k).length;
+}
+function usoActividad(id){
+  return datos.filter(d=>d.act===id||d.actOrigen===id||d.actDestino===id).length;
+}
+function usoCuenta(nombre){
+  const k=normCta(nombre);
+  return datos.filter(d=>[d.cta,d.ctaOrigen,d.ctaDestino].some(c=>c&&normCta(c)===k)).length;
+}
+function opcionesAct(sel){
+  return actividadesTodas().map(a=>`<option value="${esc(a.id)}"${a.id===sel?' selected':''}>${esc(a.nombre)}</option>`).join('');
+}
+// Los selects de actividad del formulario y de los filtros salen del catálogo,
+// así que una actividad nueva aparece en todos lados sin tocar el HTML.
+function refrescarSelectsAct(){
+  [['m-act',''],['m-origen',''],['m-destino','']].forEach(([id])=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const v=el.value;
+    el.innerHTML=opcionesAct(v);
+    if(actividadPorId(v))el.value=v;
+  });
+  const f=document.getElementById('f-act');
+  if(f){
+    const v=f.value;
+    f.innerHTML='<option value="">Todas</option>'+opcionesAct(v);
+    f.value=actividadPorId(v)?v:'';
+  }
+  const cf=document.getElementById('cfg-rubro-filtro');
+  if(cf){
+    const v=cf.value;
+    cf.innerHTML='<option value="">Todas las actividades</option>'+opcionesAct(v);
+    cf.value=actividadPorId(v)?v:'';
+  }
+}
+function renderConfig(){
+  refrescarSelectsAct();
+  // los selects de actividad sí se actualizan siempre (los usa el formulario),
+  // pero armar las 3 listas largas solo tiene sentido si están en pantalla
+  if(grupoGestion!=='config')return;
+  // ----- actividades -----
+  const ea=document.getElementById('cfg-actividades');
+  if(ea){
+    ea.innerHTML=actividadesTodas().map((a,i)=>{
+      const n=usoActividad(a.id);
+      const nRub=catalogo.rubros.filter(r=>r.act===a.id).length;
+      const fija=a.id==='General';
+      return `<div class="g-fila" style="align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:4px;background:${a.color};flex:none"></span>
+        <input type="text" value="${esc(a.nombre)}" onchange="renombrarActividad(${i},this.value)" style="flex:1;min-width:150px;padding:7px 10px">
+        <span class="mini-nota" style="margin:0;white-space:nowrap">${n} mov · ${nRub} rubro${nRub===1?'':'s'}</span>
+        <input type="color" value="${a.color}" onchange="colorearActividad(${i},this.value)" title="Color" style="width:38px;height:32px;padding:2px;border:1px solid var(--linea);border-radius:8px;background:none;cursor:pointer">
+        ${fija?'<span class="act-tag">fija</span>':`<button class="borrar" title="Borrar actividad" onclick="borrarActividad(${i})">✕</button>`}
+      </div>`;
+    }).join('');
+  }
+  // ----- rubros -----
+  const er=document.getElementById('cfg-rubros');
+  if(er){
+    const q=norm((document.getElementById('cfg-rubro-busca')||{}).value||'');
+    const fa=(document.getElementById('cfg-rubro-filtro')||{}).value||'';
+    const lista=catalogo.rubros
+      .map((r,i)=>({r,i}))
+      .filter(({r})=>(!q||norm(r.nombre).includes(q))&&(!fa||r.act===fa));
+    if(!lista.length){
+      er.innerHTML='<p class="mini-nota">'+(catalogo.rubros.length?'Ningún rubro coincide con la búsqueda.':'Todavía no hay rubros. Importá el Excel o agregá uno a mano acá abajo.')+'</p>';
+    }else{
+      er.innerHTML=lista.map(({r,i})=>{
+        const n=usoRubro(r.nombre);
+        return `<div class="g-fila" style="align-items:center;gap:10px;flex-wrap:wrap">
+          <input type="text" value="${esc(r.nombre)}" onchange="renombrarRubro(${i},this.value)" style="flex:1;min-width:150px;padding:7px 10px">
+          <select onchange="cambiarActRubro(${i},this.value)" style="min-width:150px">${opcionesAct(r.act)}</select>
+          <label class="mini-nota" style="margin:0;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap"><input type="checkbox" ${r.interno?'checked':''} onchange="marcarRubro(${i},'interno',this.checked)" style="width:auto;margin:0"> interno</label>
+          <label class="mini-nota" style="margin:0;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap"><input type="checkbox" ${r.financiero?'checked':''} onchange="marcarRubro(${i},'financiero',this.checked)" style="width:auto;margin:0"> financiero</label>
+          <span class="mini-nota" style="margin:0;white-space:nowrap;min-width:52px;text-align:right">${n} mov</span>
+          <button class="borrar" title="Borrar rubro" onclick="borrarRubro(${i})">✕</button>
+        </div>`;
+      }).join('');
+      if(lista.length<catalogo.rubros.length)er.innerHTML+='<p class="mini-nota">Mostrando '+lista.length+' de '+catalogo.rubros.length+' rubros.</p>';
+    }
+  }
+  // ----- cuentas -----
+  const ec=document.getElementById('cfg-cuentas');
+  if(ec){
+    ec.innerHTML=catalogo.cuentas.length?catalogo.cuentas.map((c,i)=>{
+      const n=usoCuenta(c.nombre);
+      return `<div class="g-fila" style="align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="text" value="${esc(c.nombre)}" onchange="renombrarCuenta(${i},this.value)" style="flex:1;min-width:150px;padding:7px 10px">
+        <label class="mini-nota" style="margin:0;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap"><input type="checkbox" ${c.dolares?'checked':''} onchange="marcarCuentaDolar(${i},this.checked)" style="width:auto;margin:0"> la llevo en dólares</label>
+        <span class="mini-nota" style="margin:0;white-space:nowrap;min-width:52px;text-align:right">${n} mov</span>
+        <button class="borrar" title="Borrar cuenta" onclick="borrarCuenta(${i})">✕</button>
+      </div>`;
+    }).join(''):'<p class="mini-nota">Todavía no hay cuentas cargadas.</p>';
+  }
+}
+
+// ---- actividades ----
+function agregarActividad(){
+  const inp=document.getElementById('cfg-act-nueva');
+  const nombre=texto(inp.value,60);
+  if(!nombre){alert('Escribí un nombre para la actividad.');return}
+  if(actividadesTodas().some(a=>norm(a.nombre)===norm(nombre))){alert('Ya existe una actividad con ese nombre.');return}
+  catalogo.actividades.push({id:nombre,nombre,color:PALETA_ACT[catalogo.actividades.length%PALETA_ACT.length]});
+  guardarCatalogo();inp.value='';renderTodo();
+}
+function renombrarActividad(i,v){
+  const a=catalogo.actividades[i];
+  const nombre=texto(v,60);
+  if(!a)return;
+  if(!nombre){renderConfig();return}
+  a.nombre=nombre;guardarCatalogo();renderTodo();
+}
+function colorearActividad(i,v){
+  const a=catalogo.actividades[i];
+  if(!a||!/^#[0-9a-fA-F]{6}$/.test(v))return;
+  a.color=v;guardarCatalogo();renderTodo();
+}
+function borrarActividad(i){
+  const a=catalogo.actividades[i];
+  if(!a)return;
+  if(a.id==='General'){alert('“General” no se puede borrar: es donde caen los movimientos sin actividad.');return}
+  const n=usoActividad(a.id);
+  const rub=catalogo.rubros.filter(r=>r.act===a.id);
+  if(n){alert('No puedo borrar «'+a.nombre+'»: hay '+n+' movimiento'+(n===1?'':'s')+' usándola.\n\nCambialos de actividad primero (podés hacerlo por rubro desde la lista de abajo).');return}
+  if(!confirm('¿Borrar la actividad «'+a.nombre+'»?'+(rub.length?'\n\n'+rub.length+' rubro'+(rub.length===1?'':'s')+' pasan a General.':'')))return;
+  rub.forEach(r=>r.act='General');
+  catalogo.actividades.splice(i,1);
+  guardarCatalogo();renderTodo();
+}
+
+// ---- rubros ----
+function agregarRubro(){
+  const inp=document.getElementById('cfg-rubro-nuevo');
+  const nombre=texto(inp.value,80);
+  if(!nombre){alert('Escribí un nombre para el rubro.');return}
+  if(rubroDelCatalogo(nombre)){alert('Ese rubro ya está en la lista.');return}
+  catalogo.rubros.push({nombre,act:'General',interno:false,financiero:false});
+  catalogo.rubros.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  guardarCatalogo();inp.value='';renderConfig();actualizarCats();
+}
+function renombrarRubro(i,v){
+  const r=catalogo.rubros[i];
+  const nuevo=texto(v,80);
+  if(!r)return;
+  if(!nuevo){renderConfig();return}
+  if(nuevo===r.nombre)return;
+  const choque=catalogo.rubros.find((o,j)=>j!==i&&normRubro(o.nombre)===normRubro(nuevo));
+  if(choque){alert('Ya existe el rubro «'+choque.nombre+'». Si querés juntarlos, renombrá los movimientos desde la tabla.');renderConfig();return}
+  const viejo=r.nombre,k=normRubro(viejo);
+  const n=datos.filter(d=>d.cat&&normRubro(d.cat)===k).length;
+  if(n&&!confirm('Se va a renombrar «'+viejo+'» a «'+nuevo+'» en '+n+' movimiento'+(n===1?'':'s')+'. ¿Confirmás?')){renderConfig();return}
+  datos.forEach(d=>{if(d.cat&&normRubro(d.cat)===k)d.cat=nuevo});
+  r.nombre=nuevo;
+  guardarCatalogo();guardarLS();renderTodo();
+}
+function cambiarActRubro(i,v){
+  const r=catalogo.rubros[i];
+  if(!r||!actividadPorId(v))return;
+  r.act=v;
+  const k=normRubro(r.nombre);
+  datos.forEach(d=>{if(d.cat&&normRubro(d.cat)===k&&d.tipo!=='transfer')d.act=v});
+  guardarCatalogo();guardarLS();renderTodo();
+}
+function marcarRubro(i,campo,val){
+  const r=catalogo.rubros[i];
+  if(!r)return;
+  r[campo]=!!val;
+  if(campo==='interno'&&val)r.financiero=false;
+  if(campo==='financiero'&&val)r.interno=false;
+  const k=normRubro(r.nombre);
+  datos.forEach(d=>{
+    if(d.cat&&normRubro(d.cat)===k&&d.tipo!=='transfer'&&d.tipo!=='transfer_cuenta'){
+      d.interno=!!r.interno;d.financiero=!!r.financiero;
+    }
+  });
+  guardarCatalogo();guardarLS();renderTodo();
+}
+function borrarRubro(i){
+  const r=catalogo.rubros[i];
+  if(!r)return;
+  const n=usoRubro(r.nombre);
+  if(n){alert('No puedo borrar «'+r.nombre+'»: hay '+n+' movimiento'+(n===1?'':'s')+' con ese rubro. Los movimientos no se tocan desde acá.');return}
+  if(!confirm('¿Sacar «'+r.nombre+'» de la lista de rubros?'))return;
+  catalogo.rubros.splice(i,1);
+  guardarCatalogo();renderConfig();actualizarCats();
+}
+
+// ---- cuentas ----
+function agregarCuenta(){
+  const inp=document.getElementById('cfg-cuenta-nueva');
+  const nombre=texto(inp.value,60);
+  if(!nombre){alert('Escribí un nombre para la cuenta.');return}
+  if(cuentaDelCatalogo(nombre)){alert('Esa cuenta ya está en la lista.');return}
+  catalogo.cuentas.push({nombre,dolares:false});
+  catalogo.cuentas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  guardarCatalogo();inp.value='';renderConfig();actualizarCats();
+}
+function renombrarCuenta(i,v){
+  const c=catalogo.cuentas[i];
+  const nuevo=texto(v,60);
+  if(!c)return;
+  if(!nuevo||nuevo===c.nombre){renderConfig();return}
+  const choque=catalogo.cuentas.find((o,j)=>j!==i&&normCta(o.nombre)===normCta(nuevo));
+  if(choque){alert('Ya existe la cuenta «'+choque.nombre+'». Para juntarlas usá el aviso de cuentas parecidas en Saldos y cuentas.');renderConfig();return}
+  const viejo=c.nombre,k=normCta(viejo);
+  const n=usoCuenta(viejo);
+  if(n&&!confirm('Se va a renombrar «'+viejo+'» a «'+nuevo+'» en '+n+' movimiento'+(n===1?'':'s')+'. ¿Confirmás?')){renderConfig();return}
+  datos.forEach(d=>{
+    ['cta','ctaOrigen','ctaDestino'].forEach(campo=>{if(d[campo]&&normCta(d[campo])===k)d[campo]=nuevo});
+    if(d.det)d.det=d.det.replace(new RegExp('\\['+viejo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\]$'),'['+nuevo+']');
+  });
+  c.nombre=nuevo;
+  guardarCatalogo();guardarLS();renderTodo();
+}
+function marcarCuentaDolar(i,val){
+  const c=catalogo.cuentas[i];
+  if(!c)return;
+  c.dolares=!!val;
+  const k=normCta(c.nombre);
+  datos.forEach(d=>{
+    if([d.cta,d.ctaOrigen,d.ctaDestino].some(x=>x&&normCta(x)===k)){
+      d.monedaOriginal=esCuentaDolares(d.cta)||esCuentaDolares(d.ctaOrigen)||esCuentaDolares(d.ctaDestino)?'usd':'ars';
+    }
+  });
+  guardarCatalogo();guardarLS();renderTodo();
+}
+function borrarCuenta(i){
+  const c=catalogo.cuentas[i];
+  if(!c)return;
+  const n=usoCuenta(c.nombre);
+  if(n){alert('No puedo borrar «'+c.nombre+'»: hay '+n+' movimiento'+(n===1?'':'s')+' en esa cuenta.');return}
+  if(!confirm('¿Sacar «'+c.nombre+'» de la lista de cuentas?'))return;
+  catalogo.cuentas.splice(i,1);
+  guardarCatalogo();renderConfig();actualizarCats();
+}
+
 function cuentasPanel(){
   panelCuentasParecidas();
   const el=document.getElementById('g-cuentas');
@@ -4144,10 +4588,10 @@ function margenActividad(){
   if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos para este ejercicio.</p>';return}
   el.innerHTML=filas.map(f=>{
     const pct=f.ing>0?Math.round(f.margen/f.ing*100):0;
-    const col=COL_ACT[f.a]||'#888';
+    const col=colorActividad(f.a);
     return `<div style="padding:14px 0;border-bottom:1px solid var(--linea)">
       <div class="g-fila" style="border:none;padding:0">
-        <div class="g-act"><span class="g-punto" style="background:${col}"></span>${esc(ACT_NOMBRE[f.a]||f.a)}</div>
+        <div class="g-act"><span class="g-punto" style="background:${col}"></span>${esc(nombreActividad(f.a))}</div>
         <div class="g-nums"><b style="color:${f.margen>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.margen)}</b>${f.ing>0?'margen '+pct+'%':''}</div>
       </div>
       <div class="g-barra"><i style="width:${Math.abs(f.margen)/maxAbs*100}%;background:${f.margen>=0?'var(--campo)':'var(--ladrillo)'}"></i></div>
@@ -4263,8 +4707,8 @@ function calcularAlertas(anio){
     if(a==='General')return;
     if(v.ing>0&&v.ing-v.egr<0){
       als.push({t:'amar',i:'🔍',
-        txt:`<b>${ACT_NOMBRE[a]||a}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`,
-        preg:`¿${ACT_NOMBRE[a]||a} pierde plata en serio o es un tema de cómo están repartidos los costos?`});
+        txt:`<b>${nombreActividad(a)}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`,
+        preg:`¿${nombreActividad(a)} pierde plata en serio o es un tema de cómo están repartidos los costos?`});
     }
   });
   // concentración de ventas: mucha dependencia de un solo comprador
@@ -4383,6 +4827,9 @@ if(descartados>0){
 }
 // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
 if(migrarDatos())guardarLS();
+cargarCatalogo();
+sincronizarCatalogo();
+refrescarSelectsAct();
 actualizarAnios();render();renderTabla();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
 avisoConversion();panelPrevioRestauracion();
 prepararAccesibilidad();
