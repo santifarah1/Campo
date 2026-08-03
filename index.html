@@ -765,6 +765,11 @@ tbody tr:hover td{background:color-mix(in srgb,var(--campo-suave) 33%,transparen
 .modal-bg{align-items:stretch;justify-content:flex-end;background:rgba(8,20,13,.46);backdrop-filter:blur(5px)}
 .modal{width:min(560px,100%);max-width:560px;height:100vh;max-height:100vh;border-radius:0!important;padding:28px 30px 32px;border:0;border-left:1px solid var(--borde);box-shadow:var(--s3);animation:entraDerecha .24s cubic-bezier(.2,.8,.2,1)}
 @keyframes entraDerecha{from{transform:translateX(28px);opacity:.4}to{transform:translateX(0);opacity:1}}
+#aviso-flotante{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:300;max-width:min(520px,calc(100vw - 32px));
+  background:var(--tinta);color:#fff;padding:14px 18px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.28);
+  font-size:14px;line-height:1.45;display:none;animation:sube .22s ease}
+#aviso-flotante b{color:#fff}
+#aviso-flotante .cerrar-aviso{background:none;border:none;color:rgba(255,255,255,.65);font-size:18px;cursor:pointer;padding:0 0 0 12px;float:right;line-height:1}
 .modal h3{font-size:20px;font-weight:740;margin-bottom:20px}
 .campo{margin-bottom:15px}.campo label{font-size:11px;font-weight:650;color:var(--tinta-2);margin-bottom:6px}
 .campo input,.campo select,.campo textarea{padding:11px 12px;border-radius:9px;background:var(--lienzo);border:1px solid var(--borde);font-size:13px}
@@ -1694,6 +1699,8 @@ body.oscuro .panel{background:rgba(28,39,31,.94);border-color:rgba(255,255,255,.
   </div>
 </div>
 
+<div id="aviso-flotante" role="status" aria-live="polite"></div>
+
 <!-- MODAL SALDAR PENDIENTE -->
 <div class="modal-bg" id="saldar-bg" onclick="if(event.target===this)cerrarSaldar()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="saldar-titulo">
@@ -1892,7 +1899,49 @@ if(window.Chart){
 }
 
 
-function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
+// Antes esto era una línea sin red: si localStorage fallaba (memoria llena,
+// modo privado de Safari, permisos), la excepción se escapaba de guardar() y
+// ni se cerraba el modal ni se redibujaba nada. El movimiento quedaba solo en
+// memoria y desaparecía al recargar, sin un solo aviso.
+let ultimoGuardadoOk=null;
+function guardarLS(){
+  const json=JSON.stringify(datos);
+  try{
+    localStorage.setItem('campo_datos',json);
+    ultimoGuardadoOk=json;
+    dataVersion++;cacheFilt={};
+    return true;
+  }catch(e){
+    // volver a lo último que sí quedó guardado: mejor perder el movimiento
+    // nuevo que mostrar en pantalla algo que en realidad no se guardó
+    if(ultimoGuardadoOk!==null){try{datos=JSON.parse(ultimoGuardadoOk)}catch(_){ }}
+    dataVersion++;cacheFilt={};
+    let usado=0;
+    try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);usado+=k.length+(localStorage.getItem(k)||'').length}}catch(_){ }
+    alert('⚠️ NO SE PUDO GUARDAR.\n\n'+
+      'El navegador rechazó guardar los datos ('+(e&&e.name||'error desconocido')+'). '+
+      'El movimiento no quedó registrado y la pantalla volvió a como estaba.\n\n'+
+      'Espacio ocupado por esta web: '+Math.round(usado/1024)+' KB.\n\n'+
+      'Qué hacer: guardá una copia de seguridad desde “Alertas y respaldo” antes de seguir. '+
+      'Si el navegador está en modo incógnito o privado, salí de ese modo: ahí no se puede guardar nada.');
+    return false;
+  }
+}
+// Aviso corto que no bloquea, para cosas que el usuario tiene que ver pero no confirmar.
+let avisoTimer=null;
+function avisarFlotante(html,segundos){
+  const el=document.getElementById('aviso-flotante');
+  if(!el)return;
+  el.innerHTML='<button class="cerrar-aviso" aria-label="Cerrar" onclick="ocultarAviso()">&times;</button>'+html;
+  el.style.display='block';
+  clearTimeout(avisoTimer);
+  avisoTimer=setTimeout(ocultarAviso,(segundos||7)*1000);
+}
+function ocultarAviso(){
+  const el=document.getElementById('aviso-flotante');
+  if(el)el.style.display='none';
+  clearTimeout(avisoTimer);
+}
 function pref(){return moneda==='usd'?'US$':'$'}
 function fmt(n){return pref()+Math.round(n).toLocaleString('es-AR')}
 function fmtK(n){
@@ -2424,13 +2473,53 @@ function guardar(){
       // Sin checkbox manual: retiros, ajustes y saldos iniciales se reconocen por categoría.
       // Si se edita un interno viejo con la misma categoría, se conserva para no cambiar datos históricos sin querer.
       interno:!!clas.interno||internoLegacy,
-      financiero:document.getElementById('m-financiero').checked
+      // Al importar, un rubro como "Plazo fijo" o "Créditos" queda marcado como
+      // financiero solo; cargándolo a mano no pasaba, y el mismo rubro terminaba
+      // clasificado distinto según por dónde entró.
+      financiero:document.getElementById('m-financiero').checked||!!clas.financiero
     };
   }
-  if(editandoId){datos=datos.map(d=>d.id===editandoId?obj:d)}
-  else{datos.push(obj)}
-  guardarLS();cerrarModal();
+  const editando=!!editandoId;
+  const anteriores=datos;
+  datos=editando?datos.map(d=>d.id===editandoId?obj:d):datos.concat([obj]);
+  if(!guardarLS()){
+    // guardarLS ya avisó y ya revirtió; dejamos el modal abierto para que no
+    // se pierda lo que la persona escribió
+    if(!datos.length&&anteriores.length)datos=anteriores;
+    renderTodo();
+    return;
+  }
+  cerrarModal();
   actualizarAnios();renderTodo();
+  avisarGuardado(obj,editando);
+}
+// Un movimiento "interno" (retiros, saldos iniciales, pases entre cajas) o
+// "financiero" (plazos fijos, créditos) SÍ se guarda y SÍ aparece en la tabla,
+// pero no mueve Ingresos / Egresos / Resultado. Sin este aviso parece que la
+// app se comió el movimiento.
+function avisarGuardado(obj,editando){
+  const verbo=editando?'Movimiento actualizado':'Movimiento guardado';
+  if(obj.tipo==='transfer_cuenta'){
+    avisarFlotante('<b>'+verbo+'.</b> Es un pase entre cuentas: cambia los saldos de cada caja, pero <b>no suma ni resta en el resultado</b> (la plata no entró ni salió del campo).');
+    return;
+  }
+  if(obj.tipo==='transfer'){
+    avisarFlotante('<b>'+verbo+'.</b> Es un pase entre actividades: reparte el resultado entre ellas, pero <b>no cambia el total del campo</b>.');
+    return;
+  }
+  if(obj.interno){
+    avisarFlotante('<b>'+verbo+' como INTERNO</b> por el rubro «'+esc(obj.cat||'')+'». Aparece en Movimientos y mueve los saldos por cuenta, pero <b>no cuenta en Ingresos, Egresos ni Resultado</b>.<br>Si querés que sí cuente, destildá “interno” en <b>Rubros y cuentas</b>.',10);
+    return;
+  }
+  if(obj.financiero){
+    avisarFlotante('<b>'+verbo+' como FINANCIERO</b> por el rubro «'+esc(obj.cat||'')+'». Se muestra aparte, en Inversiones y préstamos, y <b>no entra en el resultado del campo</b>.<br>Si querés que sí entre, destildá “financiero” en <b>Rubros y cuentas</b>.',10);
+    return;
+  }
+  if(obj.plazo){
+    avisarFlotante('<b>'+verbo+' como PENDIENTE.</b> Va a “Cuentas a cobrar y pagar” hasta que marques que se cobró o se pagó. Todavía <b>no cuenta en el resultado</b>.',9);
+    return;
+  }
+  avisarFlotante('<b>'+verbo+'.</b>',3);
 }
 function borrar(id){
   if(!confirm('¿Borrar este movimiento?'))return;
