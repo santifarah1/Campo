@@ -901,12 +901,22 @@ const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B
 
 function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
 function pref(){return moneda==='usd'?'US$':'$'}
-function fmt(n){return pref()+Math.round(n).toLocaleString('es-AR')}
+// Muestra los centavos solo cuando existen, y solo en $ corrientes: los montos
+// ajustados por IPC o pasados a dólar son estimaciones, ahí el centavo es ruido.
+function fmt(n){return signo(n)+pref()+numAR(n,moneda!=='hoy')}
+function fmtARS(n){return signo(n)+'$'+numAR(n,true)}
+// el menos va antes del signo pesos (-$1.500, no $-1.500)
+function signo(n){return n<0?'-':''}
+// centavos solo si los hay; el 0,005 evita que el redondeo binario invente decimales
+function numAR(n,conDec){
+  const d=conDec&&Math.abs(n%1)>=0.005;
+  return Math.abs(n).toLocaleString('es-AR',{minimumFractionDigits:d?2:0,maximumFractionDigits:d?2:0});
+}
 function fmtK(n){
   const a=Math.abs(n);
-  if(a>=1e6)return pref()+(n/1e6).toFixed(1)+'M';
-  if(a>=1e3)return pref()+(n/1e3).toFixed(0)+'k';
-  return pref()+Math.round(n);
+  if(a>=1e6)return signo(n)+pref()+(a/1e6).toFixed(1)+'M';
+  if(a>=1e3)return signo(n)+pref()+(a/1e3).toFixed(0)+'k';
+  return signo(n)+pref()+numAR(n,moneda!=='hoy');
 }
 function norm(s){return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
 // clave de cuenta: además sin espacios, así "e cheq" y "echeq" son la misma
@@ -1772,7 +1782,7 @@ function renderTabla(){
       :x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>';
     return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
       <td style="white-space:nowrap">${x.fecha}</td>
-      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo);white-space:nowrap" title="Pase entre cuentas propias o ajuste: la plata solo cambió de caja, no cuenta en el resultado del campo">pase interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
+      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant.toLocaleString('es-AR',{maximumFractionDigits:3})}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo);white-space:nowrap" title="Pase entre cuentas propias o ajuste: la plata solo cambió de caja, no cuenta en el resultado del campo">pase interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
       <td>${ctaCell}</td>
       <td>${actCell}</td>
       <td>${x.cat}</td>
@@ -2912,7 +2922,7 @@ function cuentasPanel(){
   const saldos=saldosPorCuenta(); // $ corrientes siempre (es plata de hoy en la cuenta)
   if(!saldos.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay cuentas cargadas. Vienen de la columna "Cuenta" del Excel o del campo Cuenta al cargar a mano.</p>';return}
   const total=saldos.reduce((s,[,v])=>s+v,0);
-  const F=n=>'$'+Math.round(n).toLocaleString('es-AR');
+  const F=fmtARS;
   el.innerHTML=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Total disponible (todas las cuentas)</div><div class="v" style="color:${total>=0?'var(--campo)':'var(--ladrillo)'}">${F(total)}</div><div class="d">Siempre en $ corrientes — es la plata de hoy</div></div>`+
     saldos.map(([c,s])=>`<div class="g-fila"><span>${c}</span><b style="color:${s>=0?'var(--tinta)':'var(--ladrillo)'}">${F(s)}</b></div>`).join('')+
     notaPases();
@@ -2922,8 +2932,8 @@ function notaPases(){
   const p=pasesInternos(datos);
   if(!p.n)return '';
   const desc=p.vol>0&&Math.abs(p.neto)>p.vol*0.05;
-  return `<p class="mini-nota">Incluye ${p.n} pase${p.n===1?'':'s'} entre cuentas propias por ${'$'+Math.round(p.vol).toLocaleString('es-AR')} (ej: de Banco Rio a Efectivo). Esa plata no entró ni salió del campo: bajó de una cuenta y subió en otra, el total no cambia.`+
-    (desc?` <b style="color:var(--ladrillo)">⚠ Hay ${'$'+Math.round(Math.abs(p.neto)).toLocaleString('es-AR')} de pases sin contrapartida</b> — si el total no te cierra, revisá que esté cargada la otra punta.`:'')+`</p>`;
+  return `<p class="mini-nota">Incluye ${p.n} pase${p.n===1?'':'s'} entre cuentas propias por ${fmtARS(p.vol)} (ej: de Banco Rio a Efectivo). Esa plata no entró ni salió del campo: bajó de una cuenta y subió en otra, el total no cambia.`+
+    (desc?` <b style="color:var(--ladrillo)">⚠ Hay ${fmtARS(Math.abs(p.neto))} de pases sin contrapartida</b> — si el total no te cierra, revisá que esté cargada la otra punta.`:'')+`</p>`;
 }
 
 function margenActividad(){
@@ -2968,7 +2978,7 @@ function preciosPromedio(){
   el.innerHTML=filas.map(f=>`
     <div class="g-fila">
       <span>${f.cat} <span class="pill ${f.tipo==='ingreso'?'ing':'egr'}" style="margin-left:6px">${f.tipo==='ingreso'?'Venta':'Compra'}</span></span>
-      <div class="g-nums"><b>${fmt(f.prom)} /u</b>${Math.round(f.cant).toLocaleString('es-AR')} unidades · total ${fmt(f.total)}</div>
+      <div class="g-nums"><b>${fmt(f.prom)} /u</b>${f.cant.toLocaleString('es-AR',{maximumFractionDigits:3})} unidades · total ${fmt(f.total)}</div>
     </div>`).join('');
 }
 
@@ -3075,7 +3085,7 @@ function calcularAlertas(anio){
   saldosPorCuenta().forEach(([c,s])=>{
     if(s<-1000){
       als.push({t:'amar',i:'🏦',
-        txt:`La cuenta <b>${c}</b> da saldo negativo ($${Math.round(s).toLocaleString('es-AR')}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
+        txt:`La cuenta <b>${c}</b> da saldo negativo (${fmtARS(s)}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
         preg:null});
     }
   });
@@ -3123,7 +3133,7 @@ function cierreEjercicio(){
     <div class="cierre-box"><div class="et">Ingresos ${anio||'(todos)'}</div><div class="v" style="color:var(--campo)">${fmt(ing)}</div></div>
     <div class="cierre-box"><div class="et">Egresos ${anio||'(todos)'}</div><div class="v" style="color:var(--ladrillo)">${fmt(egr)}</div></div>
     <div class="cierre-box"><div class="et">Resultado del ejercicio</div><div class="v" style="color:${ing-egr>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(ing-egr)}</div></div>
-    ${pas.n?`<div class="cierre-box"><div class="et">Pases entre cuentas ${anio||'(todos)'}</div><div class="v" style="color:var(--cielo)">$${Math.round(pas.vol).toLocaleString('es-AR')}</div><div class="d">Plata movida entre cajas propias en ${pas.n} movimiento${pas.n===1?'':'s'} (ej: de Banco Rio a Efectivo), en $ corrientes. No entra ni sale del campo: no cambia el resultado, solo el saldo de cada cuenta.${descuadre?`<br><b style="color:var(--ladrillo)">⚠ Quedan $${Math.round(Math.abs(pas.neto)).toLocaleString('es-AR')} sin contrapartida:</b> puede faltar cargar la otra punta de algún pase.`:''}</div></div>`:''}
+    ${pas.n?`<div class="cierre-box"><div class="et">Pases entre cuentas ${anio||'(todos)'}</div><div class="v" style="color:var(--cielo)">${fmtARS(pas.vol)}</div><div class="d">Plata movida entre cajas propias en ${pas.n} movimiento${pas.n===1?'':'s'} (ej: de Banco Rio a Efectivo), en $ corrientes. No entra ni sale del campo: no cambia el resultado, solo el saldo de cada cuenta.${descuadre?`<br><b style="color:var(--ladrillo)">⚠ Quedan ${fmtARS(Math.abs(pas.neto))} sin contrapartida:</b> puede faltar cargar la otra punta de algún pase.`:''}</div></div>`:''}
     ${comp}
   </div>`;
 }
