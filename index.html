@@ -725,7 +725,8 @@ tr:hover td{background:var(--lienzo)}
     </div>
     <div class="campo">
       <label>Monto total ($ corrientes, con IVA incluido)</label>
-      <input type="text" id="m-monto" placeholder="Ej: 1.500,50" inputmode="decimal">
+      <input type="text" id="m-monto" placeholder="Ej: 1.500,50" inputmode="decimal" oninput="ecoMonto()" autocomplete="off">
+      <p class="mini-nota" id="eco-monto">Coma para los centavos y punto para los miles: 1.500,50 son mil quinientos con cincuenta.</p>
     </div>
     <details id="det-iva" style="margin-bottom:14px">
       <summary style="font-size:13px;color:var(--tinta-suave);cursor:pointer">Desglosar IVA (opcional — para el contador)</summary>
@@ -743,7 +744,8 @@ tr:hover td{background:var(--lienzo)}
     </details>
     <div class="campo">
       <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
-      <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal">
+      <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal" oninput="ecoCant()" autocomplete="off">
+      <p class="mini-nota" id="eco-cant"></p>
     </div>
     <div class="campo" id="wrap-plazo">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
@@ -1165,6 +1167,7 @@ function abrirModal(id){
     togglePlazo();toggleInterno();
   }
   actualizarCats();
+  ecoMonto();ecoCant();
   document.getElementById('modal-bg').classList.add('abierto');
 }
 function cerrarModal(){document.getElementById('modal-bg').classList.remove('abierto')}
@@ -1242,7 +1245,7 @@ Reglas: los montos van como número sin separador de miles ni símbolo (ej 12345
 
 function guardar(){
   const fecha=document.getElementById('m-fecha').value;
-  const monto=parseMonto(document.getElementById('m-monto').value);
+  const monto=parseMontoAR(document.getElementById('m-monto').value);
   if(!fecha){alert('Falta la fecha.');return}
   if(!monto){alert('Falta el monto, o no se entiende lo que escribiste.\n\nPodés escribirlo como quieras: 1500 · 1500,50 · 1.500,50');return}
   // Un año mal tipeado (2206 en vez de 2026) entra sin chistar y descoloca
@@ -1253,12 +1256,12 @@ function guardar(){
     alert('La fecha parece estar mal: el año es '+anio+'. Revisala.');
     return;
   }
-  const cant=parseMonto(document.getElementById('m-cant').value)||null;
+  const cant=parseMontoAR(document.getElementById('m-cant').value)||null;
   const esPlazo=tipoActual!=='transfer'&&document.getElementById('m-plazo').checked;
   const venc=document.getElementById('m-venc').value;
   if(esPlazo&&!venc){alert('Marcaste que es a plazo: falta la fecha de vencimiento (cuándo se cobra o se paga).');return}
-  const neto=parseMonto(document.getElementById('m-neto').value)||null;
-  const iva=parseMonto(document.getElementById('m-iva').value)||null;
+  const neto=parseMontoAR(document.getElementById('m-neto').value)||null;
+  const iva=parseMontoAR(document.getElementById('m-iva').value)||null;
   let obj;
   if(tipoActual==='transfer'){
     const o=document.getElementById('m-origen').value, de=document.getElementById('m-destino').value;
@@ -1895,6 +1898,46 @@ function parseFecha(v){
     return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
   }
   return null;
+}
+// Lo que se escribe A MANO es siempre formato argentino: la coma es el decimal
+// y el punto es separador de miles. parseMonto (el de abajo) tiene que adivinar
+// entre formatos porque lee planillas ajenas, y ante "1,500" asume miles al
+// estilo inglés; acá eso está mal: si el usuario escribe 1,500 quiso decir 1,5.
+// Muestra en el momento cómo se va a guardar lo que se escribe, así no hay
+// dudas con la coma: si alguien pone 1,500 ve al toque que son $1,50.
+function ecoMonto(){
+  const el=document.getElementById('eco-monto');if(!el)return;
+  const v=document.getElementById('m-monto').value.trim();
+  const n=parseMontoAR(v);
+  const txt='$'+n.toLocaleString('es-AR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});
+  el.innerHTML=v
+    ?(n?`Se guarda <b>${txt}</b>`:'⚠️ Así no se entiende el número. Escribilo como 1.500,50')
+    :'Coma para los centavos y punto para los miles: 1.500,50 son mil quinientos con cincuenta.';
+  el.style.color=v&&!n?'var(--ladrillo)':'';
+}
+function ecoCant(){
+  const el=document.getElementById('eco-cant');if(!el)return;
+  const v=document.getElementById('m-cant').value.trim();
+  const n=parseMontoAR(v);
+  el.innerHTML=v&&n?`Se guarda <b>${n.toLocaleString('es-AR',{maximumFractionDigits:3})}</b>`:'';
+}
+function parseMontoAR(v){
+  if(typeof v==='number')return v;
+  const neg=/^\s*-/.test(''+v);
+  let s=(''+v).replace(/[^0-9,.]/g,'');
+  if(!s)return 0;
+  if(s.includes(',')){
+    // manda la última coma como decimal, sin importar cuántos dígitos la sigan
+    const i=s.lastIndexOf(',');
+    s=s.slice(0,i).replace(/[.,]/g,'')+'.'+s.slice(i+1).replace(/[.,]/g,'');
+  }else{
+    const p=s.split('.');
+    // un solo punto con 1 o 2 decimales = decimal (teclado numérico que tira
+    // punto en vez de coma); en cualquier otro caso el punto es de miles
+    if(!(p.length===2&&p[1].length>0&&p[1].length<=2))s=s.replace(/\./g,'');
+  }
+  const n=parseFloat(s)||0;
+  return neg?-Math.abs(n):n;
 }
 function parseMonto(v){
   if(typeof v==='number')return v;
@@ -2749,7 +2792,7 @@ let hasMaq=JSON.parse(localStorage.getItem('campo_has_maq')||'{}');
 function claveEjercicio(){return document.getElementById('g-anio').value||'todos'}
 function guardarHasMaq(){
   const k=claveEjercicio();
-  const v=parseMonto(document.getElementById('maq-has').value);
+  const v=parseMontoAR(document.getElementById('maq-has').value);
   if(v>0)hasMaq[k]=v;else delete hasMaq[k];
   localStorage.setItem('campo_has_maq',JSON.stringify(hasMaq));
   maquinariaPanel(true);
