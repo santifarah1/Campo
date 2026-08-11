@@ -411,6 +411,15 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="document.getElementById('banner-fechas').style.display='none'">Entendido</button>
   </div>
 
+  <div class="alerta verde" id="banner-drive" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span class="ai">☁️</span>
+    <div style="flex:1;min-width:240px"><b>Protegé tus datos en un minuto.</b> <span id="drive-ofr-txt">Todo lo que cargás vive únicamente en esta computadora: si se rompe o la formatean, se pierde.</span> Conectá tu cuenta de Google y la app va a guardar sola una copia cada vez que cargues algo. <b>La copia queda en tu Drive</b>, y sólo se pide permiso para los archivos que crea esta app.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primario" style="padding:8px 12px;font-size:13px" onclick="driveConectar()">☁️ Conectar Google Drive</button>
+      <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="postergarDrive()">Ahora no</button>
+    </div>
+  </div>
+
   <div class="alerta amar" id="banner-backup" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai">💾</span>
     <div style="flex:1;min-width:220px" id="txt-backup"></div>
@@ -2786,7 +2795,7 @@ async function driveConectar(){
   try{
     await gdPedirToken(true);
     alm.setItem('campo_drive_on','1');
-    driveEstado();
+    driveEstado();ofrecerDrive();
     const ok=await driveSubir(true);
     if(ok)alert('✓ Listo. Desde ahora la copia se sube sola a tu Google Drive cada vez que cargues algo.\n\nNo tenés que hacer nada más.');
   }catch(e){
@@ -2798,7 +2807,8 @@ function driveDesconectar(){
   if(!confirm('¿Dejar de subir copias a tu Google Drive?\n\nLas copias que ya subiste quedan en tu Drive, no se borran. Pero de acá en más vas a tener que acordarte de guardar copias a mano.'))return;
   alm.setItem('campo_drive_on','0');
   gdToken=null;gdVence=0;clearTimeout(gdTimer);
-  driveEstado();
+  alm.setItem('campo_drive_ofr',''+Date.now());   // recién desconectó: no molestar enseguida
+  driveEstado();ofrecerDrive();
 }
 async function driveRestaurar(){
   if(!driveListo()){alert('No se pudo cargar el conector de Google. Probá en un rato.');return}
@@ -2823,6 +2833,25 @@ async function driveRestaurar(){
     console.error('Drive:',e);
     alert('⚠️ No se pudo restaurar desde Drive. Probá con el archivo .json si tenés uno.');
   }
+}
+// El respaldo automático que nadie activa no sirve de nada: si está apagado,
+// la app lo ofrece sola al abrir. Se puede postergar, pero vuelve cada 5 días.
+const DRIVE_INSISTIR=5*24*3600*1000;
+function postergarDrive(){
+  alm.setItem('campo_drive_ofr',''+Date.now());
+  const b=document.getElementById('banner-drive');if(b)b.style.display='none';
+}
+function ofrecerDrive(){
+  const b=document.getElementById('banner-drive');
+  if(!b)return;
+  if(driveActivo()){b.style.display='none';return}
+  const ult=parseInt(alm.getItem('campo_drive_ofr')||'0');
+  if(ult&&Date.now()-ult<DRIVE_INSISTIR){b.style.display='none';return}
+  const t=document.getElementById('drive-ofr-txt');
+  if(t)t.textContent=datos.length
+    ? `Tenés ${datos.length.toLocaleString('es-AR')} movimiento${datos.length===1?'':'s'} cargado${datos.length===1?'':'s'} que viven únicamente en esta computadora: si se rompe o la formatean, se pierden.`
+    : 'Todo lo que cargues va a vivir únicamente en esta computadora: si se rompe o la formatean, se pierde.';
+  b.style.display='flex';
 }
 function driveEstado(){
   const el=document.getElementById('drive-estado');
@@ -2851,7 +2880,7 @@ function driveEstado(){
 }
 // Al abrir: si ya estaba conectado, se renueva el permiso en silencio.
 async function driveArranque(){
-  driveEstado();
+  driveEstado();ofrecerDrive();
   if(!driveActivo())return;
   for(let i=0;i<20&&!driveListo();i++)await new Promise(r=>setTimeout(r,250));
   if(!driveListo())return;
