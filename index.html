@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -638,7 +639,14 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     </div>
 
     <div class="panel" data-g="control">
-      <h2><span class="pin"></span>Copias de seguridad</h2>
+      <h2><span class="pin"></span>Respaldo automático en tu Google Drive</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Conectás tu cuenta de Google una sola vez y la app sube sola una copia cada vez que cargás algo. Si se rompe esta computadora, entrás desde otra, conectás Google y recuperás todo. <b>La copia queda en tu Drive, no en el nuestro:</b> el permiso que se pide sólo deja ver los archivos que crea esta app, no el resto de tus cosas.</p>
+      <div id="drive-estado" style="margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap" id="drive-botones"></div>
+    </div>
+
+    <div class="panel" data-g="control">
+      <h2><span class="pin"></span>Copias de seguridad en archivo</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Todo lo que cargás vive únicamente en esta computadora. Si se rompe, si la formatean o si se borran los datos del navegador, se pierde. Guardá una copia cada tanto y <b>mandátela por WhatsApp o subila a tu Drive</b>: si la dejás solo en esta misma PC, no te salva de nada.</p>
       <div id="estado-backup" style="margin-bottom:14px"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1115,7 +1123,7 @@ function llenarSelectsAct(){
   });
 }
 
-function guardarLS(){alm.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
+function guardarLS(){alm.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={};driveProgramar()}
 function pref(){return moneda==='usd'?'US$':'$'}
 // Muestra los centavos solo cuando existen, y solo en $ corrientes: los montos
 // ajustados por IPC o pasados a dólar son estimaciones, ahí el centavo es ruido.
@@ -2655,6 +2663,204 @@ function restaurar(e){
   };
   reader.readAsText(f);
 }
+// ============ RESPALDO AUTOMÁTICO EN GOOGLE DRIVE ============
+// La copia se guarda en el Drive del propio usuario. El permiso pedido
+// (drive.file) sólo alcanza a los archivos que crea esta app: no vemos ni
+// podemos tocar el resto de su Drive, y la copia nunca pasa por un servidor
+// nuestro.
+//
+// Se guarda un archivo por día (respaldo-campo-AAAA-MM-DD.json) y se conservan
+// los últimos 30. Un archivo único que se pisa siempre sería peligroso: un
+// error se sincronizaría encima de la única copia buena.
+const GDRIVE_ID='964664359215-362fah0f8j4kgfnvrb99kut611gsiai1.apps.googleusercontent.com';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const GDRIVE_COPIAS=30;
+const GDRIVE_ESPERA=8000;   // se sube recién cuando deja de cargar
+let gdToken=null, gdVence=0, gdCliente=null, gdTimer=null, gdSubiendo=false, gdUltError=null;
+
+function driveActivo(){return alm.getItem('campo_drive_on')==='1'}
+function driveListo(){return typeof google!=='undefined'&&google.accounts&&google.accounts.oauth2}
+
+function gdInit(){
+  if(gdCliente||!driveListo())return gdCliente;
+  gdCliente=google.accounts.oauth2.initTokenClient({
+    client_id:GDRIVE_ID, scope:GDRIVE_SCOPE, callback:()=>{}
+  });
+  return gdCliente;
+}
+// pedirConsentimiento=false intenta renovar sin mostrarle nada al usuario:
+// es lo que hace que después de conectar una vez no vuelva a ver una pantalla.
+function gdPedirToken(pedirConsentimiento){
+  return new Promise((res,rej)=>{
+    if(!gdInit())return rej(new Error('sin-libreria'));
+    gdCliente.callback=r=>{
+      if(r&&r.access_token){
+        gdToken=r.access_token;
+        gdVence=Date.now()+((r.expires_in||3600)-120)*1000;
+        res(gdToken);
+      }else rej(new Error(r&&r.error||'sin-token'));
+    };
+    gdCliente.error_callback=e=>rej(new Error(e&&e.type||'error-oauth'));
+    try{gdCliente.requestAccessToken({prompt:pedirConsentimiento?'consent':''})}
+    catch(e){rej(e)}
+  });
+}
+async function gdToken_(){
+  if(gdToken&&Date.now()<gdVence)return gdToken;
+  return await gdPedirToken(false);
+}
+async function gdFetch(url,opt){
+  const t=await gdToken_();
+  opt=opt||{};opt.headers=Object.assign({},opt.headers,{Authorization:'Bearer '+t});
+  const r=await fetch(url,opt);
+  if(r.status===401){ // token vencido antes de tiempo: uno nuevo y reintento
+    gdToken=null;
+    const t2=await gdToken_();
+    opt.headers.Authorization='Bearer '+t2;
+    return await fetch(url,opt);
+  }
+  return r;
+}
+function gdNombreHoy(){return 'respaldo-campo-'+new Date().toISOString().slice(0,10)+'.json'}
+async function gdListar(){
+  const q=encodeURIComponent("name contains 'respaldo-campo-' and trashed=false");
+  const r=await gdFetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name,modifiedTime,size)&orderBy=name desc&pageSize=100&spaces=drive');
+  if(!r.ok)throw new Error('listar-'+r.status);
+  return (await r.json()).files||[];
+}
+async function gdSubirArchivo(nombre,contenido,idExistente){
+  const meta={name:nombre,mimeType:'application/json'};
+  const lim='-l-'+Date.now();
+  const cuerpo='--'+lim+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+
+    JSON.stringify(meta)+'\r\n--'+lim+'\r\nContent-Type: application/json\r\n\r\n'+
+    contenido+'\r\n--'+lim+'--';
+  const url=idExistente
+    ? 'https://www.googleapis.com/upload/drive/v3/files/'+idExistente+'?uploadType=multipart'
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  const r=await gdFetch(url,{method:idExistente?'PATCH':'POST',
+    headers:{'Content-Type':'multipart/related; boundary='+lim},body:cuerpo});
+  if(!r.ok)throw new Error('subir-'+r.status);
+  return await r.json();
+}
+async function gdPodar(archivos){
+  const viejos=archivos.slice(GDRIVE_COPIAS);
+  for(const f of viejos){
+    try{await gdFetch('https://www.googleapis.com/drive/v3/files/'+f.id,{method:'DELETE'})}catch(_){}
+  }
+}
+// El corazón: sube la copia del día. Si ya existe la de hoy, la reemplaza.
+async function driveSubir(manual){
+  if(!driveActivo()||gdSubiendo)return false;
+  if(!navigator.onLine){gdUltError='sin-internet';driveEstado();return false}
+  gdSubiendo=true;driveEstado();
+  try{
+    const archivos=await gdListar();
+    const hoy=gdNombreHoy();
+    const yaHoy=archivos.find(f=>f.name===hoy);
+    await gdSubirArchivo(hoy,armarRespaldo(),yaHoy?yaHoy.id:null);
+    if(!yaHoy)await gdPodar([{name:hoy}].concat(archivos));
+    alm.setItem('campo_drive_ult',''+Date.now());
+    alm.setItem('campo_backup',''+Date.now());  // cuenta como copia hecha
+    alm.removeItem('campo_backup_snooze');
+    const b=document.getElementById('banner-backup');if(b)b.style.display='none';
+    gdUltError=null;
+    return true;
+  }catch(e){
+    console.error('Drive:',e);
+    gdUltError=(''+e.message).startsWith('sin-token')||(''+e.message).includes('oauth')?'permiso':'error';
+    if(manual)alert('⚠️ No se pudo subir la copia a Drive.\n\nProbá tocando "Conectar Google Drive" de nuevo. Mientras tanto, guardá una copia en archivo con el botón de abajo.');
+    return false;
+  }finally{
+    gdSubiendo=false;driveEstado();estadoBackup();
+  }
+}
+// No se sube en cada tecla: se espera a que deje de cargar y sube una sola vez.
+function driveProgramar(){
+  if(!driveActivo())return;
+  clearTimeout(gdTimer);
+  gdTimer=setTimeout(()=>driveSubir(false),GDRIVE_ESPERA);
+  driveEstado();
+}
+async function driveConectar(){
+  if(!driveListo()){alert('No se pudo cargar el conector de Google (¿sin internet?). Probá de nuevo en un rato.');return}
+  try{
+    await gdPedirToken(true);
+    alm.setItem('campo_drive_on','1');
+    driveEstado();
+    const ok=await driveSubir(true);
+    if(ok)alert('✓ Listo. Desde ahora la copia se sube sola a tu Google Drive cada vez que cargues algo.\n\nNo tenés que hacer nada más.');
+  }catch(e){
+    console.error(e);
+    alert('No se completó la conexión con Google. Si cerraste la ventana sin dar permiso, probá de nuevo.');
+  }
+}
+function driveDesconectar(){
+  if(!confirm('¿Dejar de subir copias a tu Google Drive?\n\nLas copias que ya subiste quedan en tu Drive, no se borran. Pero de acá en más vas a tener que acordarte de guardar copias a mano.'))return;
+  alm.setItem('campo_drive_on','0');
+  gdToken=null;gdVence=0;clearTimeout(gdTimer);
+  driveEstado();
+}
+async function driveRestaurar(){
+  if(!driveListo()){alert('No se pudo cargar el conector de Google. Probá en un rato.');return}
+  try{
+    if(!gdToken)await gdPedirToken(true);
+    const archivos=await gdListar();
+    if(!archivos.length){alert('No hay ninguna copia en tu Drive todavía.');return}
+    const f=archivos[0];
+    const fecha=f.name.replace('respaldo-campo-','').replace('.json','');
+    if(!confirm(`La copia más nueva en tu Drive es del ${fecha}.\n\nAhora en la app hay ${datos.length} movimientos, y se van a REEMPLAZAR por los de esa copia.\n\n¿Seguimos?`))return;
+    const r=await gdFetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media');
+    if(!r.ok)throw new Error('bajar-'+r.status);
+    const j=await r.json();
+    if(!j||j.app!==RESPALDO_MARCA||!j.datos)throw new Error('formato');
+    try{bajarArchivo('respaldo-anterior-'+new Date().toISOString().slice(0,10)+'.json',armarRespaldo())}catch(_){}
+    alm.claves().filter(k=>!NO_RESPALDAR.includes(k)).forEach(k=>alm.removeItem(k));
+    Object.entries(j.datos).forEach(([k,v])=>{if(k&&k.startsWith('campo_')&&!NO_RESPALDAR.includes(k))alm.setItem(k,v)});
+    await alm.flush();
+    alert('✓ Restaurado desde la copia del '+fecha+'. La app se va a recargar.');
+    location.reload();
+  }catch(e){
+    console.error('Drive:',e);
+    alert('⚠️ No se pudo restaurar desde Drive. Probá con el archivo .json si tenés uno.');
+  }
+}
+function driveEstado(){
+  const el=document.getElementById('drive-estado');
+  const bt=document.getElementById('drive-botones');
+  if(!el||!bt)return;
+  const ult=parseInt(alm.getItem('campo_drive_ult')||'0');
+  const hace=ult?Math.floor((Date.now()-ult)/60000):null;
+  const cuando=hace===null?'':(hace<1?'hace menos de un minuto':hace<60?`hace ${hace} minuto${hace===1?'':'s'}`:
+    hace<1440?`hace ${Math.floor(hace/60)} hora${Math.floor(hace/60)===1?'':'s'}`:`hace ${Math.floor(hace/1440)} día${Math.floor(hace/1440)===1?'':'s'}`);
+  if(!driveActivo()){
+    el.innerHTML='<div class="alerta amar"><span class="ai">☁️</span><div><b>El respaldo automático está apagado.</b> Hoy tus datos viven sólo en esta computadora. Conectá tu Google y la copia se sube sola, sin que tengas que acordarte.</div></div>';
+    bt.innerHTML='<button class="btn btn-primario" onclick="driveConectar()">☁️ Conectar Google Drive</button>';
+    return;
+  }
+  let cuerpo;
+  if(gdSubiendo)cuerpo='<div class="alerta amar"><span class="ai">⏳</span><div>Subiendo la copia a tu Drive...</div></div>';
+  else if(gdUltError==='sin-internet')cuerpo='<div class="alerta amar"><span class="ai">📡</span><div><b>Sin internet.</b> Seguí cargando tranquilo: se guarda todo en la computadora y la copia se sube sola cuando vuelva la señal.'+(cuando?' Última copia subida '+cuando+'.':'')+'</div></div>';
+  else if(gdUltError==='permiso')cuerpo='<div class="alerta roja"><span class="ai">⚠️</span><div><b>Google pidió permiso de nuevo.</b> Tocá "Conectar Google Drive" para volver a autorizarlo. Hasta entonces no se están subiendo copias.</div></div>';
+  else if(gdUltError)cuerpo='<div class="alerta roja"><span class="ai">⚠️</span><div><b>No se pudo subir la última copia.</b> Probá de nuevo o guardá una copia en archivo.'+(cuando?' Última copia buena: '+cuando+'.':'')+'</div></div>';
+  else if(!ult)cuerpo='<div class="alerta amar"><span class="ai">☁️</span><div>Conectado. Todavía no se subió ninguna copia.</div></div>';
+  else cuerpo=`<div class="alerta verde"><span class="ai">✅</span><div><b>Respaldado ${cuando}</b> en tu Google Drive. Se guarda una copia por día y se conservan los últimos ${GDRIVE_COPIAS} días.</div></div>`;
+  el.innerHTML=cuerpo;
+  bt.innerHTML='<button class="btn btn-primario" onclick="driveSubir(true)">☁️ Subir copia ahora</button>'+
+    '<button class="btn btn-sec" onclick="driveRestaurar()">📥 Restaurar desde Drive</button>'+
+    '<button class="btn btn-sec" onclick="driveDesconectar()">Desconectar</button>';
+}
+// Al abrir: si ya estaba conectado, se renueva el permiso en silencio.
+async function driveArranque(){
+  driveEstado();
+  if(!driveActivo())return;
+  for(let i=0;i<20&&!driveListo();i++)await new Promise(r=>setTimeout(r,250));
+  if(!driveListo())return;
+  try{await gdPedirToken(false);gdUltError=null}
+  catch(e){gdUltError='permiso'}
+  driveEstado();
+}
+window.addEventListener('online',()=>{if(driveActivo()&&gdUltError==='sin-internet')driveSubir(false)});
+
 function diasSinBackup(){
   const ult=parseInt(alm.getItem('campo_backup')||'0');
   if(!ult)return null;
@@ -3105,6 +3311,7 @@ function datosGestion(){
 function renderGestion(){
   actualizarAniosGestion();
   actividadesPanel();
+  driveEstado();
   cuentasPanel();
   margenActividad();
   preciosPromedio();
@@ -3493,7 +3700,7 @@ async function iniciar(){
   document.getElementById('f-moneda').value=moneda;
   // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
   if(migrarDatos())guardarLS();
-  actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
+  actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();driveArranque();
 
   if(alm.recuperado){
     let f=alm.fechaRecuperado;
@@ -3506,6 +3713,12 @@ async function iniciar(){
 // perderla en silencio. En la práctica dura milisegundos y no se ve nunca.
 window.addEventListener('beforeunload',e=>{
   if(alm.pendientes>0){e.preventDefault();e.returnValue=''}
+});
+// Si se cierra la pestaña con una subida a Drive todavía en espera, se sube ya.
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&gdTimer&&driveActivo()){
+    clearTimeout(gdTimer);gdTimer=null;driveSubir(false);
+  }
 });
 
 iniciar();
