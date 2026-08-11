@@ -300,6 +300,10 @@ tr:hover td{background:var(--lienzo)}
 /* rótulos de grupo en el menú lateral */
 .nav-rotulo{font-size:10.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--tinta-3);font-weight:700;padding:16px 14px 7px}
 .nav-rotulo:first-child{padding-top:8px}
+.pie-legal{padding:12px 22px 16px;font-size:11.5px;color:var(--tinta-3);display:flex;gap:6px;align-items:center;border-top:1px solid var(--borde)}
+.pie-legal a{color:var(--tinta-3);text-decoration:none}
+.pie-legal a:hover{color:var(--campo-hondo);text-decoration:underline}
+@media(max-width:900px){.pie-legal{width:100%;border-top:none;padding:4px 22px 12px}}
 .nav-item.peligro{color:var(--tinta-2)}
 .nav-item.peligro:hover{background:var(--ladrillo-suave);color:var(--ladrillo)}
 
@@ -371,6 +375,11 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <button class="nav-item" onclick="verTabGrupo('gestion','control',this)"><span class="ni-ico">◇</span> Alertas y respaldo</button>
     <button class="nav-item peligro" onclick="borrarTodo()"><span class="ni-ico">⌫</span> Borrar todo</button>
   </nav>
+  <div class="pie-legal">
+    <a href="privacidad.html" target="_blank" rel="noopener">Privacidad</a>
+    <span>·</span>
+    <a href="terminos.html" target="_blank" rel="noopener">Términos</a>
+  </div>
 </aside>
 
 <div class="contenido">
