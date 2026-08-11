@@ -332,6 +332,11 @@ tr:hover td{background:var(--lienzo)}
 </style>
 </head>
 <body>
+<script>
+// El tema se aplica antes de pintar nada. Se lee de localStorage (no de
+// IndexedDB) justamente porque hace falta que sea sincrónico.
+try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('oscuro')}catch(_){}
+</script>
 
 <div class="topbar-global">
   <div class="tg-izq">
@@ -379,7 +384,17 @@ tr:hover td{background:var(--lienzo)}
     <select id="f-anio-top" onchange="sincroAnio(this.value)"></select>
   </div>
 </header>
+<div id="velo-carga" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--fondo,#F7F4EF);color:var(--tinta-suave,#7a6f61);font-size:15px">
+  Abriendo tus datos…
+</div>
+
 <main>
+  <div class="alerta roja" id="banner-guardado" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span class="ai">⚠️</span>
+    <div style="flex:1;min-width:220px"><b>No se puede guardar en este navegador.</b> Lo que cargues ahora se puede perder al cerrar la página. Suele pasar en ventana de incógnito o con el almacenamiento bloqueado. <b>Guardá una copia de seguridad ahora mismo</b> y abrí la app en una ventana normal.</div>
+    <button class="btn btn-primario" style="padding:8px 12px;font-size:13px" onclick="respaldar()">Guardar copia</button>
+  </div>
+
   <div class="alerta roja" id="banner-fechas" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai">📅</span>
     <div style="flex:1;min-width:220px"><b>Las fechas se importaron mal.</b> Una versión anterior de la app leía mal las fechas del Excel (las tomaba en formato americano). Ya está corregido, pero los datos que están cargados quedaron con el día y el mes cambiados. <b>La solución:</b> exportá un backup por las dudas, borrá todo con 🗑️ y volvé a importar la planilla. Tarda un minuto y queda todo bien.</div>
@@ -410,14 +425,7 @@ tr:hover td{background:var(--lienzo)}
       <span class="lbl">Año:</span>
       <select id="f-anio" onchange="render()"></select>
       <span class="lbl">Actividad:</span>
-      <select id="f-act" onchange="render()">
-        <option value="">Todas</option>
-        <option value="Ganadería">Cría / invernada</option>
-        <option value="Agricultura">Agricultura</option>
-        <option value="Cebolla">Alquiler cebolla</option>
-        <option value="Maquinaria">Maquinaria propia</option>
-        <option value="General">General / estructura</option>
-      </select>
+      <select id="f-act" onchange="render()"></select>
       <span class="lbl">Moneda:</span>
       <select id="f-moneda" onchange="cambiarMoneda()">
         <option value="corriente">$ corrientes</option>
@@ -573,6 +581,18 @@ tr:hover td{background:var(--lienzo)}
     </div>
 
     <div class="panel" data-g="rubros">
+      <h2><span class="pin"></span>Mis actividades</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">La actividad es a qué parte del campo le imputás cada movimiento. Armá acá las tuyas: tambo, huerta, colmenas, monte, lo que hagas. Después el resultado y los márgenes se calculan por cada una. <b>General / estructura</b> es la que junta lo que no es de ninguna actividad en particular (sueldos, impuestos, seguros) y por eso no se puede borrar.</p>
+      <div class="filtros" style="margin-bottom:12px">
+        <input type="text" id="a-nombre" placeholder="Nombre de la actividad (ej: Tambo)" style="flex:1;min-width:190px" onkeydown="if(event.key==='Enter')agregarActividad()">
+        <input type="color" id="a-color" value="#5C7A3D" title="Color en los gráficos" style="width:52px;padding:2px;cursor:pointer">
+        <button class="btn btn-primario" onclick="agregarActividad()">＋ Agregar</button>
+      </div>
+      <div id="a-sugeridas" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+      <div id="g-actividades"></div>
+    </div>
+
+    <div class="panel" data-g="rubros">
       <h2><span class="pin"></span>Mis rubros y categorías</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">El rubro es con lo que clasificás cada movimiento: gasoil, veterinaria, venta de hacienda, sueldos. Armá acá tu propia lista y después aparece para elegir cuando cargás un movimiento. Si un rubro tiene actividad fija, al elegirlo se completa sola.</p>
       <div class="filtros" style="margin-bottom:12px">
@@ -582,14 +602,7 @@ tr:hover td{background:var(--lienzo)}
           <option value="ingreso">Es un ingreso</option>
           <option value="ambos">Puede ser los dos</option>
         </select>
-        <select id="r-act">
-          <option value="">Sin actividad fija</option>
-          <option value="Ganadería">Cría / invernada</option>
-          <option value="Agricultura">Agricultura</option>
-          <option value="Cebolla">Alquiler cebolla</option>
-          <option value="Maquinaria">Maquinaria propia</option>
-          <option value="General">General / estructura</option>
-        </select>
+        <select id="r-act"></select>
         <button class="btn btn-primario" onclick="agregarRubro()">＋ Agregar</button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
@@ -769,30 +782,16 @@ tr:hover td{background:var(--lienzo)}
     </div>
     <div class="campo" id="wrap-act-normal">
       <label>Actividad</label>
-      <select id="m-act">
-        <option value="Ganadería">Cría / invernada</option>
-        <option value="Agricultura">Agricultura</option>
-        <option value="Cebolla">Alquiler cebolla</option>
-        <option value="Maquinaria">Maquinaria propia</option>
-        <option value="General">General / sin actividad</option>
-      </select>
+      <select id="m-act"></select>
     </div>
     <div id="wrap-act-transfer" style="display:none">
       <div class="campo">
         <label>Actividad que entrega</label>
-        <select id="m-origen">
-          <option value="Agricultura">Agricultura</option>
-          <option value="Ganadería">Cría / invernada</option>
-          <option value="Cebolla">Alquiler cebolla</option>
-        </select>
+        <select id="m-origen"></select>
       </div>
       <div class="campo">
         <label>Actividad que recibe / consume</label>
-        <select id="m-destino">
-          <option value="Ganadería">Cría / invernada</option>
-          <option value="Agricultura">Agricultura</option>
-          <option value="Cebolla">Alquiler cebolla</option>
-        </select>
+        <select id="m-destino"></select>
       </div>
     </div>
     <div class="campo" id="wrap-prov">
@@ -881,15 +880,151 @@ tr:hover td{background:var(--lienzo)}
 </div>
 
 <script>
+// ============ ALMACÉN ============
+// Toda la app lee y escribe con `alm` como si fuera localStorage (sincrónico),
+// pero contra una caché en memoria. La escritura real va a IndexedDB, que no
+// tiene el techo de 5 MB del localStorage y no bloquea el hilo principal al
+// guardar (localStorage es sincrónico: con 4.000 movimientos, cada guardado
+// congelaba la pantalla unos milisegundos).
+//
+// Si IndexedDB no está disponible (modo privado, file:// en Firefox, navegador
+// viejo), cae solo a localStorage y la app funciona igual que antes.
+//
+// La migración desde localStorage se hace una sola vez, y NO borra el
+// localStorage viejo: queda congelado como red de seguridad.
+const DB_NOMBRE='gestion-campo', DB_TIENDA='kv', DB_VERSION=1;
+const alm=(function(){
+  let db=null, mem={}, modo='ls', pendientes=0, avisado=false;
+
+  function fallo(e){
+    if(avisado)return;
+    avisado=true;
+    console.error('Error al guardar:',e);
+    const b=document.getElementById('banner-guardado');
+    if(b)b.style.display='flex';
+    else alert('⚠️ No se pudo guardar en este navegador. Guardá una copia de seguridad AHORA y probá con otro navegador.');
+  }
+
+  function abrir(){
+    return new Promise(res=>{
+      let idb=null;
+      try{idb=window.indexedDB}catch(_){}
+      if(!idb)return res(false);
+      let req;
+      try{req=idb.open(DB_NOMBRE,DB_VERSION)}catch(_){return res(false)}
+      req.onupgradeneeded=()=>{
+        const d=req.result;
+        if(!d.objectStoreNames.contains(DB_TIENDA))d.createObjectStore(DB_TIENDA);
+      };
+      req.onsuccess=()=>{db=req.result;res(true)};
+      req.onerror=()=>res(false);
+      req.onblocked=()=>res(false);
+      // Si el navegador se traba abriendo la base, no dejamos la app colgada.
+      setTimeout(()=>{if(!db)res(false)},5000);
+    });
+  }
+  function leerTodoIDB(){
+    return new Promise(res=>{
+      const out={};
+      try{
+        const tx=db.transaction(DB_TIENDA,'readonly');
+        const req=tx.objectStore(DB_TIENDA).openCursor();
+        req.onsuccess=()=>{const c=req.result;if(c){out[c.key]=c.value;c.continue()}else res(out)};
+        req.onerror=()=>res(out);
+        tx.onabort=()=>res(out);
+      }catch(e){res(out)}
+    });
+  }
+  function escribirIDB(k,v){
+    pendientes++;
+    return new Promise(res=>{
+      try{
+        const tx=db.transaction(DB_TIENDA,'readwrite');
+        const st=tx.objectStore(DB_TIENDA);
+        if(v===null)st.delete(k);else st.put(v,k);
+        tx.oncomplete=()=>{pendientes--;res(true)};
+        tx.onerror=tx.onabort=()=>{pendientes--;fallo(tx.error);res(false)};
+      }catch(e){pendientes--;fallo(e);res(false)}
+    });
+  }
+  function leerLS(){
+    const o={};
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k&&k.startsWith('campo_')&&k!=='campo_migrado_idb')o[k]=localStorage.getItem(k);
+      }
+    }catch(_){}
+    return o;
+  }
+
+  return {
+    get modo(){return modo},
+    get pendientes(){return pendientes},
+    // Devuelve true si los datos vinieron de una recuperación del localStorage
+    // viejo (o sea: IndexedDB estaba vacío pero había datos anteriores).
+    recuperado:false,
+    fechaRecuperado:null,
+
+    async iniciar(){
+      const ok=await abrir();
+      if(!ok){modo='ls';mem=leerLS();return}
+      modo='idb';
+      mem=await leerTodoIDB();
+      if(!mem._migrado){
+        const viejo=leerLS();
+        const claves=Object.keys(viejo);
+        if(claves.length){
+          // Primera vez con IndexedDB: traemos todo lo que había.
+          for(const k of claves)mem[k]=viejo[k];
+          await Promise.all(claves.map(k=>escribirIDB(k,viejo[k])));
+          // Si ya habíamos migrado antes y el navegador borró IndexedDB, esto
+          // es una recuperación: los datos pueden estar viejos y hay que avisar.
+          let marca=null;
+          try{marca=localStorage.getItem('campo_migrado_idb')}catch(_){}
+          if(marca){this.recuperado=true;this.fechaRecuperado=marca}
+          else{try{localStorage.setItem('campo_migrado_idb',new Date().toISOString())}catch(_){}}
+        }
+        mem._migrado='1';
+        await escribirIDB('_migrado','1');
+      }
+    },
+    getItem(k){return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null},
+    setItem(k,v){
+      v=''+v;
+      mem[k]=v;
+      if(modo==='idb')escribirIDB(k,v);
+      else{try{localStorage.setItem(k,v)}catch(e){fallo(e)}}
+    },
+    removeItem(k){
+      delete mem[k];
+      if(modo==='idb')escribirIDB(k,null);
+      else{try{localStorage.removeItem(k)}catch(_){}}
+    },
+    // Reemplaza a recorrer localStorage por índice.
+    claves(){return Object.keys(mem).filter(k=>k.startsWith('campo_'))},
+    // Espera a que no queden escrituras en vuelo (antes de recargar la página).
+    async flush(){
+      for(let i=0;i<200&&pendientes>0;i++)await new Promise(r=>setTimeout(r,25));
+    }
+  };
+})();
+
+// Escapa texto del usuario antes de meterlo en innerHTML. Sin esto, un rubro
+// o un detalle con "<" (ej: "novillos <300kg") rompe el render de la tabla.
+function esc(s){
+  return (''+(s==null?'':s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // ============ ESTADO ============
-let datos = JSON.parse(localStorage.getItem('campo_datos')||'[]');
+let datos=[];
 let tipoActual='egreso';
 let editandoId=null;
 let charts={};
 let rawImport=null, colsImport=[];
 
 // moneda e índices (inflación + dólar histórico, ArgentinaDatos)
-let moneda=localStorage.getItem('campo_moneda')||'corriente';
+let moneda='corriente';
 let ipcIdx=null, ipcUltimoMes=null;
 let dolarMes=null, dolarUltimo=null;
 
@@ -897,9 +1032,81 @@ let dolarMes=null, dolarUltimo=null;
 let dataVersion=0, cacheFilt={};
 
 const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const COL_ACT={'Ganadería':'#6B4A2E','Agricultura':'#5C7A3D','Cebolla':'#C9A24B','Maquinaria':'#8A6B4A','General':'#4A6B8A'};
+// ============ ACTIVIDADES ============
+// Cada productor hace cosas distintas: tambo, huerta, colmenas, monte. Antes
+// estaban clavadas en el código las cinco del campo de origen (incluida
+// "Alquiler cebolla", que era de un solo caso). Ahora las arma cada usuario.
+//
+// Clave: `n` es lo que queda guardado en cada movimiento y NO cambia nunca.
+// `e` es la etiqueta visible y sí se puede editar: así renombrar una actividad
+// no toca un solo movimiento y no hay forma de romper datos viejos.
+let actividades=[];
+const ACT_LEGADO=[
+  {n:'Ganadería',   e:'Cría / invernada',    c:'#6B4A2E'},
+  {n:'Agricultura', e:'Agricultura',         c:'#5C7A3D'},
+  {n:'Cebolla',     e:'Alquiler cebolla',    c:'#C9A24B'},
+  {n:'Maquinaria',  e:'Maquinaria propia',   c:'#8A6B4A', maq:true},
+  {n:'General',     e:'General / estructura',c:'#4A6B8A', estructura:true}
+];
+const ACT_SUGERIDAS=['Tambo','Horticultura','Apicultura','Forestal','Viña / frutales','Porcinos','Avicultura','Servicios a terceros','Alquiler / arrendamiento'];
+const PALETA_ACT=['#5C7A3D','#6B4A2E','#C9A24B','#4A6B8A','#8A6B4A','#7A5C8A','#3D7A6B','#A85C3D','#5C6B8A','#8A7A3D'];
 
-function guardarLS(){localStorage.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
+function colorLibre(){
+  // el <input type="color"> devuelve el hex en minúscula: hay que comparar
+  // sin distinguir mayúsculas o siempre da libre el mismo color
+  const usados=new Set(actividades.map(a=>(''+a.c).toLowerCase()));
+  return PALETA_ACT.find(c=>!usados.has(c.toLowerCase()))||PALETA_ACT[actividades.length%PALETA_ACT.length];
+}
+function actBuscar(n){return actividades.find(a=>a.n===n)}
+function actEtiqueta(n){const a=actBuscar(n);return a?a.e:(n||'—')}
+function actColor(n){const a=actBuscar(n);return a?a.c:'#888'}
+// La actividad "estructura" junta lo que no es de ninguna en particular.
+// Siempre tiene que existir una: es el destino por defecto de todo.
+function actEstructura(){const a=actividades.find(x=>x.estructura);return a?a.n:(actividades[0]?actividades[0].n:'General')}
+function actMaq(){const a=actividades.find(x=>x.maq);return a?a.n:null}
+
+function cargarActividades(){
+  let g=null;
+  try{g=JSON.parse(alm.getItem('campo_actividades')||'null')}catch(_){g=null}
+  if(Array.isArray(g)&&g.length){
+    actividades=g.filter(a=>a&&a.n).map(a=>({n:''+a.n,e:''+(a.e||a.n),c:a.c||'#888',maq:!!a.maq,estructura:!!a.estructura}));
+  }else{
+    // Primera vez: se arranca de las que ya venía usando la app, pero solo se
+    // conservan las que realmente aparecen en los datos cargados. Así un
+    // usuario nuevo no hereda "Alquiler cebolla" de otro campo.
+    const enUso=new Set();
+    datos.forEach(x=>[x.act,x.actOrigen,x.actDestino].forEach(v=>{if(v)enUso.add(v)}));
+    const base=['Ganadería','Agricultura','Maquinaria','General'];
+    actividades=ACT_LEGADO.filter(a=>base.includes(a.n)||enUso.has(a.n)).map(a=>({...a}));
+  }
+  // Toda actividad que aparezca en un movimiento tiene que existir en la lista,
+  // si no el movimiento queda huérfano y desaparece de los filtros.
+  const hay=new Set(actividades.map(a=>a.n));
+  datos.forEach(x=>[x.act,x.actOrigen,x.actDestino].forEach(v=>{
+    if(v&&!hay.has(v)){hay.add(v);actividades.push({n:v,e:v,c:colorLibre()})}
+  }));
+  if(!actividades.length)actividades=[{n:'General',e:'General / estructura',c:'#4A6B8A',estructura:true}];
+  if(!actividades.some(a=>a.estructura))actividades[actividades.length-1].estructura=true;
+}
+function guardarActividades(){
+  alm.setItem('campo_actividades',JSON.stringify(actividades));
+  llenarSelectsAct();
+}
+// Rellena todos los desplegables de actividad conservando lo que estaba elegido.
+function llenarSelectsAct(){
+  const opts=(vacio)=>(vacio?`<option value="">${vacio}</option>`:'')+
+    actividades.map(a=>`<option value="${esc(a.n)}">${esc(a.e)}</option>`).join('');
+  [['f-act','Todas'],['r-act','Sin actividad fija'],['m-act',null],['m-origen',null],['m-destino',null]].forEach(([id,vacio])=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const prev=el.value;
+    el.innerHTML=opts(vacio);
+    if(prev&&actividades.some(a=>a.n===prev))el.value=prev;
+    else if(!vacio)el.value=actEstructura();
+  });
+}
+
+function guardarLS(){alm.setItem('campo_datos',JSON.stringify(datos));dataVersion++;cacheFilt={}}
 function pref(){return moneda==='usd'?'US$':'$'}
 // Muestra los centavos solo cuando existen, y solo en $ corrientes: los montos
 // ajustados por IPC o pasados a dólar son estimaciones, ahí el centavo es ruido.
@@ -949,12 +1156,12 @@ function mv(x){return conv(x.monto,x.fecha)}
 
 async function cargarIndices(){
   try{
-    let cache=JSON.parse(localStorage.getItem('campo_ipc')||'null');
+    let cache=JSON.parse(alm.getItem('campo_ipc')||'null');
     if(!cache||Date.now()-cache.t>864e5){
       const r=await fetch('https://api.argentinadatos.com/v1/finanzas/indices/inflacion');
       const arr=await r.json();
       cache={t:Date.now(),arr};
-      localStorage.setItem('campo_ipc',JSON.stringify(cache));
+      alm.setItem('campo_ipc',JSON.stringify(cache));
     }
     ipcIdx={};let acc=1;
     [...cache.arr].sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(o=>{
@@ -964,14 +1171,14 @@ async function cargarIndices(){
     ipcUltimoMes=Object.keys(ipcIdx).sort().pop();
   }catch(e){}
   try{
-    let cache=JSON.parse(localStorage.getItem('campo_tc')||'null');
+    let cache=JSON.parse(alm.getItem('campo_tc')||'null');
     if(!cache||Date.now()-cache.t>864e5){
       const r=await fetch('https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial');
       const arr=await r.json();
       const mes={};
       arr.forEach(o=>{if(o.venta)mes[o.fecha.slice(0,7)]=o.venta});
       cache={t:Date.now(),mes};
-      localStorage.setItem('campo_tc',JSON.stringify(cache));
+      alm.setItem('campo_tc',JSON.stringify(cache));
     }
     dolarMes=cache.mes;
     dolarUltimo=dolarMes[Object.keys(dolarMes).sort().pop()];
@@ -987,7 +1194,7 @@ function notaMoneda(){
 }
 function cambiarMoneda(){
   moneda=document.getElementById('f-moneda').value;
-  localStorage.setItem('campo_moneda',moneda);
+  alm.setItem('campo_moneda',moneda);
   notaMoneda();
   if(moneda!=='corriente'&&((moneda==='hoy'&&!ipcIdx)||(moneda==='usd'&&!dolarMes)))cargarIndices();
   renderTodo();
@@ -1070,11 +1277,18 @@ function aplicarGrupo(){
 // ============ TEMA ============
 function toggleTema(){
   document.body.classList.toggle('oscuro');
-  localStorage.setItem('campo_tema',document.body.classList.contains('oscuro')?'1':'0');
+  const osc=document.body.classList.contains('oscuro')?'1':'0';
+  alm.setItem('campo_tema',osc);
+  // espejo sincrónico, solo para poder pintar el tema correcto al abrir
+  try{localStorage.setItem('campo_tema',osc)}catch(_){}
   document.getElementById('btn-tema').textContent=document.body.classList.contains('oscuro')?'☀️':'🌙';
   render();renderProj();
 }
-if(localStorage.getItem('campo_tema')==='1'){document.body.classList.add('oscuro');document.getElementById('btn-tema').textContent='☀️'}
+function aplicarTema(){
+  const osc=alm.getItem('campo_tema')==='1';
+  document.body.classList.toggle('oscuro',osc);
+  document.getElementById('btn-tema').textContent=osc?'☀️':'🌙';
+}
 
 // ============ MODAL ============
 function setTipo(t){
@@ -1113,7 +1327,7 @@ function toggleInterno(){
     document.getElementById('wrap-financiero').style.display='none';
     document.getElementById('wrap-cta').style.display='block';
     // un pase no pertenece a ninguna actividad productiva
-    if(!editandoId)document.getElementById('m-act').value='General';
+    if(!editandoId)document.getElementById('m-act').value=actEstructura();
   }else if(!esT){
     document.getElementById('wrap-plazo').style.display='block';
     document.getElementById('wrap-prov').style.display='block';
@@ -1198,13 +1412,13 @@ function leerFactura(e){
   e.target.value='';
   if(!f)return;
   if(!iaKey||usarGroq()){
-    const claveGem=localStorage.getItem('campo_gemini_key')||'';
+    const claveGem=alm.getItem('campo_gemini_key')||'';
     if(!claveGem){
       alert('Para leer facturas con foto hace falta el asistente Gemini.\n\nAndá a la pestaña 🤖 Asesor, elegí Gemini y pegá su clave (es gratis). Después volvés y sacás la foto.');
       return;
     }
   }
-  const keyFactura=localStorage.getItem('campo_gemini_key')||'';
+  const keyFactura=alm.getItem('campo_gemini_key')||'';
   const est=document.getElementById('ocr-estado');
   est.style.display='block';
   est.textContent='📖 Leyendo la factura...';
@@ -1322,19 +1536,21 @@ function borrar(id){
 function actualizarCats(){
   const alfa=(a,b)=>a.localeCompare(b,'es',{sensitivity:'base'});
   const cats=[...new Set([...rubros.map(r=>r.n),...datos.map(d=>d.cat)])].filter(Boolean).sort(alfa);
-  document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
+  document.getElementById('cats').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
   const ctas=[...new Set(datos.flatMap(d=>[d.cta,d.ctaDest]).filter(Boolean))].sort(alfa);
-  document.getElementById('ctas').innerHTML=ctas.map(c=>`<option value="${c}">`).join('');
+  document.getElementById('ctas').innerHTML=ctas.map(c=>`<option value="${esc(c)}">`).join('');
   const provs=[...new Set(datos.map(d=>d.prov).filter(Boolean))].sort(alfa);
-  document.getElementById('provs').innerHTML=provs.map(c=>`<option value="${c}">`).join('');
+  document.getElementById('provs').innerHTML=provs.map(c=>`<option value="${esc(c)}">`).join('');
 }
 
 // ============ RUBROS PROPIOS ============
 // Lista de categorías que arma cada usuario. Sirve para el que arranca de cero
 // (sin un Excel previo): sin esto, el desplegable de categorías está vacío.
 let rubros=[];
-try{rubros=JSON.parse(localStorage.getItem('campo_rubros')||'[]')}catch(_){rubros=[]}
-if(!Array.isArray(rubros))rubros=[];
+function cargarRubros(){
+  try{rubros=JSON.parse(alm.getItem('campo_rubros')||'[]')}catch(_){rubros=[]}
+  if(!Array.isArray(rubros))rubros=[];
+}
 const RUBROS_SUGERIDOS=[
   {n:'Venta de hacienda',t:'ingreso',a:'Ganadería'},
   {n:'Venta de granos',t:'ingreso',a:'Agricultura'},
@@ -1362,7 +1578,7 @@ const RUBROS_SUGERIDOS=[
   {n:'Pase entre cuentas',t:'ambos',a:'General'}
 ];
 function guardarRubros(){
-  localStorage.setItem('campo_rubros',JSON.stringify(rubros));
+  alm.setItem('campo_rubros',JSON.stringify(rubros));
   actualizarCats();
 }
 function buscarRubro(nombre){
@@ -1449,6 +1665,97 @@ function borrarRubro(i){
   rubros.splice(i,1);
   guardarRubros();rubrosPanel();
 }
+// ===== PANEL DE ACTIVIDADES =====
+function usoActividad(n){
+  return datos.filter(x=>x.act===n||x.actOrigen===n||x.actDestino===n).length;
+}
+function agregarActividad(){
+  const inp=document.getElementById('a-nombre');
+  const nom=inp.value.trim();
+  if(!nom){inp.focus();return}
+  if(actividades.some(a=>norm(a.e)===norm(nom)||norm(a.n)===norm(nom))){
+    alert('Ya tenés una actividad con ese nombre.');return;
+  }
+  actividades.push({n:nom,e:nom,c:document.getElementById('a-color').value||colorLibre()});
+  guardarActividades();
+  inp.value='';
+  document.getElementById('a-color').value=colorLibre();
+  actividadesPanel();renderTodo();
+}
+function agregarActSugerida(nom){
+  if(actividades.some(a=>norm(a.e)===norm(nom))){alert('Esa actividad ya está en tu lista.');return}
+  actividades.push({n:nom,e:nom,c:colorLibre()});
+  guardarActividades();actividadesPanel();renderTodo();
+}
+// Renombrar solo cambia la etiqueta: la clave guardada en los movimientos
+// queda igual, así que no se toca ni un dato.
+function renombrarActividad(i){
+  const a=actividades[i];if(!a)return;
+  const nom=prompt('Nuevo nombre para "'+a.e+'":',a.e);
+  if(nom===null)return;
+  const t=nom.trim();
+  if(!t)return;
+  if(actividades.some((x,j)=>j!==i&&norm(x.e)===norm(t))){alert('Ya tenés otra actividad con ese nombre.');return}
+  a.e=t;
+  guardarActividades();actividadesPanel();renderTodo();
+}
+function colorActividad(i,c){
+  if(!actividades[i])return;
+  actividades[i].c=c;
+  guardarActividades();actividadesPanel();renderTodo();
+}
+function borrarActividad(i){
+  const a=actividades[i];if(!a)return;
+  if(a.estructura){alert('"'+a.e+'" no se puede borrar: es la actividad donde van los gastos que no son de ninguna actividad en particular (sueldos, impuestos, seguros).\n\nSi el nombre no te gusta, cambialo con ✎.');return}
+  const usos=usoActividad(a.n);
+  const dest=actEstructura();
+  if(usos){
+    if(!confirm(`Hay ${usos} movimiento${usos===1?'':'s'} cargado${usos===1?'':'s'} con la actividad "${a.e}".\n\nSi la borrás, esos movimientos pasan a "${actEtiqueta(dest)}". No se pierde ningún movimiento ni ningún monto, pero vas a tener que reimputarlos a mano si querés ponerlos en otra actividad.\n\n¿Borrar igual?`))return;
+    datos.forEach(x=>{
+      if(x.act===a.n)x.act=dest;
+      if(x.actOrigen===a.n)x.actOrigen=dest;
+      if(x.actDestino===a.n)x.actDestino=dest;
+    });
+    guardarLS();
+  }else{
+    if(!confirm(`¿Sacar "${a.e}" de tu lista de actividades? No hay ningún movimiento cargado con ella.`))return;
+  }
+  // los rubros que la tenían fija quedan sin actividad, no rotos
+  rubros.forEach(r=>{if(r.a===a.n)r.a=''});
+  guardarRubros();
+  actividades.splice(i,1);
+  guardarActividades();
+  actividadesPanel();actualizarAnios();renderTodo();
+}
+function actividadesPanel(){
+  const el=document.getElementById('g-actividades');
+  if(!el)return;
+  el.innerHTML=actividades.map((a,i)=>{
+    const n=usoActividad(a.n);
+    return `<div class="g-fila" style="gap:10px;flex-wrap:wrap">
+      <span style="flex:1;min-width:150px;display:flex;align-items:center;gap:8px">
+        <span class="g-punto" style="background:${esc(a.c)}"></span>
+        <b style="font-weight:600">${esc(a.e)}</b>
+        <span class="act-tag">${n?n+' mov.':'sin usar'}</span>
+        ${a.estructura?'<span class="act-tag" title="Acá van los gastos que no son de una actividad puntual">estructura</span>':''}
+        ${a.maq?'<span class="act-tag" title="Alimenta el panel de costo de maquinaria por hectárea">maquinaria</span>':''}
+      </span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <input type="color" value="${esc(a.c)}" onchange="colorActividad(${i},this.value)" title="Color en los gráficos" style="width:38px;height:28px;padding:2px;cursor:pointer">
+        <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="renombrarActividad(${i})" title="Cambiar el nombre">✎</button>
+        <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="borrarActividad(${i})" title="${a.estructura?'No se puede borrar':'Borrar'}"${a.estructura?' disabled style="opacity:.35;padding:5px 9px;font-size:12px"':''}>✕</button>
+      </span>
+    </div>`;
+  }).join('');
+  const sug=document.getElementById('a-sugeridas');
+  if(sug){
+    const faltan=ACT_SUGERIDAS.filter(s=>!actividades.some(a=>norm(a.e)===norm(s)));
+    sug.innerHTML=faltan.length
+      ? '<span class="mini-nota" style="width:100%;margin:0 0 2px">Agregar rápido:</span>'+faltan.map(s=>`<button class="btn btn-sec" style="padding:5px 10px;font-size:12px" onclick="agregarActSugerida('${esc(s).replace(/'/g,"\\'")}')">＋ ${esc(s)}</button>`).join('')
+      : '';
+  }
+}
+
 function rubrosPanel(){
   const el=document.getElementById('g-rubros');
   if(!el)return;
@@ -1457,16 +1764,16 @@ function rubrosPanel(){
     return;
   }
   const uso=usoRubros();
-  const ACTS=['','Ganadería','Agricultura','Cebolla','Maquinaria','General'];
+  const ACTS=[''].concat(actividades.map(a=>a.n));
   const orden=rubros.map((r,i)=>({r,i})).sort((a,b)=>a.r.n.localeCompare(b.r.n,'es',{sensitivity:'base'}));
   el.innerHTML=orden.map(({r,i})=>{
     const n=uso[norm(r.n)]||0;
     const selAct=`<select onchange="cambiarActRubro(${i},this.value)" style="font-size:12px;padding:4px 6px">`+
-      ACTS.map(a=>`<option value="${a}"${(r.a||'')===a?' selected':''}>${a?nombreAct(a):'Sin actividad'}</option>`).join('')+'</select>';
+      ACTS.map(a=>`<option value="${esc(a)}"${(r.a||'')===a?' selected':''}>${a?esc(actEtiqueta(a)):'Sin actividad'}</option>`).join('')+'</select>';
     const selTipo=`<select onchange="cambiarTipoRubro(${i},this.value)" style="font-size:12px;padding:4px 6px">`+
       [['egreso','Egreso'],['ingreso','Ingreso'],['ambos','Los dos']].map(([v,t])=>`<option value="${v}"${r.t===v?' selected':''}>${t}</option>`).join('')+'</select>';
     return `<div class="g-fila" style="gap:10px;flex-wrap:wrap">
-      <span style="flex:1;min-width:150px"><b style="font-weight:600">${r.n}</b> ${n?`<span class="act-tag">${n} mov.</span>`:'<span class="act-tag">sin usar</span>'}</span>
+      <span style="flex:1;min-width:150px"><b style="font-weight:600">${esc(r.n)}</b> ${n?`<span class="act-tag">${n} mov.</span>`:'<span class="act-tag">sin usar</span>'}</span>
       ${selTipo}${selAct}
       <button class="btn btn-sec" style="padding:5px 10px;font-size:12px" onclick="renombrarRubro(${i})" title="Renombrar">✎</button>
       <button class="borrar" onclick="borrarRubro(${i})" title="Sacar de la lista">✕</button>
@@ -1578,7 +1885,7 @@ function ultimosMov(){
     const signo=esPase?'':(x.tipo==='egreso'?'\u2212':x.tipo==='ingreso'?'+':'');
     return `<div class="um-fila" onclick="verTab('mov',document.querySelectorAll('.nav-item')[1])">
       <div class="um-ico um-${i.c}">${i.s}</div>
-      <div class="um-txt"><div class="um-nom">${nom}</div><div class="um-sub">${sub}</div></div>
+      <div class="um-txt"><div class="um-nom">${esc(nom)}</div><div class="um-sub">${esc(sub)}</div></div>
       <div class="um-monto ${cls}">${signo}${fmt(mv(x))}</div>
     </div>`;
   }).join('');
@@ -1641,7 +1948,7 @@ function chartAct(d){
   const labels=Object.keys(acts);
   charts.act=new Chart(document.getElementById('ch-act'),{
     type:'bar',
-    data:{labels,datasets:[{data:labels.map(l=>acts[l]),backgroundColor:labels.map(l=>COL_ACT[l]||'#888'),borderRadius:4}]},
+    data:{labels,datasets:[{data:labels.map(l=>acts[l]),backgroundColor:labels.map(l=>actColor(l)),borderRadius:4}]},
     options:{...baseOpts(false),plugins:{legend:{display:false}}}
   });
 }
@@ -1653,7 +1960,7 @@ function llenarSelectRubro(d){
   d.forEach(x=>{if(x.tipo!=='transfer')totales[x.cat]=(totales[x.cat]||0)+mv(x)});
   const rubros=Object.keys(totales).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
   const actual=sel.value;
-  sel.innerHTML=rubros.map(r=>`<option value="${r.replace(/"/g,'&quot;')}">${r}</option>`).join('');
+  sel.innerHTML=rubros.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   if(actual&&rubros.includes(actual))sel.value=actual;
 }
 // Evolución mes a mes de un rubro elegido (ej: cuánto retiró Gustavo cada mes).
@@ -1765,9 +2072,10 @@ function renderTabla(){
     // si el detalle termina en [Cuenta] y ya tenemos la cuenta aparte, no lo repetimos
     let detTxt=x.det||'';
     if(x.cta&&detTxt.endsWith('['+x.cta+']'))detTxt=detTxt.slice(0,-(x.cta.length+2)).trim();
+    detTxt=esc(detTxt);
     const actCell=esT
-      ?`<span class="act-tag">${nombreAct(x.actOrigen)} → ${nombreAct(x.actDestino)}</span>`
-      :`<span class="act-tag">${nombreAct(x.act)}</span>`;
+      ?`<span class="act-tag">${esc(actEtiqueta(x.actOrigen))} → ${esc(actEtiqueta(x.actDestino))}</span>`
+      :`<span class="act-tag">${esc(actEtiqueta(x.act))}</span>`;
     const esPase=!esT&&!!x.ctaDest;
     const pill=esT?'<span class="pill tra">Transf.</span>'
       :esPase?'<span class="pill pase">Pase</span>'
@@ -1778,21 +2086,21 @@ function renderTabla(){
       ?`<td style="text-align:right" class="monto-pase">${fmt(mv(x))}</td>`
       :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
     const ctaCell=esPase
-      ?`<span class="act-tag">${x.cta}</span> <span style="color:var(--tinta-suave)">→</span> <span class="act-tag">${x.ctaDest}</span>`
-      :x.cta?`<span class="act-tag">${x.cta}</span>`:'<span style="color:var(--tinta-suave)">—</span>';
+      ?`<span class="act-tag">${esc(x.cta)}</span> <span style="color:var(--tinta-suave)">→</span> <span class="act-tag">${esc(x.ctaDest)}</span>`
+      :x.cta?`<span class="act-tag">${esc(x.cta)}</span>`:'<span style="color:var(--tinta-suave)">—</span>';
     return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
       <td style="white-space:nowrap">${x.fecha}</td>
-      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${x.prov}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant.toLocaleString('es-AR',{maximumFractionDigits:3})}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo);white-space:nowrap" title="Pase entre cuentas propias o ajuste: la plata solo cambió de caja, no cuenta en el resultado del campo">pase interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
+      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${esc(x.prov)}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant.toLocaleString('es-AR',{maximumFractionDigits:3})}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo);white-space:nowrap" title="Pase entre cuentas propias o ajuste: la plata solo cambió de caja, no cuenta en el resultado del campo">pase interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
       <td>${ctaCell}</td>
       <td>${actCell}</td>
-      <td>${x.cat}</td>
+      <td>${esc(x.cat)}</td>
       <td>${pill}</td>
       ${monto}
       <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
     </tr>`;
   }).join('');
 }
-function nombreAct(a){return{'Ganadería':'Cría/inv.','Agricultura':'Agric.','Cebolla':'Cebolla','General':'General'}[a]||a}
+function nombreAct(a){return actEtiqueta(a)}
 
 // ============ PROYECCIÓN ============
 function renderProj(){
@@ -1847,7 +2155,7 @@ function rentActividad(){
   const el=document.getElementById('rent-act');
   const filas=Object.entries(agg).map(([a,v])=>({a,res:v.ing-v.egr})).sort((x,y)=>y.res-x.res);
   if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos.</p>';return}
-  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${COL_ACT[f.a]||'#888'};margin-right:7px"></span>${nombreAct(f.a)}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad, con transferencias internas incluidas. Acá ves de una cuál te deja plata y cuál te la come.</p>';
+  el.innerHTML=filas.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--linea)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${actColor(f.a)};margin-right:7px"></span>${esc(actEtiqueta(f.a))}</span><b style="color:${f.res>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.res)}</b></div>`).join('')+'<p class="mini-nota">Resultado neto por actividad, con transferencias internas incluidas. Acá ves de una cuál te deja plata y cuál te la come.</p>';
 }
 
 // ============ IMPORT ============
@@ -1862,7 +2170,7 @@ function leerArchivo(e){
     rawImport=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true,cellDates:true});
     if(!rawImport.length){alert('El archivo parece vacío');return}
     colsImport=Object.keys(rawImport[0]);
-    const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${c}">${c}</option>`).join('');
+    const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
     ['map-fecha','map-monto','map-tipo','map-egrcol','map-cta','map-prov','map-cant','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
     adivinar('map-fecha',['fecha','date','dia']);
     adivinar('map-monto',['monto','importe','valor','total','pesos','$']);
@@ -2088,17 +2396,23 @@ function mapAct(v){
   return clasificarRubro(v).act;
 }
 
+// Al importar un Excel se adivina la actividad por el nombre del rubro. Solo
+// puede proponer actividades que el usuario tenga en su lista: si no, el
+// movimiento quedaría imputado a algo que no existe y desaparecería de los
+// filtros. Lo que no matchea va a estructura y se reimputa a mano.
+function actSiExiste(n){return actBuscar(n)?n:actEstructura()}
 function clasificarRubro(rubro){
   const r=(''+(rubro||'')).toLowerCase();
+  const E=actEstructura();
   if(/plazo fijo|plazo\b|dolar|dólar|inversion|inversión|bono|accion|acción|criptomoneda|cripto|credito|crédito|prestamo|préstamo/.test(r))
-    return {act:'General',interno:false,financiero:true};
+    return {act:E,interno:false,financiero:true};
   if(/movimiento interno|retiro|saldo inicial|ajuste|movimiento entre/.test(r))
-    return {act:'General',interno:true};
-  if(/cebolla/.test(r))return {act:'Cebolla',interno:false};
-  if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo|veterinari|sanidad animal/.test(r))return {act:'Ganadería',interno:false};
+    return {act:E,interno:true};
+  if(/cebolla/.test(r))return {act:actSiExiste('Cebolla'),interno:false};
+  if(/ternero|vaca|capitaliz|hacienda|vaquillona|novillo|veterinari|sanidad animal/.test(r))return {act:actSiExiste('Ganadería'),interno:false};
   if(/maiz|maíz|semilla|fertiliz|herbicida|cosecha|siembra|grano|trigo|soja|canon de riego|riego|contratista|chacra|luz chacra/.test(r))
-    return {act:'Agricultura',interno:false};
-  return {act:'General',interno:false};
+    return {act:actSiExiste('Agricultura'),interno:false};
+  return {act:E,interno:false};
 }
 
 // ===== IMPORT DIRECTO del formato "Gestión" =====
@@ -2239,12 +2553,10 @@ const NO_RESPALDAR=['campo_ipc','campo_tc','campo_gemini_key','campo_groq_key','
 // así una función nueva queda respaldada sola sin tocar esto.
 function juntarDatosLS(){
   const d={};
-  for(let i=0;i<localStorage.length;i++){
-    const k=localStorage.key(i);
-    if(!k||!k.startsWith('campo_'))continue;
-    if(NO_RESPALDAR.includes(k))continue;
-    d[k]=localStorage.getItem(k);
-  }
+  alm.claves().forEach(k=>{
+    if(NO_RESPALDAR.includes(k))return;
+    d[k]=alm.getItem(k);
+  });
   return d;
 }
 function bajarArchivo(nombre,contenido){
@@ -2271,8 +2583,8 @@ function respaldar(){
   const hoy=new Date();
   const nombre='respaldo-campo-'+hoy.toISOString().slice(0,10)+'.json';
   bajarArchivo(nombre,armarRespaldo());
-  localStorage.setItem('campo_backup',''+Date.now());
-  localStorage.removeItem('campo_backup_snooze');
+  alm.setItem('campo_backup',''+Date.now());
+  alm.removeItem('campo_backup_snooze');
   document.getElementById('banner-backup').style.display='none';
   estadoBackup();
   alert('✓ Copia guardada como:\n'+nombre+'\n\nFijate en la carpeta de Descargas. Muy importante: mandátela por WhatsApp o subila a tu Drive. Si la dejás solo en esta computadora y la computadora se rompe, la copia se pierde con ella.\n\n(La clave del asesor no se incluye en el archivo, así podés compartirlo tranquilo. Si restaurás en una computadora nueva, la pegás una vez y listo.)');
@@ -2282,7 +2594,7 @@ function restaurar(e){
   e.target.value='';
   if(!f)return;
   const reader=new FileReader();
-  reader.onload=ev=>{
+  reader.onload=async ev=>{
     let j;
     try{j=JSON.parse(ev.target.result)}
     catch(_){alert('⚠️ Ese archivo no se puede leer. Tiene que ser el archivo respaldo-campo-....json que bajó esta misma app.');return}
@@ -2313,30 +2625,29 @@ function restaurar(e){
       }
     }
     // limpiar solo las claves de la app y escribir las de la copia
-    const viejas=[];
-    for(let i=0;i<localStorage.length;i++){
-      const k=localStorage.key(i);
-      if(k&&k.startsWith('campo_')&&!NO_RESPALDAR.includes(k))viejas.push(k);
-    }
-    viejas.forEach(k=>localStorage.removeItem(k));
+    const viejas=alm.claves().filter(k=>!NO_RESPALDAR.includes(k));
+    viejas.forEach(k=>alm.removeItem(k));
     Object.entries(j.datos).forEach(([k,v])=>{
       if(!k||!k.startsWith('campo_'))return;
       // Copias hechas con versiones anteriores pueden traer la clave de Gemini
       // o el control del aviso: no pisamos lo que ya tiene esta PC.
       if(NO_RESPALDAR.includes(k)){
         // única excepción: si acá no hay clave cargada, aprovechamos la de la copia
-        if((k==='campo_gemini_key'||k==='campo_groq_key')&&!localStorage.getItem(k))localStorage.setItem(k,v);
+        if((k==='campo_gemini_key'||k==='campo_groq_key')&&!alm.getItem(k))alm.setItem(k,v);
         return;
       }
-      localStorage.setItem(k,v);
+      alm.setItem(k,v);
     });
+    // Con IndexedDB la escritura es asincrónica: si recargamos antes de que
+    // termine, la restauración se pierde a medias.
+    await alm.flush();
     alert('✓ Listo, se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.');
     location.reload();
   };
   reader.readAsText(f);
 }
 function diasSinBackup(){
-  const ult=parseInt(localStorage.getItem('campo_backup')||'0');
+  const ult=parseInt(alm.getItem('campo_backup')||'0');
   if(!ult)return null;
   return Math.floor((Date.now()-ult)/864e5);
 }
@@ -2354,17 +2665,17 @@ function estadoBackup(){
 }
 function chequearBackup(){
   if(datos.length<10)return;
-  const ult=parseInt(localStorage.getItem('campo_backup')||'0');
-  const snooze=parseInt(localStorage.getItem('campo_backup_snooze')||'0');
+  const ult=parseInt(alm.getItem('campo_backup')||'0');
+  const snooze=parseInt(alm.getItem('campo_backup_snooze')||'0');
   // "Después" silencia el aviso hasta el día siguiente
   if(snooze&&Date.now()-snooze<864e5)return;
   if(!ult){
     // nunca respaldó: damos 3 días de gracia desde el primer uso
-    if(!localStorage.getItem('campo_backup_primera')){
-      localStorage.setItem('campo_backup_primera',''+Date.now());
+    if(!alm.getItem('campo_backup_primera')){
+      alm.setItem('campo_backup_primera',''+Date.now());
       return;
     }
-    if(Date.now()-parseInt(localStorage.getItem('campo_backup_primera'))<3*864e5)return;
+    if(Date.now()-parseInt(alm.getItem('campo_backup_primera'))<3*864e5)return;
     document.getElementById('txt-backup').innerHTML='<b>Todavía no guardaste ninguna copia de seguridad.</b> Todo lo que cargaste vive solo en esta computadora: si se rompe o se borran los datos del navegador, se pierde.';
     document.getElementById('banner-backup').style.display='flex';
     return;
@@ -2375,7 +2686,7 @@ function chequearBackup(){
   document.getElementById('banner-backup').style.display='flex';
 }
 function posponerBackup(){
-  localStorage.setItem('campo_backup_snooze',''+Date.now());
+  alm.setItem('campo_backup_snooze',''+Date.now());
   document.getElementById('banner-backup').style.display='none';
 }
 
@@ -2399,10 +2710,10 @@ async function cargarDolar(){
 }
 
 // ============ ASESOR IA (Gemini / Groq) ============
-let iaProveedor=localStorage.getItem('campo_ia_prov')||'gemini';
-let iaKey=localStorage.getItem(iaProveedor==='groq'?'campo_groq_key':'campo_gemini_key')||'';
+let iaProveedor='gemini';
+let iaKey='';
 let iaHistorial=[];
-function claveDe(prov){return localStorage.getItem(prov==='groq'?'campo_groq_key':'campo_gemini_key')||''}
+function claveDe(prov){return alm.getItem(prov==='groq'?'campo_groq_key':'campo_gemini_key')||''}
 function usarGroq(){return iaProveedor==='groq'}
 
 function initIA(){
@@ -2429,7 +2740,7 @@ function initIA(){
 }
 function cambiarProveedor(){
   iaProveedor=document.getElementById('ia-prov-sel').value;
-  localStorage.setItem('campo_ia_prov',iaProveedor);
+  alm.setItem('campo_ia_prov',iaProveedor);
   iaHistorial=[];
   const cont=document.getElementById('ia-mensajes');
   if(cont)cont.innerHTML='';
@@ -2438,13 +2749,13 @@ function cambiarProveedor(){
 function guardarKey(){
   const k=document.getElementById('ia-key-input').value.trim();
   if(!k){alert('Pegá la clave primero');return}
-  localStorage.setItem(usarGroq()?'campo_groq_key':'campo_gemini_key',k);
+  alm.setItem(usarGroq()?'campo_groq_key':'campo_gemini_key',k);
   document.getElementById('ia-key-input').value='';
   initIA();
 }
 function cambiarKey(){
   if(!confirm('¿Borrar la clave guardada y cargar otra?'))return;
-  localStorage.removeItem(usarGroq()?'campo_groq_key':'campo_gemini_key');
+  alm.removeItem(usarGroq()?'campo_groq_key':'campo_gemini_key');
   iaKey='';
   iaHistorial=[];document.getElementById('ia-mensajes').innerHTML='';
   initIA();
@@ -2626,7 +2937,7 @@ function resumenParaIA(){
     txt+=`- Saldo neto pendiente: ${M(rp.neto)}\n`;
   }
   // maquinaria por hectárea
-  const dMaq=datosReales().filter(x=>x.act==='Maquinaria'&&x.tipo==='egreso');
+  const dMaq=actMaq()?datosReales().filter(x=>x.act===actMaq()&&x.tipo==='egreso'):[];
   if(dMaq.length){
     const cMaq=dMaq.reduce((s,x)=>s+mv(x),0);
     const kMaq=document.getElementById('g-anio')?.value||'todos';
@@ -2784,6 +3095,7 @@ function datosGestion(){
 }
 function renderGestion(){
   actualizarAniosGestion();
+  actividadesPanel();
   cuentasPanel();
   margenActividad();
   preciosPromedio();
@@ -2798,17 +3110,17 @@ function renderGestion(){
   rubrosPanel();
 }
 // ===== MAQUINARIA PROPIA (costo por hectárea) =====
-let hasMaq=JSON.parse(localStorage.getItem('campo_has_maq')||'{}');
+let hasMaq={};
 function claveEjercicio(){return document.getElementById('g-anio').value||'todos'}
 function guardarHasMaq(){
   const k=claveEjercicio();
   const v=parseMontoAR(document.getElementById('maq-has').value);
   if(v>0)hasMaq[k]=v;else delete hasMaq[k];
-  localStorage.setItem('campo_has_maq',JSON.stringify(hasMaq));
+  alm.setItem('campo_has_maq',JSON.stringify(hasMaq));
   maquinariaPanel(true);
 }
 function maquinariaPanel(soloResultado){
-  const d=datosGestion().filter(x=>x.act==='Maquinaria');
+  const d=actMaq()?datosGestion().filter(x=>x.act===actMaq()):[];
   const el=document.getElementById('g-maquinaria');
   const panel=document.getElementById('panel-maq');
   const costo=d.filter(x=>x.tipo==='egreso').reduce((s,x)=>s+mv(x),0);
@@ -2850,7 +3162,7 @@ function financieroPanel(){
     <div class="cierre-box"><div class="et">Resultado financiero</div><div class="v" style="color:${entrada-salida>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(entrada-salida)}</div></div>
   </div>`;
   const evs=[...d].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,15);
-  html+='<div style="margin-top:12px">'+evs.map(x=>`<div class="g-fila"><span>${x.fecha} · ${x.cat}${x.det?' · '+x.det.replace(/\\[[^\\]]+\\]/,'').trim():''}</span><b class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</b></div>`).join('')+'</div>';
+  html+='<div style="margin-top:12px">'+evs.map(x=>`<div class="g-fila"><span>${esc(x.fecha)} · ${esc(x.cat)}${x.det?' · '+esc(x.det.replace(/\\[[^\\]]+\\]/,'').trim()):''}</span><b class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</b></div>`).join('')+'</div>';
   el.innerHTML=html;
 }
 // ===== CUENTAS A COBRAR Y PAGAR =====
@@ -2877,7 +3189,7 @@ function pendientesPanel(){
     const venc=x.venc&&x.venc<hoy;
     const nom=x.prov?x.prov:(x.cat||'—');
     return `<div class="g-fila">
-      <span>${nom} <span class="mini-nota" style="display:block">${x.cat}${x.det?' · '+x.det.replace(/\\[[^\\]]+\\]/,'').trim():''}${x.venc?` · ${venc?'<b style="color:var(--ladrillo)">venció '+x.venc+'</b>':'vence '+x.venc}`:''}</span></span>
+      <span>${esc(nom)} <span class="mini-nota" style="display:block">${esc(x.cat)}${x.det?' · '+esc(x.det.replace(/\\[[^\\]]+\\]/,'').trim()):''}${x.venc?` · ${venc?'<b style="color:var(--ladrillo)">venció '+esc(x.venc)+'</b>':'vence '+esc(x.venc)}`:''}</span></span>
       <span style="display:flex;align-items:center;gap:10px">
         <b>${fmt(mv(x))}</b>
         <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="saldarPendiente('${x.id}')">Ya se ${x.tipo==='ingreso'?'cobró':'pagó'}</button>
@@ -2915,7 +3227,7 @@ function saldarPendiente(id){
   render();renderTabla();renderGestion();
 }
 
-const ACT_NOMBRE={'Ganadería':'Cría / invernada','Agricultura':'Agricultura','Cebolla':'Alquiler cebolla','Maquinaria':'Maquinaria propia'};
+
 
 function cuentasPanel(){
   const el=document.getElementById('g-cuentas');
@@ -2924,7 +3236,7 @@ function cuentasPanel(){
   const total=saldos.reduce((s,[,v])=>s+v,0);
   const F=fmtARS;
   el.innerHTML=`<div class="cierre-box" style="margin-bottom:14px"><div class="et">Total disponible (todas las cuentas)</div><div class="v" style="color:${total>=0?'var(--campo)':'var(--ladrillo)'}">${F(total)}</div><div class="d">Siempre en $ corrientes — es la plata de hoy</div></div>`+
-    saldos.map(([c,s])=>`<div class="g-fila"><span>${c}</span><b style="color:${s>=0?'var(--tinta)':'var(--ladrillo)'}">${F(s)}</b></div>`).join('')+
+    saldos.map(([c,s])=>`<div class="g-fila"><span>${esc(c)}</span><b style="color:${s>=0?'var(--tinta)':'var(--ladrillo)'}">${F(s)}</b></div>`).join('')+
     notaPases();
 }
 // Aviso al pie de los saldos: cuánto se movió entre cajas y si alguna punta quedó sin cargar.
@@ -2938,7 +3250,7 @@ function notaPases(){
 
 function margenActividad(){
   const agg=actAgg(datosGestion());
-  const filas=Object.entries(agg).filter(([a])=>a!=='General'&&a!=='Maquinaria')
+  const filas=Object.entries(agg).filter(([a])=>a!==actEstructura()&&a!==actMaq())
     .map(([a,v])=>({a,ing:v.ing,egr:v.egr,margen:v.ing-v.egr}))
     .sort((x,y)=>y.margen-x.margen);
   const maxAbs=Math.max(...filas.map(f=>Math.abs(f.margen)),1);
@@ -2946,10 +3258,10 @@ function margenActividad(){
   if(!filas.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin datos para este ejercicio.</p>';return}
   el.innerHTML=filas.map(f=>{
     const pct=f.ing>0?Math.round(f.margen/f.ing*100):0;
-    const col=COL_ACT[f.a]||'#888';
+    const col=actColor(f.a);
     return `<div style="padding:14px 0;border-bottom:1px solid var(--linea)">
       <div class="g-fila" style="border:none;padding:0">
-        <div class="g-act"><span class="g-punto" style="background:${col}"></span>${ACT_NOMBRE[f.a]||f.a}</div>
+        <div class="g-act"><span class="g-punto" style="background:${col}"></span>${esc(actEtiqueta(f.a))}</div>
         <div class="g-nums"><b style="color:${f.margen>=0?'var(--campo)':'var(--ladrillo)'}">${fmt(f.margen)}</b>${f.ing>0?'margen '+pct+'%':''}</div>
       </div>
       <div class="g-barra"><i style="width:${Math.abs(f.margen)/maxAbs*100}%;background:${f.margen>=0?'var(--campo)':'var(--ladrillo)'}"></i></div>
@@ -2977,7 +3289,7 @@ function preciosPromedio(){
   }).sort((a,b)=>b.total-a.total);
   el.innerHTML=filas.map(f=>`
     <div class="g-fila">
-      <span>${f.cat} <span class="pill ${f.tipo==='ingreso'?'ing':'egr'}" style="margin-left:6px">${f.tipo==='ingreso'?'Venta':'Compra'}</span></span>
+      <span>${esc(f.cat)} <span class="pill ${f.tipo==='ingreso'?'ing':'egr'}" style="margin-left:6px">${f.tipo==='ingreso'?'Venta':'Compra'}</span></span>
       <div class="g-nums"><b>${fmt(f.prom)} /u</b>${f.cant.toLocaleString('es-AR',{maximumFractionDigits:3})} unidades · total ${fmt(f.total)}</div>
     </div>`).join('');
 }
@@ -3007,7 +3319,7 @@ function provPanel(){
     return `<p style="font-size:13px;font-weight:700;margin:10px 0 4px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.04em">${titulo}</p>`+
       filas.slice(0,10).map(([p,v])=>{
         const pct=total>0?Math.round(v.monto/total*100):0;
-        return `<div class="g-fila"><span>${p} <span class="act-tag">${v.n} movs · ${pct}%</span></span><b style="color:${color}">${fmt(v.monto)}</b></div>`;
+        return `<div class="g-fila"><span>${esc(p)} <span class="act-tag">${v.n} movs · ${pct}%</span></span><b style="color:${color}">${fmt(v.monto)}</b></div>`;
       }).join('');
   };
   el.innerHTML=bloque('Clientes (a quién le vendés)',clientes,'var(--campo)')+
@@ -3065,8 +3377,8 @@ function calcularAlertas(anio){
     if(a==='General')return;
     if(v.ing>0&&v.ing-v.egr<0){
       als.push({t:'amar',i:'🔍',
-        txt:`<b>${ACT_NOMBRE[a]||a}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`,
-        preg:`¿${ACT_NOMBRE[a]||a} pierde plata en serio o es un tema de cómo están repartidos los costos?`});
+        txt:`<b>${esc(actEtiqueta(a))}</b> cerró con margen negativo (${fmt(v.ing-v.egr)}). Ojo: puede ser real, o que gastos comunes (combustible, sueldos) que la afectan estén contados en estructura y no acá.`,
+        preg:`¿${actEtiqueta(a)} pierde plata en serio o es un tema de cómo están repartidos los costos?`});
     }
   });
   // concentración de ventas: mucha dependencia de un solo comprador
@@ -3085,7 +3397,7 @@ function calcularAlertas(anio){
   saldosPorCuenta().forEach(([c,s])=>{
     if(s<-1000){
       als.push({t:'amar',i:'🏦',
-        txt:`La cuenta <b>${c}</b> da saldo negativo (${fmtARS(s)}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
+        txt:`La cuenta <b>${esc(c)}</b> da saldo negativo (${fmtARS(s)}). Una caja no puede tener menos que cero: seguramente falta cargar un ingreso o un saldo inicial, o hay un movimiento mal imputado.`,
         preg:null});
     }
   });
@@ -3145,10 +3457,49 @@ function borrarTodo(){
   if(!confirm('¿Seguro? Última confirmación.'))return;
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
 }
-document.getElementById('f-moneda').value=moneda;
-// migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
-if(migrarDatos())guardarLS();
-actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
+// El arranque espera a que abra IndexedDB antes de leer nada: hasta que no
+// termine, `datos` está vacío y no hay que renderizar ni dejar tocar botones.
+async function iniciar(){
+  try{
+    await alm.iniciar();
+  }catch(e){
+    console.error('Almacén:',e);
+  }
+
+  // --- estado desde el almacén ---
+  try{datos=JSON.parse(alm.getItem('campo_datos')||'[]')}catch(_){datos=[]}
+  if(!Array.isArray(datos))datos=[];
+  moneda=alm.getItem('campo_moneda')||'corriente';
+  cargarRubros();
+  cargarActividades();
+  llenarSelectsAct();
+  document.getElementById('a-color').value=colorLibre();
+  aplicarTema();
+  iaProveedor=alm.getItem('campo_ia_prov')||'gemini';
+  iaKey=claveDe(iaProveedor);
+  try{hasMaq=JSON.parse(alm.getItem('campo_has_maq')||'{}')}catch(_){hasMaq={}}
+  if(!hasMaq||typeof hasMaq!=='object')hasMaq={};
+
+  document.getElementById('velo-carga').style.display='none';
+  document.getElementById('f-moneda').value=moneda;
+  // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
+  if(migrarDatos())guardarLS();
+  actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();
+
+  if(alm.recuperado){
+    let f=alm.fechaRecuperado;
+    try{f=new Date(f).toLocaleDateString('es-AR')}catch(_){}
+    alert('⚠️ El navegador había borrado los datos de la app.\n\nSe recuperó la copia interna que había quedado guardada el '+f+', con '+datos.length+' movimientos.\n\nRevisá que no falte lo cargado después de esa fecha. Si falta algo, restaurá tu último respaldo .json.');
+  }
+}
+
+// Si queda una escritura en vuelo y se cierra la pestaña, avisamos en vez de
+// perderla en silencio. En la práctica dura milisegundos y no se ve nunca.
+window.addEventListener('beforeunload',e=>{
+  if(alm.pendientes>0){e.preventDefault();e.returnValue=''}
+});
+
+iniciar();
 </script>
 </body>
 </html>
