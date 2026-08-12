@@ -398,6 +398,26 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
   Abriendo tus datos…
 </div>
 
+<!-- Pantalla de acceso: sólo aparece si no hay clave guardada o si venció. -->
+<div id="velo-lic" style="display:none;position:fixed;inset:0;z-index:9998;background:var(--lienzo);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--s2);padding:30px 28px;width:100%;max-width:400px">
+    <div style="width:44px;height:44px;border-radius:12px;background:var(--campo-hondo);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;margin-bottom:16px">C</div>
+    <h2 id="lic-tit" style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-.02em;margin-bottom:6px">Bienvenido</h2>
+    <p id="lic-sub" style="color:var(--tinta-2);font-size:14px;margin-bottom:20px">Poné la clave que te pasamos para empezar a usar la app. Se pone una sola vez.</p>
+    <div id="lic-form">
+      <input type="text" id="lic-clave" placeholder="CAMPO-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false"
+             style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:17px;letter-spacing:.06em;text-align:center;padding:13px;border:1px solid var(--borde-vivo);border-radius:10px;background:#fff;color:var(--tinta);margin-bottom:12px"
+             enterkeyhint="go" onkeydown="if(event.key==='Enter')activarLic()">
+      <div id="lic-err" style="display:none;color:var(--ladrillo);font-size:13.5px;margin:-4px 0 12px"></div>
+      <button class="btn btn-primario" style="width:100%" id="lic-btn" onclick="activarLic()">Activar</button>
+    </div>
+    <div id="lic-acc" style="display:none;margin-top:6px"></div>
+    <p style="color:var(--tinta-3);font-size:12.5px;margin-top:18px;line-height:1.5">
+      Al usar la app aceptás los <a href="terminos.html" target="_blank" rel="noopener" style="color:var(--campo-hondo)">términos</a> y la <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--campo-hondo)">política de privacidad</a>.
+    </p>
+  </div>
+</div>
+
 <main>
   <div class="alerta roja" id="banner-guardado" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
     <span class="ai">⚠️</span>
@@ -409,6 +429,11 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <span class="ai">📅</span>
     <div style="flex:1;min-width:220px"><b>Las fechas se importaron mal.</b> Una versión anterior de la app leía mal las fechas del Excel (las tomaba en formato americano). Ya está corregido, pero los datos que están cargados quedaron con el día y el mes cambiados. <b>La solución:</b> exportá un backup por las dudas, borrá todo con 🗑️ y volvé a importar la planilla. Tarda un minuto y queda todo bien.</div>
     <button class="btn btn-sec" style="padding:8px 12px;font-size:13px" onclick="document.getElementById('banner-fechas').style.display='none'">Entendido</button>
+  </div>
+
+  <div class="alerta amar" id="banner-lic" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span class="ai">📅</span>
+    <div style="flex:1;min-width:240px" id="banner-lic-txt"></div>
   </div>
 
   <div class="alerta verde" id="banner-drive" style="display:none;margin-bottom:16px;align-items:center;flex-wrap:wrap">
@@ -2672,6 +2697,146 @@ function restaurar(e){
   };
   reader.readAsText(f);
 }
+// ============ LICENCIA ============
+// La app le pregunta al Worker si la clave sigue vigente. Principios:
+//  · Ante la duda, DEJA ENTRAR. Es mucho peor dejar sin trabajar a cinco que
+//    pagan que darle unos días gratis a uno que no pagó.
+//  · Aguanta GRACIA_OFF días sin internet: en el campo se cae la señal.
+//  · Exportar el respaldo NUNCA se bloquea, ni con la cuenta vencida. Los
+//    datos son del cliente, no nuestros.
+const LIC_API='https://gestion-campo.eliasfarah166.workers.dev';
+const GRACIA_OFF=7;          // días que funciona sin poder consultar al Worker
+let lic=null;                // estado de la última validación
+
+function licLeer(){
+  try{return JSON.parse(alm.getItem('campo_lic')||'null')}catch(_){return null}
+}
+function licGuardar(o){alm.setItem('campo_lic',JSON.stringify(o))}
+// Identificador anónimo del equipo: sirve para que el panel muestre desde
+// cuántas computadoras se usa. No lleva ningún dato personal.
+function licEquipo(){
+  let e=alm.getItem('campo_equipo');
+  if(!e){e='eq-'+Math.random().toString(36).slice(2,10);alm.setItem('campo_equipo',e)}
+  return e;
+}
+function licNormalizar(v){
+  const l=(''+(v||'')).toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!l.startsWith('CAMPO')||l.length!==13)return null;
+  return 'CAMPO-'+l.slice(5,9)+'-'+l.slice(9);
+}
+async function licConsultar(clave){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),8000);
+  try{
+    const r=await fetch(LIC_API+'/validar',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({clave,equipo:licEquipo()}),signal:ctrl.signal
+    });
+    if(!r.ok)throw new Error('http-'+r.status);
+    return await r.json();
+  }finally{clearTimeout(t)}
+}
+function licPantalla(modo,datos){
+  const velo=document.getElementById('velo-lic');
+  const tit=document.getElementById('lic-tit'), sub=document.getElementById('lic-sub');
+  const form=document.getElementById('lic-form'), acc=document.getElementById('lic-acc');
+  velo.style.display='flex';
+  if(modo==='pedir'){
+    form.style.display='block';acc.style.display='none';
+    setTimeout(()=>document.getElementById('lic-clave').focus(),60);
+    return;
+  }
+  form.style.display='none';acc.style.display='block';
+  if(modo==='vencido'){
+    tit.textContent='Tu cuenta venció';
+    sub.innerHTML='La cuenta venció el <b>'+(datos&&datos.vence?aFechaAR(datos.vence):'—')+'</b>. Escribinos para reactivarla y seguís donde quedaste: <b>tus datos están intactos</b> en esta computadora.';
+  }else if(modo==='baja'){
+    tit.textContent='Cuenta dada de baja';
+    sub.innerHTML='Esta cuenta está dada de baja. <b>Tus datos siguen intactos</b> en esta computadora: podés descargarlos cuando quieras con el botón de abajo.';
+  }else{
+    tit.textContent='No pudimos verificar tu cuenta';
+    sub.innerHTML='Hace más de '+GRACIA_OFF+' días que no logramos conectarnos. Conectate a internet una vez y listo. Mientras tanto podés descargar una copia de tus datos.';
+  }
+  // La descarga del respaldo nunca se bloquea: los datos son del cliente.
+  acc.innerHTML='<button class="btn btn-primario" style="width:100%;margin-bottom:9px" onclick="respaldar()">💾 Descargar mis datos</button>'+
+    '<button class="btn btn-sec" style="width:100%" onclick="licOtraClave()">Poner otra clave</button>';
+}
+function aFechaAR(iso){if(!iso)return '—';const p=(''+iso).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:iso}
+function licOtraClave(){
+  document.getElementById('lic-clave').value='';
+  document.getElementById('lic-err').style.display='none';
+  licPantalla('pedir');
+}
+async function activarLic(){
+  const inp=document.getElementById('lic-clave');
+  const err=document.getElementById('lic-err');
+  const btn=document.getElementById('lic-btn');
+  const clave=licNormalizar(inp.value);
+  if(!clave){
+    err.textContent='Esa clave no tiene el formato correcto. Tiene que ser tipo CAMPO-A7K2-9XQ4.';
+    err.style.display='block';return;
+  }
+  btn.disabled=true;btn.textContent='Verificando...';err.style.display='none';
+  try{
+    const r=await licConsultar(clave);
+    if(r.ok){
+      licGuardar({clave,vence:r.vence,ult:Date.now(),nombre:r.nombre});
+      document.getElementById('velo-lic').style.display='none';
+      lic={ok:true,...r};
+      licBanner();
+      return;
+    }
+    err.textContent=r.motivo==='baja'?'Esa cuenta está dada de baja. Escribinos para reactivarla.'
+      :r.motivo==='vencido'?'Esa cuenta está vencida. Escribinos para reactivarla.'
+      :'No encontramos esa clave. Fijate que esté bien copiada.';
+    err.style.display='block';
+  }catch(e){
+    err.textContent='No se pudo conectar. Revisá tu internet y probá de nuevo.';
+    err.style.display='block';
+  }finally{btn.disabled=false;btn.textContent='Activar'}
+}
+function licBanner(){
+  const b=document.getElementById('banner-lic');
+  if(!b||!lic||!lic.ok){if(b)b.style.display='none';return}
+  const t=document.getElementById('banner-lic-txt');
+  if(lic.gracia){
+    t.innerHTML='<b>Tu cuenta venció el '+aFechaAR(lic.vence)+'.</b> Podés seguir usándola unos días más, pero después se va a bloquear. Escribinos para renovarla.';
+    b.style.display='flex';
+  }else if(typeof lic.dias==='number'&&lic.dias>=0&&lic.dias<=5){
+    t.innerHTML='Tu cuenta vence '+(lic.dias===0?'<b>hoy</b>':'en <b>'+lic.dias+' día'+(lic.dias===1?'':'s')+'</b>')+' ('+aFechaAR(lic.vence)+').';
+    b.style.display='flex';
+  }else b.style.display='none';
+}
+// Devuelve true si la app puede abrirse.
+async function licVerificar(){
+  const g=licLeer();
+  if(!g||!g.clave){licPantalla('pedir');return false}
+
+  let r=null;
+  try{r=await licConsultar(g.clave)}catch(_){r=null}
+
+  if(r){
+    if(r.ok){
+      licGuardar({clave:g.clave,vence:r.vence,ult:Date.now(),nombre:r.nombre});
+      lic={ok:true,...r};
+      return true;
+    }
+    // El Worker respondió que no: eso sí es definitivo.
+    licPantalla(r.motivo==='baja'?'baja':'vencido',r);
+    return false;
+  }
+
+  // No hubo respuesta (sin señal, Worker caído, Cloudflare con problemas).
+  // Se usa la última validación buena mientras esté dentro de la gracia.
+  const dias=(Date.now()-(g.ult||0))/86400000;
+  if(dias<=GRACIA_OFF){
+    lic={ok:true,vence:g.vence,dias:g.vence?Math.round((new Date(g.vence+'T00:00:00')-new Date(new Date().toISOString().slice(0,10)+'T00:00:00'))/86400000):null,offline:true};
+    return true;
+  }
+  licPantalla('sinconexion');
+  return false;
+}
+
 // ============ RESPALDO AUTOMÁTICO EN GOOGLE DRIVE ============
 // La copia se guarda en el Drive del propio usuario. El permiso pedido
 // (drive.file) sólo alcanza a los archivos que crea esta app: no vemos ni
@@ -3726,10 +3891,16 @@ async function iniciar(){
   if(!hasMaq||typeof hasMaq!=='object')hasMaq={};
 
   document.getElementById('velo-carga').style.display='none';
+
+  // La licencia se verifica DESPUÉS de cargar los datos: así, aunque la cuenta
+  // esté vencida, el botón de descargar el respaldo tiene qué descargar.
+  const habilitada=await licVerificar();
+  if(!habilitada)return;
+
   document.getElementById('f-moneda').value=moneda;
   // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
   if(migrarDatos())guardarLS();
-  actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();driveArranque();
+  actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();driveArranque();licBanner();
 
   if(alm.recuperado){
     let f=alm.fechaRecuperado;
