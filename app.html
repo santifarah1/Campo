@@ -167,8 +167,15 @@ tr:hover td{background:var(--lienzo)}
 .monto-ing{color:var(--campo);font-weight:600}
 .monto-egr{color:var(--ladrillo);font-weight:600}
 .monto-tra{color:var(--cielo);font-weight:600}
-.borrar{background:none;color:var(--tinta-3);font-size:15px;padding:3px 8px;border-radius:7px;transition:.15s}
+.borrar{background:none;border:none;color:var(--tinta-3);font-size:15px;padding:3px 8px;
+  border-radius:7px;transition:.15s;cursor:pointer;line-height:1}
 .borrar:hover{background:var(--ladrillo-suave);color:var(--ladrillo)}
+/* En celular todo lo que se toca necesita 44x44 como mínimo, o se le erra
+   con el dedo. Pasaba con el ✕ de rubros y actividades. */
+@media(pointer:coarse){
+  .borrar{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+  .g-fila .btn{min-height:44px;min-width:44px}
+}
 
 /* ===== MODAL ===== */
 .modal-bg{position:fixed;inset:0;background:rgba(43,42,38,.4);z-index:100;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
@@ -558,7 +565,7 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
       <div class="vacio" id="tabla-vacia" style="display:none">
         <div class="ico">🌾</div>
         <h3>Todavía no hay movimientos</h3>
-        <p>Cargá el primero con el botón + o importá el Excel de tu viejo.</p>
+        <p>Cargá el primero con el botón <b>+ Nuevo movimiento</b>, o importá la planilla que ya venías llevando.</p>
       </div>
     </div>
   </div>
@@ -2014,7 +2021,7 @@ function llenarSelectRubro(d){
   sel.innerHTML=rubros.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   if(actual&&rubros.includes(actual))sel.value=actual;
 }
-// Evolución mes a mes de un rubro elegido (ej: cuánto retiró Gustavo cada mes).
+// Evolución mes a mes de un rubro elegido (ej: cuánto se gastó en gasoil cada mes).
 function chartRubro(){
   destruir('rubro');
   const sel=document.getElementById('f-rubro');

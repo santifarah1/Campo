@@ -6,288 +6,829 @@
 <title>Gestión del Campo · Los números de tu campo, claros</title>
 <meta name="description" content="Aplicación para llevar las cuentas de un campo: cuánto entra, cuánto sale y cuánto deja cada actividad. Sin Excel, sin planillas rotas.">
 <meta property="og:title" content="Gestión del Campo">
-<meta property="og:description" content="Los números de tu campo, claros. Sin pelear con Excel.">
+<meta property="og:description" content="Sabé qué está dejando realmente tu campo. Ingresos, gastos y resultado por actividad.">
 <meta property="og:type" content="website">
+<meta property="og:image" content="cap-resumen.png">
+<meta name="theme-color" content="#F7F4EC">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+/* ============================================================
+   GESTIÓN DEL CAMPO — sistema visual
+   Paleta: crema cálido / verde bosque / oliva / lima apagado
+   Display: Bricolage Grotesque · Cuerpo: Inter · Datos: Plex Mono
+   Signature: líneas de lotes vistos desde arriba + etiquetas en mono
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
-  --lienzo:#F5F1E8;--lienzo-2:#EBE5D6;--tarjeta:#FDFBF6;
-  --tinta:#2E2820;--tinta-2:#6E6656;--tinta-3:#9E9686;
-  --borde:#D8D0BE;--borde-vivo:#C8BFA8;
-  --campo:#5C7A3D;--campo-hondo:#48632E;--campo-suave:#E7EDD9;
-  --trigo:#C9A24B;--trigo-suave:#F4EAD0;--ladrillo:#A6533A;
-  --s1:0 1px 2px rgba(60,50,30,.04),0 2px 6px rgba(60,50,30,.05);
-  --s2:0 6px 24px rgba(60,50,30,.10);
-  --radio:14px;
+  --crema:#F7F4EC;
+  --crema-2:#EFEADC;
+  --papel:#FEFDF9;
+  --bosque:#22301B;
+  --bosque-2:#2E4025;
+  --bosque-3:#1A2415;
+  --oliva:#5C7A3D;
+  --oliva-hondo:#47612D;
+  --lima:#B6D45C;
+  --tinta:#1D1B15;
+  --tinta-2:#5F5B4E;
+  --tinta-3:#918C7C;
+  --linea:#DDD6C4;
+  --linea-2:#C9C0A9;
+  --linea-osc:rgba(182,212,92,.20);
+  --claro-2:rgba(247,244,236,.72);
+  --claro-3:rgba(247,244,236,.46);
+
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
+  --sp-9:96px;
+
+  --disp:"Bricolage Grotesque",system-ui,sans-serif;
+  --cuerpo:"Inter",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+
+  --t-xs:12px; --t-sm:14px; --t-md:16.5px; --t-lg:19px;
+  --t-xl:25px; --t-2xl:34px; --t-3xl:clamp(38px,5vw,58px); --t-4xl:clamp(40px,5.5vw,70px);
+
+  --r-sm:8px; --r:12px; --r-lg:18px; --r-xl:26px;
+  --ancho:1240px;
+
+  --e1:0 1px 2px rgba(35,28,12,.05), 0 3px 10px rgba(35,28,12,.05);
+  --e2:0 2px 6px rgba(35,28,12,.06), 0 14px 40px rgba(35,28,12,.09);
+  --e3:0 30px 90px rgba(35,28,12,.17), 0 4px 14px rgba(35,28,12,.08);
 }
-html{scroll-behavior:smooth}
-body{font-family:"Inter",system-ui,-apple-system,sans-serif;background:var(--lienzo);
-  color:var(--tinta);line-height:1.6;font-size:16.5px;-webkit-font-smoothing:antialiased}
 
-/* ===== barra ===== */
-.barra{position:sticky;top:0;z-index:50;background:rgba(253,251,246,.92);
-  backdrop-filter:blur(8px);border-bottom:1px solid var(--borde)}
-.barra .caja{max-width:1080px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:12px}
-.logo{width:36px;height:36px;border-radius:10px;background:var(--campo-hondo);color:#fff;
-  display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk",sans-serif;
-  font-weight:700;font-size:18px;flex-shrink:0}
-.marca{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:16.5px;letter-spacing:-.02em}
-.barra .der{margin-left:auto;display:flex;gap:9px;align-items:center}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--cuerpo);background:var(--crema);color:var(--tinta);
+  font-size:var(--t-md);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+img{max-width:100%;display:block}
+a{color:inherit}
+:focus-visible{outline:2.5px solid var(--oliva);outline-offset:3px;border-radius:4px}
 
-/* ===== botones ===== */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  font-family:inherit;font-size:15px;font-weight:500;border-radius:11px;padding:11px 18px;
-  border:1px solid var(--borde-vivo);background:var(--tarjeta);color:var(--tinta);
-  cursor:pointer;text-decoration:none;transition:transform .12s,background .12s;white-space:nowrap;min-height:44px}
-.btn:hover{background:var(--lienzo);transform:translateY(-1px)}
-.btn-pri{background:var(--campo-hondo);border-color:var(--campo-hondo);color:#fff}
-.btn-pri:hover{background:var(--campo)}
-.btn-mini{padding:8px 14px;font-size:14px;min-height:38px}
-.btn-wa{background:#25A768;border-color:#25A768;color:#fff}
-.btn-wa:hover{background:#1F8E58}
+h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.032em;line-height:1.04}
+h1{font-size:var(--t-4xl)}
+h2{font-size:var(--t-3xl)}
+h3{font-size:var(--t-xl);letter-spacing:-.022em;line-height:1.15}
+p{max-width:62ch}
 
-/* ===== estructura ===== */
-section{max-width:1080px;margin:0 auto;padding:70px 22px}
-.centro{text-align:center}
-h1{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:clamp(31px,5.4vw,50px);
-  line-height:1.1;letter-spacing:-.035em;margin-bottom:18px}
-h1 em{font-style:normal;color:var(--campo-hondo)}
-h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:clamp(23px,3.4vw,31px);
-  letter-spacing:-.028em;line-height:1.2;margin-bottom:12px}
-h3{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:17.5px;letter-spacing:-.015em;margin-bottom:6px}
-.bajada{font-size:clamp(17px,2.2vw,19.5px);color:var(--tinta-2);max-width:620px;margin:0 auto 30px;line-height:1.55}
-.seccion-intro{color:var(--tinta-2);max-width:620px;margin-bottom:34px}
+.eti{
+  font-family:var(--mono);font-size:var(--t-xs);font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--tinta-3);
+  display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4);
+}
+.eti::before{content:"";width:22px;height:1px;background:var(--linea-2);flex-shrink:0}
+.eti.sola::before{display:none}
+.osc .eti{color:rgba(182,212,92,.85)}
+.osc .eti::before{background:var(--linea-osc)}
 
-/* ===== hero ===== */
-.hero{padding-top:56px;padding-bottom:20px}
-.hero .acciones{display:flex;gap:11px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
-.nota{font-size:14px;color:var(--tinta-3)}
-.marco{margin-top:44px;border-radius:16px;overflow:hidden;border:1px solid var(--borde);
-  box-shadow:var(--s2);background:var(--tarjeta);line-height:0}
-.marco img{width:100%;height:auto;display:block}
+.marco{max-width:var(--ancho);margin:0 auto;padding-left:var(--sp-5);padding-right:var(--sp-5)}
+.bloque{padding-top:var(--sp-9);padding-bottom:var(--sp-9)}
+.osc{background:var(--bosque);color:var(--crema)}
+.osc h2,.osc h3{color:var(--papel)}
+.osc p{color:var(--claro-2)}
 
-/* ===== problema ===== */
-.franja{background:var(--lienzo-2);border-top:1px solid var(--borde);border-bottom:1px solid var(--borde)}
-.dolores{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:26px}
-.dolor{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);padding:20px 22px;box-shadow:var(--s1)}
-.dolor .ico{font-size:21px;margin-bottom:9px;display:block}
-.dolor p{color:var(--tinta-2);font-size:15.5px}
+.lotes{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5}
+.lotes svg{width:100%;height:100%}
+.lotes path{fill:none;stroke:var(--linea-2);stroke-width:1;vector-effect:non-scaling-stroke}
+.osc .lotes path{stroke:rgba(182,212,92,.16)}
 
-/* ===== features ===== */
-.feat{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;margin-bottom:76px}
-.feat:last-child{margin-bottom:0}
-.feat.inv .txt{order:2}
-.feat ul{list-style:none;margin-top:16px}
-.feat li{padding-left:26px;position:relative;margin-bottom:10px;color:var(--tinta-2);font-size:15.5px}
-.feat li::before{content:"";position:absolute;left:0;top:9px;width:8px;height:8px;
-  border-radius:50%;background:var(--campo)}
-.feat .marco{margin-top:0}
-.etiqueta{display:inline-block;font-size:11.5px;font-weight:650;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--campo-hondo);background:var(--campo-suave);
-  padding:5px 11px;border-radius:20px;margin-bottom:13px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
+  font-family:var(--cuerpo);font-size:var(--t-sm);font-weight:500;
+  padding:.85em 1.4em;border-radius:var(--r);border:1px solid transparent;
+  background:var(--papel);color:var(--tinta);cursor:pointer;text-decoration:none;
+  white-space:nowrap;min-height:46px;
+  transition:transform .16s cubic-bezier(.2,.7,.3,1),background .16s,box-shadow .16s,border-color .16s;
+}
+.btn:hover{transform:translateY(-1.5px)}
+.btn-pri{background:var(--bosque);color:var(--papel);box-shadow:var(--e1)}
+.btn-pri:hover{background:var(--bosque-2);box-shadow:var(--e2)}
+.btn-sec{background:transparent;border-color:var(--linea-2);color:var(--tinta)}
+.btn-sec:hover{background:var(--papel);border-color:var(--tinta-3)}
+.btn-gr{font-size:var(--t-md);padding:1em 1.7em;min-height:54px}
+.osc .btn-pri{background:var(--lima);color:var(--bosque-3);font-weight:600}
+.osc .btn-pri:hover{background:#C6E070}
+.osc .btn-sec{border-color:rgba(247,244,236,.28);color:var(--crema)}
+.osc .btn-sec:hover{background:rgba(247,244,236,.09);border-color:rgba(247,244,236,.5)}
+.btn svg{width:17px;height:17px;flex-shrink:0}
 
-/* ===== datos ===== */
-.tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:30px}
-.tarjeta{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio);
-  padding:22px;box-shadow:var(--s1)}
-.tarjeta .ico{font-size:23px;margin-bottom:11px;display:block}
-.tarjeta p{color:var(--tinta-2);font-size:15px}
+/* ===== HEADER ===== */
+.tope{
+  position:sticky;top:0;z-index:60;
+  background:rgba(247,244,236,.86);backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid transparent;transition:border-color .25s,background .25s;
+}
+.tope.pegado{border-bottom-color:var(--linea);background:rgba(247,244,236,.96)}
+.tope .marco{display:flex;align-items:center;gap:var(--sp-5);height:70px}
+.logo{display:flex;align-items:center;gap:var(--sp-3);text-decoration:none;flex-shrink:0}
+.logo .sig{width:34px;height:34px;border-radius:9px;background:var(--bosque);
+  display:grid;place-items:center;flex-shrink:0}
+.logo .sig svg{width:19px;height:19px}
+.logo b{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:-.025em}
+.nav{display:flex;gap:var(--sp-6);margin-left:var(--sp-7)}
+.nav a{font-size:var(--t-sm);color:var(--tinta-2);text-decoration:none;font-weight:450;
+  position:relative;padding:4px 0;transition:color .16s}
+.nav a::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1.5px;
+  background:var(--oliva);transition:right .22s cubic-bezier(.2,.7,.3,1)}
+.nav a:hover{color:var(--tinta)}
+.nav a:hover::after{right:0}
+.tope .der{margin-left:auto;display:flex;align-items:center;gap:var(--sp-3)}
+.tope .der .btn{min-height:40px;padding:.6em 1.15em}
 
-/* ===== precio ===== */
-.precio-caja{background:var(--tarjeta);border:1px solid var(--borde);border-radius:18px;
-  padding:38px 30px;box-shadow:var(--s2);max-width:470px;margin:30px auto 0;text-align:center}
-.precio{font-family:"Space Grotesk",sans-serif;font-size:47px;font-weight:600;
-  letter-spacing:-.035em;line-height:1;color:var(--campo-hondo)}
-.precio span{font-size:17px;color:var(--tinta-2);font-weight:400;letter-spacing:0}
-.incluye{list-style:none;text-align:left;margin:24px 0;display:inline-block}
-.incluye li{padding-left:27px;position:relative;margin-bottom:9px;color:var(--tinta-2);font-size:15.5px}
-.incluye li::before{content:"✓";position:absolute;left:0;color:var(--campo);font-weight:700}
+/* ===== HERO ===== */
+.hero{position:relative;overflow:hidden;padding-top:var(--sp-8);padding-bottom:var(--sp-9)}
+.hero-grid{position:relative;z-index:1;display:grid;
+  grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:var(--sp-8);align-items:center}
+.hero h1{margin-bottom:var(--sp-5)}
+.hero h1 .sub{display:block;color:var(--oliva-hondo)}
+.hero .entrada{font-size:var(--t-lg);color:var(--tinta-2);max-width:44ch;
+  margin-bottom:var(--sp-6);line-height:1.5}
+.hero-cta{display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-5)}
+.hero-pie{font-family:var(--mono);font-size:var(--t-xs);color:var(--tinta-3);
+  display:flex;gap:var(--sp-4);flex-wrap:wrap;align-items:center}
+.hero-pie span{display:flex;align-items:center;gap:7px}
+.hero-pie svg{width:13px;height:13px;color:var(--oliva)}
 
-/* ===== cierre ===== */
-.cierre{background:var(--campo-hondo);color:#fff;text-align:center}
-.cierre h2{color:#fff}
-.cierre p{color:#D8E3C8;max-width:520px;margin:0 auto 28px}
-.cierre .btn{background:#fff;border-color:#fff;color:var(--campo-hondo)}
-.cierre .btn:hover{background:var(--campo-suave)}
+.escena{position:relative;padding:var(--sp-5) 0;padding-left:var(--sp-7)}
+.ventana{border-radius:var(--r-lg);overflow:hidden;background:var(--papel);
+  border:1px solid var(--linea);box-shadow:var(--e3)}
+.ventana .barra{display:flex;align-items:center;gap:6px;padding:9px 13px;
+  background:var(--crema-2);border-bottom:1px solid var(--linea)}
+.ventana .barra i{width:9px;height:9px;border-radius:50%;background:var(--linea-2);display:block}
+.ventana .barra .url{margin-left:8px;font-family:var(--mono);font-size:11px;color:var(--tinta-3);
+  background:var(--papel);border-radius:20px;padding:3px 12px;border:1px solid var(--linea)}
+.ventana img{width:100%}
+.v-frente{position:relative;z-index:2}
+.v-fondo{position:absolute;top:-26px;right:-30px;width:56%;z-index:1;opacity:.62;filter:saturate(.85)}
+.v-fondo .ventana{box-shadow:var(--e2)}
 
-footer{background:var(--tarjeta);border-top:1px solid var(--borde);padding:30px 22px;
-  text-align:center;font-size:14px;color:var(--tinta-3)}
-footer a{color:var(--tinta-2);text-decoration:none;margin:0 7px}
-footer a:hover{text-decoration:underline}
+.metrica{position:absolute;z-index:3;background:var(--papel);border:1px solid var(--linea);
+  border-radius:var(--r);padding:13px 16px;box-shadow:var(--e2);
+  animation:flotar 7s ease-in-out infinite}
+.metrica .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--tinta-3);display:block;margin-bottom:5px}
+.metrica .v{font-family:var(--disp);font-size:22px;font-weight:600;letter-spacing:-.03em;
+  line-height:1;font-variant-numeric:tabular-nums;display:block}
+.metrica .n{font-size:11.5px;color:var(--tinta-2);margin-top:4px;display:block}
+.m-res{bottom:8%;left:-11%;animation-delay:-1s}
+.m-res .v{color:var(--oliva-hondo)}
+.m-act{top:22%;left:-13%;animation-delay:-3.5s}
+.m-ven{bottom:-2%;right:-4%;animation-delay:-5s;display:flex;align-items:center;gap:10px}
+.m-ven .pt{width:8px;height:8px;border-radius:50%;background:#C9843F;flex-shrink:0}
+.m-ven .t{font-size:13px;font-weight:500;line-height:1.25}
+.m-ven .t em{font-style:normal;color:var(--tinta-3);font-size:11.5px;display:block;font-family:var(--mono)}
+.barrita{height:5px;border-radius:3px;background:var(--crema-2);margin-top:8px;overflow:hidden;width:96px}
+.barrita i{display:block;height:100%;border-radius:3px;background:var(--oliva)}
+@keyframes flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 
-@media(max-width:820px){
-  section{padding:52px 20px}
-  .feat{grid-template-columns:1fr;gap:26px;margin-bottom:56px}
-  .feat.inv .txt{order:0}
-  .barra .marca{display:none}
+/* ===== FLUJO ===== */
+.flujo{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);background:var(--crema-2)}
+.flujo .marco{padding-top:var(--sp-8);padding-bottom:var(--sp-8)}
+.flujo-top{display:flex;justify-content:space-between;align-items:flex-end;
+  gap:var(--sp-6);margin-bottom:var(--sp-7);flex-wrap:wrap}
+.flujo h2{font-size:var(--t-2xl);max-width:16ch}
+.flujo-top p{font-size:var(--t-sm);color:var(--tinta-2);max-width:38ch}
+.cadena{display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch}
+.paso{position:relative;padding:0 var(--sp-5)}
+.paso:first-child{padding-left:0}
+.paso:last-child{padding-right:0}
+.paso+.paso{border-left:1px solid var(--linea-2)}
+.paso .num{font-family:var(--mono);font-size:11px;color:var(--tinta-3);
+  letter-spacing:.1em;display:block;margin-bottom:var(--sp-3)}
+.paso .ic{width:26px;height:26px;color:var(--oliva-hondo);margin-bottom:var(--sp-3)}
+.paso h3{font-size:var(--t-lg);margin-bottom:6px}
+.paso p{font-size:var(--t-sm);color:var(--tinta-2)}
+
+/* ===== PROBLEMA ===== */
+.frase{font-family:var(--disp);font-weight:600;letter-spacing:-.035em;line-height:1.06;
+  font-size:clamp(30px,4.4vw,52px);max-width:19ch;margin-bottom:var(--sp-8)}
+.frase em{font-style:normal;color:var(--tinta-3)}
+.dolores{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-7)}
+.dolor{padding-top:var(--sp-5);border-top:1.5px solid var(--tinta)}
+.dolor .ic{width:24px;height:24px;color:var(--oliva-hondo);margin-bottom:var(--sp-4)}
+.dolor h3{font-size:var(--t-lg);margin-bottom:var(--sp-2)}
+.dolor p{font-size:var(--t-sm);color:var(--tinta-2)}
+
+/* ===== SHOWCASE ===== */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-8);align-items:center}
+.duo.inv .texto{order:2}
+.texto h2{margin-bottom:var(--sp-4);font-size:var(--t-2xl)}
+.texto>p{font-size:var(--t-lg);color:var(--tinta-2);line-height:1.5;margin-bottom:var(--sp-5)}
+.osc .texto>p{color:var(--claro-2)}
+.lista{list-style:none;display:grid;gap:var(--sp-3)}
+.lista li{display:flex;gap:var(--sp-3);font-size:var(--t-sm);color:var(--tinta-2);align-items:flex-start}
+.lista svg{width:17px;height:17px;color:var(--oliva);flex-shrink:0;margin-top:2px}
+.osc .lista li{color:var(--claro-2)}
+.osc .lista svg{color:var(--lima)}
+
+.entender{position:relative;overflow:hidden}
+.entender .ventana{border-color:rgba(247,244,236,.14)}
+.entender .ventana .barra{background:#1A2415;border-bottom-color:rgba(247,244,236,.1)}
+.entender .ventana .barra i{background:rgba(247,244,236,.2)}
+.margenes{display:grid;gap:var(--sp-4);margin-top:var(--sp-6)}
+.margen{display:grid;grid-template-columns:1fr auto;gap:var(--sp-3);align-items:baseline}
+.margen .n{font-size:var(--t-sm);color:var(--crema);font-weight:500}
+.margen .p{font-family:var(--mono);font-size:var(--t-sm);color:var(--lima)}
+.margen .bar{grid-column:1/-1;height:4px;border-radius:2px;
+  background:rgba(247,244,236,.11);overflow:hidden}
+.margen .bar i{display:block;height:100%;background:var(--lima);border-radius:2px;
+  transform-origin:left;transform:scaleX(0);transition:transform 1.1s cubic-bezier(.2,.7,.3,1)}
+.visible .margen .bar i{transform:scaleX(1)}
+
+/* ===== GASTOS ===== */
+.gastos{background:var(--crema-2);border-top:1px solid var(--linea);border-bottom:1px solid var(--linea)}
+.gastos-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+  gap:var(--sp-8);align-items:center}
+.ranking{display:grid;gap:var(--sp-5)}
+.fila{display:grid;grid-template-columns:1fr auto;gap:var(--sp-4);align-items:baseline;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--linea)}
+.fila .r{font-family:var(--mono);font-size:11px;color:var(--tinta-3);margin-right:10px}
+.fila .n{font-size:var(--t-lg);font-weight:500}
+.fila .m{font-family:var(--disp);font-size:var(--t-lg);font-weight:600;
+  letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+.fila .bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--crema);
+  overflow:hidden;margin-top:var(--sp-2)}
+.fila .bar i{display:block;height:100%;background:var(--oliva);border-radius:3px;
+  transform-origin:left;transform:scaleX(0);transition:transform 1s cubic-bezier(.2,.7,.3,1)}
+.visible .fila .bar i{transform:scaleX(1)}
+.fila:nth-child(1) .bar i{transition-delay:.05s}
+.fila:nth-child(2) .bar i{transition-delay:.13s;background:#6E8A4A}
+.fila:nth-child(3) .bar i{transition-delay:.21s;background:#82995C}
+.fila:nth-child(4) .bar i{transition-delay:.29s;background:#96A870}
+
+/* ===== SEGURIDAD ===== */
+.seguridad{background:var(--bosque-3);position:relative;overflow:hidden}
+.seg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+  gap:var(--sp-8);align-items:start}
+.seg-item{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-4);
+  padding:var(--sp-5) 0;border-top:1px solid rgba(247,244,236,.13)}
+.seg-item:last-child{border-bottom:1px solid rgba(247,244,236,.13)}
+.seg-item .ic{width:22px;height:22px;color:var(--lima);margin-top:3px}
+.seg-item h3{font-size:var(--t-lg);margin-bottom:5px}
+.seg-item p{font-size:var(--t-sm)}
+
+/* ===== PRECIO ===== */
+.precio-caja{background:var(--papel);border:1px solid var(--linea);border-radius:var(--r-xl);
+  box-shadow:var(--e2);overflow:hidden;display:grid;grid-template-columns:1.05fr .95fr}
+.precio-izq{padding:var(--sp-8);border-right:1px solid var(--linea)}
+.cinta{display:inline-flex;align-items:center;gap:8px;background:var(--bosque);color:var(--lima);
+  font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+  padding:7px 14px;border-radius:20px;margin-bottom:var(--sp-5)}
+.cinta svg{width:13px;height:13px}
+.numero{display:flex;align-items:baseline;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.numero .v{font-family:var(--disp);font-size:clamp(46px,6.6vw,72px);font-weight:600;
+  letter-spacing:-.045em;line-height:.9;font-variant-numeric:tabular-nums}
+.numero .u{font-family:var(--mono);font-size:var(--t-sm);color:var(--tinta-3)}
+.precio-izq>p{font-size:var(--t-sm);color:var(--tinta-2);margin-bottom:var(--sp-6)}
+.precio-der{padding:var(--sp-8);display:flex;flex-direction:column;
+  justify-content:center;background:var(--crema)}
+.incluye{list-style:none;display:grid;gap:var(--sp-3)}
+.incluye li{display:flex;gap:var(--sp-3);font-size:var(--t-sm);align-items:flex-start;color:var(--tinta-2)}
+.incluye svg{width:16px;height:16px;color:var(--oliva);flex-shrink:0;margin-top:2px}
+.precio-acc{display:flex;flex-direction:column;gap:var(--sp-3)}
+.precio-nota{font-family:var(--mono);font-size:11px;color:var(--tinta-3);
+  margin-top:var(--sp-4);line-height:1.5}
+
+/* ===== CIERRE ===== */
+.cierre{position:relative;overflow:hidden;padding-top:var(--sp-9);padding-bottom:0}
+.cierre .marco{position:relative;z-index:2;text-align:center}
+.cierre h2{font-size:var(--t-3xl);margin:0 auto var(--sp-5);max-width:15ch}
+.cierre h2 em{font-style:normal;color:var(--lima)}
+.cierre p{margin:0 auto var(--sp-6);max-width:50ch;font-size:var(--t-lg)}
+.cierre-cta{display:flex;gap:var(--sp-3);justify-content:center;
+  flex-wrap:wrap;margin-bottom:var(--sp-7)}
+.asomo{position:relative;max-width:900px;margin:0 auto;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;overflow:hidden;
+  border:1px solid rgba(247,244,236,.16);border-bottom:none;box-shadow:0 -20px 70px rgba(0,0,0,.3)}
+.asomo .fundido{position:absolute;left:0;right:0;bottom:0;height:120px;
+  background:linear-gradient(to bottom,rgba(34,48,27,0),var(--bosque))}
+
+/* ===== FOOTER ===== */
+.pie{background:var(--bosque-3);color:var(--claro-3);
+  padding-top:var(--sp-8);padding-bottom:var(--sp-6);border-top:1px solid rgba(247,244,236,.1)}
+.pie-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:var(--sp-7);margin-bottom:var(--sp-7)}
+.pie .logo b{color:var(--papel)}
+.pie .logo .sig{background:var(--oliva)}
+.pie .desc{font-size:var(--t-sm);margin-top:var(--sp-4);max-width:34ch;color:var(--claro-3)}
+.pie h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(182,212,92,.8);margin-bottom:var(--sp-4);font-weight:500}
+.pie ul{list-style:none;display:grid;gap:var(--sp-3)}
+.pie ul a{font-size:var(--t-sm);text-decoration:none;color:var(--claro-2);transition:color .16s}
+.pie ul a:hover{color:var(--lima)}
+.pie-base{border-top:1px solid rgba(247,244,236,.1);padding-top:var(--sp-5);
+  display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em}
+
+/* ===== REVELADO ===== */
+.rev{opacity:0;transform:translateY(22px);
+  transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+.rev.visible{opacity:1;transform:none}
+.rev.d1{transition-delay:.08s} .rev.d2{transition-delay:.16s} .rev.d3{transition-delay:.24s}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1080px){
+  .nav{display:none}
+  .escena{padding-left:0}
+  .hero-grid{grid-template-columns:1fr;gap:var(--sp-8)}
+  .v-fondo{display:none}
+  .m-act{top:6%;left:auto;right:-2%}
+  .m-res{left:-2%;bottom:6%}
+  .gastos-grid{grid-template-columns:1fr;gap:var(--sp-7)}
+  .seg-grid{grid-template-columns:1fr;gap:var(--sp-7)}
+  .precio-caja{grid-template-columns:1fr}
+  .precio-izq{border-right:none;border-bottom:1px solid var(--linea)}
+}
+@media(max-width:860px){
+  :root{--sp-9:72px}
+  .duo{grid-template-columns:1fr;gap:var(--sp-6)}
+  .duo.inv .texto{order:0}
+  .cadena{grid-template-columns:1fr 1fr;gap:var(--sp-6) 0}
+  .paso{padding:0 var(--sp-4)}
+  .paso:nth-child(odd){padding-left:0;border-left:none}
+  .paso:nth-child(3),.paso:nth-child(4){padding-top:var(--sp-6);border-top:1px solid var(--linea-2)}
+  .dolores{grid-template-columns:1fr;gap:var(--sp-6)}
+  .pie-grid{grid-template-columns:1fr 1fr;gap:var(--sp-6)}
+  .pie-grid>div:first-child{grid-column:1/-1}
+}
+@media(max-width:560px){
+  :root{--sp-9:60px}
+  .marco{padding-left:var(--sp-4);padding-right:var(--sp-4)}
+  /* en celular: logo compacto y botones chicos, sin que se apilen */
+  .logo b{display:none}
+  .tope .marco{height:62px}
+  .tope .der{gap:var(--sp-2)}
+  .tope .der .btn{font-size:13px;padding:.5em .85em;min-height:36px}
+  .hero{padding-top:var(--sp-6)}
+  .hero-pie{gap:var(--sp-2);flex-direction:column;align-items:flex-start}
+  .metrica{padding:10px 13px}
+  .metrica .v{font-size:18px}
+  .m-act,.m-ven{display:none}
+  .m-res{left:-6px;bottom:-16px}
+  .hero-cta .btn{flex:1;min-width:150px}
+  .precio-izq,.precio-der{padding:var(--sp-6)}
+  .pie-grid{grid-template-columns:1fr}
+  .flujo-top{flex-direction:column;align-items:flex-start;gap:var(--sp-4)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important}
+  .rev{opacity:1;transform:none}
+  .margen .bar i,.fila .bar i{transform:scaleX(1)}
 }
 </style>
 </head>
 <body>
 
-<div class="barra">
-  <div class="caja">
-    <div class="logo">C</div>
-    <div class="marca">Gestión del Campo</div>
+<header class="tope" id="tope">
+  <div class="marco">
+    <a class="logo" href="#inicio" aria-label="Gestión del Campo, inicio">
+      <span class="sig" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F7F4EC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20V9l6-4 6 4 6-4v11"/><path d="M9 20V9"/><path d="M15 20V9"/>
+        </svg>
+      </span>
+      <b>Gestión del Campo</b>
+    </a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#producto">Producto</a>
+      <a href="#como">Cómo funciona</a>
+      <a href="#seguridad">Seguridad</a>
+      <a href="#precio">Precio</a>
+    </nav>
     <div class="der">
-      <a class="btn btn-mini" href="app.html">Entrar a la app</a>
-      <a class="btn btn-pri btn-mini" href="#precio">Quiero probarla</a>
+      <a class="btn btn-sec" href="app.html">Entrar</a>
+      <a class="btn btn-pri" href="#precio">Pedir una cuenta</a>
     </div>
   </div>
-</div>
+</header>
 
-<section class="hero centro">
-  <h1>Los números de tu campo,<br><em>claros de una vez</em></h1>
-  <p class="bajada">Cargás lo que entra y lo que sale, y la app te dice cuánto deja cada actividad,
-    dónde se te va la plata y cómo venís este año. Sin pelear con planillas.</p>
-  <div class="acciones">
-    <a class="btn btn-pri" href="#precio">Quiero probarla</a>
-    <a class="btn" href="#como">Ver cómo funciona</a>
+<section class="hero" id="inicio">
+  <div class="lotes" aria-hidden="true">
+    <svg viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid slice">
+      <path d="M-50 210 L520 150 L1010 235 L1460 170"/>
+      <path d="M-50 400 L430 355 L980 430 L1460 380"/>
+      <path d="M-50 600 L560 560 L1030 640 L1460 590"/>
+      <path d="M250 -20 L215 830"/>
+      <path d="M700 -20 L735 830"/>
+      <path d="M1120 -20 L1085 830"/>
+      <path d="M480 150 L455 830" opacity=".55"/>
+      <path d="M930 -20 L950 640" opacity=".55"/>
+    </svg>
   </div>
-  <p class="nota">¿Ya sos usuario? <a href="app.html" style="color:var(--campo-hondo)">Entrá acá</a></p>
-  <div class="marco"><img src="cap-resumen.png" alt="Pantalla de resumen de la app, con ingresos, egresos y resultado del ejercicio" loading="eager"></div>
+  <div class="marco hero-grid">
+    <div>
+      <p class="eti">Gestión financiera para el campo</p>
+      <h1>Sabé qué está dejando <span class="sub">realmente tu campo.</span></h1>
+      <p class="entrada">Ingresos, gastos, cuentas y resultado por actividad. Sin fórmulas rotas, sin perder horas peleando con Excel.</p>
+      <div class="hero-cta">
+        <a class="btn btn-pri btn-gr" href="#precio">Pedir una cuenta</a>
+        <a class="btn btn-sec btn-gr" href="#como">Ver cómo funciona</a>
+      </div>
+      <div class="hero-pie">
+        <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Primer mes sin cargo
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Tus datos quedan en tu computadora
+        </span>
+      </div>
+    </div>
+
+    <div class="escena">
+      <div class="v-fondo" aria-hidden="true">
+        <div class="ventana"><img src="cap-movimientos.png" alt="" loading="lazy"></div>
+      </div>
+      <div class="v-frente">
+        <div class="ventana">
+          <div class="barra" aria-hidden="true">
+            <i></i><i></i><i></i>
+            <span class="url">gestioncampo.com</span>
+          </div>
+          <img src="cap-resumen.png" alt="Pantalla de resumen de Gestión del Campo con ingresos, egresos y resultado del ejercicio">
+        </div>
+      </div>
+      <div class="metrica m-act" aria-hidden="true">
+        <span class="k">Cría / invernada</span>
+        <span class="v">52%</span>
+        <span class="n">del resultado</span>
+        <div class="barrita"><i style="width:52%"></i></div>
+      </div>
+      <div class="metrica m-res" aria-hidden="true">
+        <span class="k">Resultado del ejercicio</span>
+        <span class="v">+$47.030.000</span>
+        <span class="n">8 meses cargados</span>
+      </div>
+      <div class="metrica m-ven" aria-hidden="true">
+        <span class="pt"></span>
+        <span class="t">3 vencimientos próximos<em>los siguientes 15 días</em></span>
+      </div>
+    </div>
+  </div>
 </section>
 
-<div class="franja">
-  <section>
-    <h2>Si esto te suena, es para vos</h2>
-    <p class="seccion-intro">La mayoría de los campos se manejan con un cuaderno, una planilla que armó
-      alguien hace años, o directamente de memoria. Funciona hasta que deja de funcionar.</p>
+<section class="flujo" id="como">
+  <div class="marco">
+    <div class="flujo-top rev">
+      <div>
+        <p class="eti">Cómo funciona</p>
+        <h2>Una carga. Todo conectado.</h2>
+      </div>
+      <p>Anotás un movimiento una sola vez y la app lo usa en todos lados: en la actividad, en el saldo de la cuenta y en el resultado del año.</p>
+    </div>
+    <div class="cadena rev d1">
+      <div class="paso">
+        <span class="num">01</span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9.5" opacity=".35"/></svg>
+        <h3>Cargás</h3>
+        <p>Fecha, monto, rubro y cuenta. Nada más.</p>
+      </div>
+      <div class="paso">
+        <span class="num">02</span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h6v6H4zM14 6h6v6h-6zM4 16h6v4H4zM14 16h6v4h-6z"/></svg>
+        <h3>Se imputa</h3>
+        <p>A la actividad que corresponde: hacienda, agricultura, lo que hagas.</p>
+      </div>
+      <div class="paso">
+        <span class="num">03</span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
+        <h3>Mueve la cuenta</h3>
+        <p>El saldo de cada banco y caja se actualiza solo.</p>
+      </div>
+      <div class="paso">
+        <span class="num">04</span>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+        <h3>Sale el resultado</h3>
+        <p>Margen por actividad y cierre del ejercicio, al día.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloque">
+  <div class="marco">
+    <p class="eti rev">El problema</p>
+    <h2 class="frase rev">Tener plata en la cuenta no significa <em>saber si el campo está ganando plata.</em></h2>
     <div class="dolores">
-      <div class="dolor">
-        <span class="ico">🤷</span>
+      <div class="dolor rev">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 1-1 1.7v.5"/><path d="M12 17.5h.01"/><circle cx="12" cy="12" r="9.5"/></svg>
         <h3>No sabés qué te deja cada cosa</h3>
-        <p>Sabés cuánta plata hay en el banco, pero no si la ganó la hacienda, la agricultura o si la estás perdiendo en una.</p>
+        <p>Sabés cuánta plata hay en el banco, pero no si la ganó la hacienda, la agricultura, o si en alguna estás perdiendo.</p>
       </div>
-      <div class="dolor">
-        <span class="ico">📄</span>
+      <div class="dolor rev d1">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="m9 12 3 3M12 12l-3 3"/></svg>
         <h3>La planilla se rompe sola</h3>
-        <p>Una fórmula mal copiada y los números dejan de cerrar. Y nadie se da cuenta hasta que ya es tarde.</p>
+        <p>Una fórmula mal copiada y los números dejan de cerrar. Nadie se da cuenta hasta que ya es tarde.</p>
       </div>
-      <div class="dolor">
-        <span class="ico">🕐</span>
+      <div class="dolor rev d2">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         <h3>Cerrar el año es un padecimiento</h3>
-        <p>Juntar facturas, sumar a mano, tratar de acordarse qué era ese gasto de marzo.</p>
+        <p>Juntar facturas, sumar a mano y tratar de acordarse qué era ese gasto de marzo.</p>
       </div>
     </div>
-  </section>
-</div>
-
-<section id="como">
-  <div class="feat">
-    <div class="txt">
-      <span class="etiqueta">Cargar</span>
-      <h2>Anotás una vez y listo</h2>
-      <p style="color:var(--tinta-2)">Fecha, cuánto, de qué es y de qué cuenta salió. Nada más.
-        La app se encarga del resto.</p>
-      <ul>
-        <li>Los rubros los armás vos: gasoil, sanidad, venta de novillos, lo que uses</li>
-        <li>Importás la planilla que ya venías llevando, no arrancás de cero</li>
-        <li>Le sacás una foto a la factura y carga los datos sola</li>
-        <li>Buscador para encontrar cualquier movimiento al toque</li>
-      </ul>
-    </div>
-    <div class="marco"><img src="cap-movimientos.png" alt="Listado de movimientos cargados en la app" loading="lazy"></div>
-  </div>
-
-  <div class="feat inv">
-    <div class="txt">
-      <span class="etiqueta">Entender</span>
-      <h2>Cuánto deja cada actividad</h2>
-      <p style="color:var(--tinta-2)">Acá está lo que ninguna planilla te da fácil: el margen de cada
-        parte del campo, por separado y con los costos de estructura aparte.</p>
-      <ul>
-        <li>Ganadería, agricultura, tambo, lo que hagas — las actividades las definís vos</li>
-        <li>El maíz propio que consume la hacienda se computa como corresponde</li>
-        <li>Costo por hectárea de la maquinaria propia, para comparar contra un contratista</li>
-        <li>Precios promedio de lo que comprás y vendés</li>
-      </ul>
-    </div>
-    <div class="marco"><img src="cap-resultado.png" alt="Márgenes por actividad calculados por la app" loading="lazy"></div>
-  </div>
-
-  <div class="feat">
-    <div class="txt">
-      <span class="etiqueta">Controlar</span>
-      <h2>Quién te debe y a quién le debés</h2>
-      <p style="color:var(--tinta-2)">Saldos por cuenta, movimientos a plazo, y en qué proveedores
-        se concentra tu gasto.</p>
-      <ul>
-        <li>Saldo de cada cuenta y caja, siempre al día</li>
-        <li>Avisos de vencimientos de pagos y cobros</li>
-        <li>Los pases entre tus propias cuentas no ensucian los resultados</li>
-        <li>Todo en pesos de hoy si querés, ajustado por inflación</li>
-      </ul>
-    </div>
-    <div class="marco"><img src="cap-clientes.png" alt="Clientes, proveedores y concentración de gastos" loading="lazy"></div>
   </div>
 </section>
 
-<div class="franja">
-  <section>
-    <h2>Tus números son tuyos</h2>
-    <p class="seccion-intro">Esto no es un detalle técnico: es la diferencia entre confiar o no
-      en dónde ponés la información de tu campo.</p>
-    <div class="tarjetas">
-      <div class="tarjeta">
-        <span class="ico">💻</span>
-        <h3>Guardado en tu computadora</h3>
-        <p>Los datos no viajan a ningún servidor nuestro. No los vemos, no los guardamos, no podemos dárselos a nadie.</p>
-      </div>
-      <div class="tarjeta">
-        <span class="ico">☁️</span>
-        <h3>Respaldo en tu propio Drive</h3>
-        <p>La copia de seguridad se sube sola a tu cuenta de Google. Si se rompe la máquina, entrás de otra y recuperás todo.</p>
-      </div>
-      <div class="tarjeta">
-        <span class="ico">📥</span>
-        <h3>Te los llevás cuando quieras</h3>
-        <p>Bajás todo en un archivo con un botón. Si algún día dejás de usarla, tus datos se van con vos.</p>
+<section class="bloque" id="producto">
+  <div class="marco duo">
+    <div class="texto rev">
+      <p class="eti">Cargar</p>
+      <h2>Anotás una vez y listo.</h2>
+      <p>Fecha, cuánto, de qué es y de qué cuenta salió. La app se encarga del resto.</p>
+      <ul class="lista">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Los rubros los armás vos: gasoil, sanidad, venta de novillos, lo que uses</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Importás la planilla que ya venías llevando, no arrancás de cero</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Le sacás una foto a la factura y carga los datos sola</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Buscador para encontrar cualquier movimiento al toque</li>
+      </ul>
+    </div>
+    <div class="rev d1">
+      <div class="ventana">
+        <img src="cap-movimientos.png" alt="Listado de movimientos cargados, con rubro, cuenta, actividad y monto" loading="lazy">
       </div>
     </div>
-  </section>
-</div>
-
-<section id="precio" class="centro">
-  <h2>Cuánto sale</h2>
-  <p class="bajada" style="margin-bottom:0">Un precio, todo incluido. Sin permanencia.</p>
-  <div class="precio-caja">
-    <div class="precio">$35.000 <span>/ mes</span></div>
-    <ul class="incluye">
-      <li>Todas las funciones, sin versiones recortadas</li>
-      <li>Movimientos ilimitados y todos los años que quieras</li>
-      <li>Respaldo automático en tu Google Drive</li>
-      <li>Importación de tu planilla actual</li>
-      <li>Te ayudo a arrancar por WhatsApp</li>
-      <li>Se da de baja cuando quieras, sin vueltas</li>
-    </ul>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <a class="btn btn-wa" href="https://wa.me/5492920244050?text=Hola%20Santiago%2C%20vi%20Gesti%C3%B3n%20del%20Campo%20y%20quer%C3%ADa%20saber%20m%C3%A1s" target="_blank" rel="noopener">Escribime por WhatsApp</a>
-    </div>
-    <p class="nota" style="margin-top:15px">El primer mes te lo hago sin cargo para que la pruebes con tus números de verdad.</p>
   </div>
 </section>
 
-<div class="cierre">
-  <section class="centro">
-    <h2>Probala con los números de tu campo</h2>
-    <p>Escribime y coordinamos. Te ayudo a pasar lo que ya tenés cargado
-      y a dejarla andando en tu computadora.</p>
-    <a class="btn" href="https://wa.me/5492920244050?text=Hola%20Santiago%2C%20quiero%20probar%20Gesti%C3%B3n%20del%20Campo" target="_blank" rel="noopener">Escribime por WhatsApp</a>
-  </section>
-</div>
-
-<footer>
-  <div style="margin-bottom:8px">
-    <a href="app.html">Entrar a la app</a> ·
-    <a href="privacidad.html">Privacidad</a> ·
-    <a href="terminos.html">Términos</a>
+<section class="bloque osc entender">
+  <div class="lotes" aria-hidden="true">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
+      <path d="M-50 180 L600 130 L1460 215"/>
+      <path d="M-50 460 L520 505 L1460 420"/>
+      <path d="M380 -20 L350 730"/>
+      <path d="M880 -20 L910 730"/>
+    </svg>
   </div>
-  Gestión del Campo · Santiago Elías Farah · Argentina
+  <div class="marco duo inv" style="position:relative;z-index:1">
+    <div class="texto rev">
+      <p class="eti">Entender</p>
+      <h2>Cuánto deja cada actividad.</h2>
+      <p>Acá está lo que ninguna planilla te da fácil: el margen de cada parte del campo, por separado y con los costos de estructura aparte.</p>
+      <div class="margenes">
+        <div class="margen">
+          <span class="n">Cría / invernada</span><span class="p">margen 79%</span>
+          <span class="bar"><i style="width:79%"></i></span>
+        </div>
+        <div class="margen">
+          <span class="n">Agricultura</span><span class="p">margen 72%</span>
+          <span class="bar"><i style="width:72%"></i></span>
+        </div>
+        <div class="margen">
+          <span class="n">Maquinaria propia</span><span class="p">$38.400 / ha</span>
+          <span class="bar"><i style="width:34%"></i></span>
+        </div>
+      </div>
+      <ul class="lista" style="margin-top:var(--sp-6)">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Las actividades las definís vos: tambo, huerta, colmenas, monte</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>El maíz propio que consume la hacienda se computa como corresponde</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Costo por hectárea de tu maquinaria, para comparar contra un contratista</li>
+      </ul>
+    </div>
+    <div class="rev d1">
+      <div class="ventana">
+        <img src="cap-resultado.png" alt="Márgenes por actividad calculados por la app, con ingresos y costos directos de cada una" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloque">
+  <div class="marco">
+    <div class="rev" style="max-width:720px;margin-bottom:var(--sp-7)">
+      <p class="eti">Controlar</p>
+      <h2 style="margin-bottom:var(--sp-4);font-size:var(--t-2xl)">Sabé dónde está cada peso.</h2>
+      <p style="font-size:var(--t-lg);color:var(--tinta-2);line-height:1.5">Saldos de cada cuenta, lo que está a plazo, quién te debe y a quién le debés. Y en qué proveedores se concentra tu gasto.</p>
+    </div>
+    <div class="rev d1">
+      <div class="ventana">
+        <img src="cap-clientes.png" alt="Clientes, proveedores y concentración de gastos por proveedor" loading="lazy">
+      </div>
+    </div>
+    <div class="cadena rev d2" style="margin-top:var(--sp-7)">
+      <div class="paso">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
+        <h3>Saldos al día</h3>
+        <p>Cada banco y cada caja, siempre actualizado.</p>
+      </div>
+      <div class="paso">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+        <h3>Vencimientos</h3>
+        <p>Avisos de pagos y cobros antes de que se pasen.</p>
+      </div>
+      <div class="paso">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h10M7 12h10M7 16h5"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+        <h3>Pases internos</h3>
+        <p>Mover plata entre tus cuentas no ensucia los resultados.</p>
+      </div>
+      <div class="paso">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7M12 21V3M21 17V7"/></svg>
+        <h3>Pesos de hoy</h3>
+        <p>Todo ajustado por inflación si querés compararlo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloque gastos">
+  <div class="marco gastos-grid">
+    <div class="rev">
+      <p class="eti">La pregunta de siempre</p>
+      <h2 style="font-size:var(--t-2xl);margin-bottom:var(--sp-4)">¿En qué estoy gastando más?</h2>
+      <p style="font-size:var(--t-sm);color:var(--tinta-2)">La app no solo guarda movimientos: los ordena. Vas a ver en dos segundos dónde se te está yendo la plata, de mayor a menor, en el período que elijas.</p>
+    </div>
+    <div class="ranking rev d1">
+      <div class="fila">
+        <span><span class="r">01</span><span class="n">Gasoil</span></span>
+        <span class="m">$16.800.000</span>
+        <span class="bar"><i style="width:100%"></i></span>
+      </div>
+      <div class="fila">
+        <span><span class="r">02</span><span class="n">Fertilizante</span></span>
+        <span class="m">$9.400.000</span>
+        <span class="bar"><i style="width:56%"></i></span>
+      </div>
+      <div class="fila">
+        <span><span class="r">03</span><span class="n">Semilla</span></span>
+        <span class="m">$7.800.000</span>
+        <span class="bar"><i style="width:46%"></i></span>
+      </div>
+      <div class="fila">
+        <span><span class="r">04</span><span class="n">Sanidad animal</span></span>
+        <span class="m">$4.240.000</span>
+        <span class="bar"><i style="width:25%"></i></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloque osc seguridad" id="seguridad">
+  <div class="lotes" aria-hidden="true">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
+      <path d="M-50 250 L700 195 L1460 280"/>
+      <path d="M-50 520 L640 570 L1460 490"/>
+      <path d="M520 -20 L490 730"/>
+      <path d="M1020 -20 L1050 730"/>
+    </svg>
+  </div>
+  <div class="marco seg-grid" style="position:relative;z-index:1">
+    <div class="rev">
+      <p class="eti">Seguridad</p>
+      <h2 style="margin-bottom:var(--sp-4)">Tus números son tuyos.</h2>
+      <p style="font-size:var(--t-lg);line-height:1.5">Los datos financieros de un campo no deberían depender de que una empresa decida qué hacer con ellos. Por eso acá no viven en un servidor nuestro.</p>
+    </div>
+    <div class="rev d1">
+      <div class="seg-item">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <div>
+          <h3>Guardado en tu computadora</h3>
+          <p>Los movimientos no viajan a ningún servidor nuestro. No los vemos, no los guardamos y no podemos dárselos a nadie.</p>
+        </div>
+      </div>
+      <div class="seg-item">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97 6 6 0 0 0-11.6-1.6A4.2 4.2 0 0 0 6.5 19z"/><path d="M12 12v5M9.5 14.5 12 12l2.5 2.5"/></svg>
+        <div>
+          <h3>Respaldo en tu propio Drive</h3>
+          <p>La copia se sube sola a tu cuenta de Google. Si se rompe la máquina, entrás desde otra y recuperás todo.</p>
+        </div>
+      </div>
+      <div class="seg-item">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <div>
+          <h3>Te los llevás cuando quieras</h3>
+          <p>Bajás todo en un archivo con un botón. Si algún día dejás de usarla, tus datos se van con vos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloque" id="precio">
+  <div class="marco">
+    <div class="rev" style="margin-bottom:var(--sp-7)">
+      <p class="eti">Precio</p>
+      <h2 style="font-size:var(--t-2xl)">Un precio. Todo incluido.</h2>
+    </div>
+    <div class="precio-caja rev d1">
+      <div class="precio-izq">
+        <span class="cinta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6 1.7 6.9L12 17.3 5.7 21l1.7-6.9L2 9.5 9 9z"/></svg>
+          Primer mes sin cargo
+        </span>
+        <div class="numero">
+          <span class="v">$35.000</span>
+          <span class="u">/ mes</span>
+        </div>
+        <p>Escribime y te doy una cuenta para probarla 30 días con los números reales de tu campo. Si no te sirve, no pagás nada y te llevás tus datos.</p>
+        <div class="precio-acc">
+          <a class="btn btn-pri btn-gr" href="https://wa.me/5492920244050?text=Hola%20Santiago%2C%20quiero%20probar%20Gesti%C3%B3n%20del%20Campo" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"/></svg>
+            Escribime por WhatsApp
+          </a>
+          <a class="btn btn-sec btn-gr" href="app.html">Ya tengo cuenta, entrar</a>
+        </div>
+        <p class="precio-nota">Se paga por transferencia, mes a mes. Se da de baja cuando quieras, sin permanencia ni penalidad.</p>
+      </div>
+      <div class="precio-der">
+        <p class="eti sola">Incluye</p>
+        <ul class="incluye">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Todas las funciones, sin versiones recortadas</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Movimientos ilimitados y todos los años que quieras</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Respaldo automático en tu Google Drive</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Importación de la planilla que ya venís usando</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Te ayudo a arrancar por WhatsApp</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Actualizaciones incluidas, sin costo extra</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cierre osc">
+  <div class="lotes" aria-hidden="true">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
+      <path d="M-50 160 L680 110 L1460 190"/>
+      <path d="M-50 420 L560 465 L1460 390"/>
+      <path d="M300 -20 L270 730"/>
+      <path d="M1100 -20 L1130 730"/>
+    </svg>
+  </div>
+  <div class="marco">
+    <h2 class="rev">Tu campo ya genera los números. <em>Ahora entendelos.</em></h2>
+    <p class="rev d1">Probá Gestión del Campo con tus propios datos y empezá a ver qué está dejando realmente cada actividad.</p>
+    <div class="cierre-cta rev d2">
+      <a class="btn btn-pri btn-gr" href="https://wa.me/5492920244050?text=Hola%20Santiago%2C%20vi%20Gesti%C3%B3n%20del%20Campo%20y%20quer%C3%ADa%20saber%20m%C3%A1s" target="_blank" rel="noopener">Pedir una cuenta</a>
+      <a class="btn btn-sec btn-gr" href="#precio">Ver el precio</a>
+    </div>
+    <div class="asomo rev d3" aria-hidden="true">
+      <img src="cap-resumen.png" alt="" loading="lazy">
+      <span class="fundido"></span>
+    </div>
+  </div>
+</section>
+
+<footer class="pie">
+  <div class="marco">
+    <div class="pie-grid">
+      <div>
+        <a class="logo" href="#inicio">
+          <span class="sig" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#F7F4EC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 20V9l6-4 6 4 6-4v11"/><path d="M9 20V9"/><path d="M15 20V9"/>
+            </svg>
+          </span>
+          <b>Gestión del Campo</b>
+        </a>
+        <p class="desc">Las cuentas de tu campo, claras. Hecho en Argentina para productores argentinos.</p>
+      </div>
+      <div>
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="#producto">Qué hace</a></li>
+          <li><a href="#como">Cómo funciona</a></li>
+          <li><a href="#seguridad">Seguridad</a></li>
+          <li><a href="#precio">Precio</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Cuenta</h4>
+        <ul>
+          <li><a href="app.html">Entrar a la app</a></li>
+          <li><a href="privacidad.html">Privacidad</a></li>
+          <li><a href="terminos.html">Términos</a></li>
+          <li><a href="https://wa.me/5492920244050" target="_blank" rel="noopener">Contacto</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pie-base">
+      <span>© 2026 Gestión del Campo</span>
+      <span>Santiago Elías Farah · Argentina</span>
+    </div>
+  </div>
 </footer>
 
+<script>
+(function(){
+  var tope=document.getElementById('tope');
+  var onScroll=function(){ tope.classList.toggle('pegado', window.scrollY>8) };
+  onScroll(); window.addEventListener('scroll',onScroll,{passive:true});
+
+  var elems=document.querySelectorAll('.rev');
+  if(!('IntersectionObserver' in window)){
+    Array.prototype.forEach.call(elems,function(e){e.classList.add('visible')}); return;
+  }
+  var io=new IntersectionObserver(function(entradas){
+    entradas.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target) }
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.12});
+  Array.prototype.forEach.call(elems,function(e){io.observe(e)});
+})();
+</script>
 </body>
 </html>
