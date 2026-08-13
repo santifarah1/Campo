@@ -527,6 +527,8 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     </div>
     <div id="barra-hacienda" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;gap:18px;flex-wrap:wrap;align-items:center">
     </div>
+    <div id="barra-granos" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;gap:18px;flex-wrap:wrap;align-items:center">
+    </div>
     <div class="filtros">
       <span class="lbl">Año:</span>
       <select id="f-anio" onchange="render()"></select>
@@ -3231,19 +3233,42 @@ const HAC_DESTACADAS=[
   ['Vaquillona',   /^VAQUILLONAS Esp\. h/i],
   ['Vaca',         /^VACAS Esp\.Joven \+/i]
 ];
+let granosCache=null;
 async function cargarHacienda(){
   const g=licLeer();
   if(!g||!g.clave)return;
   try{
     const r=await fetch(LIC_API+'/precios');
-    if(!r.ok)return;
-    const d=await r.json();
-    if(!d||d.error||!Array.isArray(d.categorias)||!d.categorias.length)return;
-    haciendaCache=d;
-    pintarHacienda();
+    if(r.ok){
+      const d=await r.json();
+      if(d&&!d.error&&Array.isArray(d.categorias)&&d.categorias.length)haciendaCache=d;
+    }
   }catch(e){}
+  try{
+    const r=await fetch(LIC_API+'/precios-granos');
+    if(r.ok){
+      const d=await r.json();
+      if(d&&!d.error&&Array.isArray(d.granos)&&d.granos.length)granosCache=d;
+    }
+  }catch(e){}
+  pintarHacienda();
+}
+// Los granos van en la misma tira que la hacienda: son dos referencias de
+// mercado y juntas ocupan una sola línea.
+function pintarGranos(){
+  const b=document.getElementById('barra-granos');
+  if(!b)return;
+  if(!granosCache){b.style.display='none';return}
+  const items=granosCache.granos.map(g=>
+    `<span><b>${esc(g.grano)}</b> $${Math.round(g.pesos).toLocaleString('es-AR')}${g.usd?` <span style="color:var(--tinta-suave);font-size:12px">US$${Math.round(g.usd)}</span>`:''}</span>`
+  ).join('');
+  b.innerHTML='<b style="color:var(--tinta-suave);font-size:12px;text-transform:uppercase;letter-spacing:.04em">🌾 Granos</b>'
+    +items
+    +'<span style="font-size:11px;color:var(--tinta-suave);margin-left:auto">$/tonelada · pizarra Rosario'+(granosCache.fecha?' · '+esc(granosCache.fecha):'')+'</span>';
+  b.style.display='flex';
 }
 function pintarHacienda(){
+  pintarGranos();
   const b=document.getElementById('barra-hacienda');
   if(!b||!haciendaCache)return;
   const cats=haciendaCache.categorias;
@@ -3642,6 +3667,7 @@ async function preguntarIA(pregunta){
   agregarMsg('user',q);
   const pensando=agregarMsg('bot','<div class="pensando"><span></span><span></span><span></span></div>',true);
 
+  const granInfo=granosCache?('\n\nPRECIOS DE GRANOS (pizarra de la Cámara Arbitral de Rosario'+(granosCache.fecha?', '+granosCache.fecha:'')+', $/tonelada): '+granosCache.granos.map(g=>`${g.grano}: $${Math.round(g.pesos).toLocaleString('es-AR')}/tn${g.usd?' (US$'+Math.round(g.usd)+')':''}`).join('; ')+'. Es el precio oficial de referencia para granos.'):'';
   const hacInfo=haciendaCache?('\n\nPRECIOS DE HACIENDA (Mercado Agroganadero de Cañuelas, rueda del '+haciendaCache.fecha+', $/kg vivo): '+haciendaCache.categorias.slice(0,12).map(c=>`${c.cat}: prom $${Math.round(c.prom)} (min ${Math.round(c.min)}, max ${Math.round(c.max)})`).join('; ')+'. Este es el precio oficial de referencia: si te preguntan por precios de hacienda, usá ESTOS datos y aclarár que son de esa fecha. Si el productor cargó ventas con cantidades, compará su precio promedio contra el del mercado.'):'';
   const dolarInfo=dolarCache?('\n\nCOTIZACIÓN DEL DÓLAR HOY (fuente dolarapi.com): '+dolarCache.filter(d=>['oficial','blue','bolsa'].includes(d.casa)).map(d=>`${d.nombre} venta $${Math.round(d.venta)}`).join(', ')+'.'):'';
 
@@ -3649,14 +3675,14 @@ async function preguntarIA(pregunta){
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
 
-${haciendaCache?'PRECIOS DE HACIENDA: más abajo te paso los precios oficiales del Mercado Agroganadero de Cañuelas del último día operado. Usá ESOS números si te preguntan por el precio de la hacienda, aclarando siempre de qué fecha son. NUNCA inventes ni estimes un precio que no esté en esa lista.':'SIN PRECIOS DE MERCADO: en esta consulta no tenés precios de mercado disponibles. NO digas que buscaste, NO simules una búsqueda y NUNCA inventes ni estimes un precio de memoria. Decí derecho que ahora mismo no los podés consultar.'}
+${(haciendaCache||granosCache)?'PRECIOS DE MERCADO: más abajo te paso los precios oficiales que tengo disponibles'+(haciendaCache?' de hacienda (Mercado Agroganadero de Cañuelas)':'')+(granosCache?(haciendaCache?' y':'')+' de granos (pizarra de Rosario)':'')+'. Usá ESOS números si te preguntan por precios, aclarando siempre de qué fecha son. NUNCA inventes ni estimes un precio que no esté en esas listas.':'SIN PRECIOS DE MERCADO: en esta consulta no tenés precios de mercado disponibles. NO digas que buscaste, NO simules una búsqueda y NUNCA inventes ni estimes un precio de memoria. Decí derecho que ahora mismo no los podés consultar.'}
 
 NO TENÉS ACCESO A INTERNET más allá de los datos que te paso acá: no busques ni digas que buscaste. Para granos, insumos o cualquier precio que no esté en la lista de hacienda, aclarár que no lo tenés. Lo que SÍ podés hacer siempre: mostrar a qué precio promedio por unidad vendió o compró él (sección VENTAS Y COMPRAS CON CANTIDADES), cómo evolucionó entre meses o años, y cuánto le rindió cada actividad. OJO CON LA MONEDA al comparar entre años: fijate en qué moneda están los datos (lo dice el encabezado del resumen); en pesos corrientes los montos viejos están licuados por la inflación.
 
 LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
 DATOS DEL CAMPO:
-${resumenParaIA()}${dolarInfo}${hacInfo}`;
+${resumenParaIA()}${dolarInfo}${hacInfo}${granInfo}`;
 
   iaHistorial.push({role:'user',parts:[{text:q}]});
 
