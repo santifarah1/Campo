@@ -525,6 +525,8 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <div id="barra-pendientes" style="display:none;margin-bottom:16px"></div>
     <div id="barra-dolar" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
     </div>
+    <div id="barra-hacienda" style="display:none;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:13.5px;gap:18px;flex-wrap:wrap;align-items:center">
+    </div>
     <div class="filtros">
       <span class="lbl">Año:</span>
       <select id="f-anio" onchange="render()"></select>
@@ -3217,6 +3219,76 @@ async function cargarDolar(){
   }catch(e){}
 }
 
+// ============ PRECIOS DE HACIENDA ============
+// El dato es el oficial del Mercado Agroganadero de Cañuelas, la referencia
+// nacional. No lo estima nadie: se lee y se muestra, igual que el dólar.
+// Sirve para comparar contra lo que uno vendió.
+let haciendaCache=null;
+// Las que mira un productor. El resto queda en el detalle.
+const HAC_DESTACADAS=[
+  ['Novillo',      /^NOVILLOS Esp/i],
+  ['Novillito',    /^NOVILLITOS Esp\. h/i],
+  ['Vaquillona',   /^VAQUILLONAS Esp\. h/i],
+  ['Vaca',         /^VACAS Esp\.Joven \+/i]
+];
+async function cargarHacienda(){
+  const g=licLeer();
+  if(!g||!g.clave)return;
+  try{
+    const r=await fetch(LIC_API+'/precios');
+    if(!r.ok)return;
+    const d=await r.json();
+    if(!d||d.error||!Array.isArray(d.categorias)||!d.categorias.length)return;
+    haciendaCache=d;
+    pintarHacienda();
+  }catch(e){}
+}
+function pintarHacienda(){
+  const b=document.getElementById('barra-hacienda');
+  if(!b||!haciendaCache)return;
+  const cats=haciendaCache.categorias;
+  const items=HAC_DESTACADAS.map(([nom,re])=>{
+    const c=cats.find(x=>re.test(x.cat));
+    return c?`<span><b>${esc(nom)}</b> $${Math.round(c.prom).toLocaleString('es-AR')}</span>`:'';
+  }).filter(Boolean).join('');
+  if(!items){b.style.display='none';return}
+  const f=(haciendaCache.fecha||'').split('-');
+  const fTxt=f.length===3?f[2]+'/'+f[1]:'';
+  b.innerHTML='<b style="color:var(--tinta-suave);font-size:12px;text-transform:uppercase;letter-spacing:.04em">🐄 Hacienda '+fTxt+'</b>'
+    +items
+    +'<span style="font-size:11px;color:var(--tinta-suave)">$/kg vivo · promedio</span>'
+    +'<button class="btn btn-sec" style="padding:4px 10px;font-size:12px;margin-left:auto" onclick="verHacienda()">Ver todas</button>';
+  b.style.display='flex';
+}
+function verHacienda(){
+  if(!haciendaCache)return;
+  const f=(haciendaCache.fecha||'').split('-');
+  const filas=haciendaCache.categorias.map(c=>
+    `<tr><td>${esc(c.cat)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">$${Math.round(c.min).toLocaleString('es-AR')}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums"><b>$${Math.round(c.prom).toLocaleString('es-AR')}</b></td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">$${Math.round(c.max).toLocaleString('es-AR')}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--tinta-suave)">${(c.cabezas||0).toLocaleString('es-AR')}</td></tr>`).join('');
+  const html=`<div class="modal" style="max-width:640px" onclick="event.stopPropagation()">
+    <h3>Precios de hacienda</h3>
+    <p class="mini-nota">Mercado Agroganadero de Cañuelas, rueda del ${f.length===3?f[2]+'/'+f[1]+'/'+f[0]:'—'}. Precios en pesos por kilo vivo. Es el precio de referencia nacional: sirve para comparar contra lo que vendiste vos.</p>
+    <div class="tabla-wrap" style="margin-top:14px;max-height:52vh;overflow-y:auto">
+      <table style="font-size:13px">
+        <thead><tr><th>Categoría</th><th style="text-align:right">Mínimo</th><th style="text-align:right">Promedio</th><th style="text-align:right">Máximo</th><th style="text-align:right">Cabezas</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div class="modal-btns"><button class="btn btn-primario" onclick="cerrarHacienda()">Cerrar</button></div>
+  </div>`;
+  const bg=document.createElement('div');
+  bg.className='modal-bg abierto';
+  bg.id='hac-bg';
+  bg.innerHTML=html;
+  bg.onclick=cerrarHacienda;
+  document.body.appendChild(bg);
+}
+function cerrarHacienda(){const b=document.getElementById('hac-bg');if(b)b.remove()}
+
 // ============ ASESOR IA (Gemini / Groq) ============
 let iaProveedor='gemini';
 let iaKey='';
@@ -3570,18 +3642,21 @@ async function preguntarIA(pregunta){
   agregarMsg('user',q);
   const pensando=agregarMsg('bot','<div class="pensando"><span></span><span></span><span></span></div>',true);
 
+  const hacInfo=haciendaCache?('\n\nPRECIOS DE HACIENDA (Mercado Agroganadero de Cañuelas, rueda del '+haciendaCache.fecha+', $/kg vivo): '+haciendaCache.categorias.slice(0,12).map(c=>`${c.cat}: prom $${Math.round(c.prom)} (min ${Math.round(c.min)}, max ${Math.round(c.max)})`).join('; ')+'. Este es el precio oficial de referencia: si te preguntan por precios de hacienda, usá ESTOS datos y aclarár que son de esa fecha. Si el productor cargó ventas con cantidades, compará su precio promedio contra el del mercado.'):'';
   const dolarInfo=dolarCache?('\n\nCOTIZACIÓN DEL DÓLAR HOY (fuente dolarapi.com): '+dolarCache.filter(d=>['oficial','blue','bolsa'].includes(d.casa)).map(d=>`${d.nombre} venta $${Math.round(d.venta)}`).join(', ')+'.'):'';
 
   const sistema=`Sos un asesor de gestión especializado en campos agropecuarios argentinos (ganadería de cría/invernada, agricultura, y alquiler de tierra). Pensás como un contador de gestión / analista de campo: mirás márgenes, rentabilidad por actividad, costos, estacionalidad, flujo de caja y saldos por cuenta. Tené en cuenta que los pases entre cuentas propias (ej: de Banco Rio a Efectivo) no son gastos ni retiros personales: solo mueven plata de una caja a otra. Hablás en español rioplatense, informal pero profesional, directo y claro, como un buen gestor de campo que conoce el negocio. Nada de vueltas ni relleno.
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
 
-SIN ACCESO A INTERNET: No podés consultar precios de mercado, ni actuales ni históricos. NO digas que buscaste, NO simules una búsqueda y NUNCA inventes ni estimes un precio de memoria. Si te preguntan por un precio de mercado, decí derecho que ahora mismo no lo podés consultar, y ofrecé en cambio lo que SÍ podés hacer con los datos del campo: mostrar a qué precio promedio por unidad vendió o compró él (sección VENTAS Y COMPRAS CON CANTIDADES), cómo evolucionó ese precio entre meses o entre años, y cuánto le rindió cada actividad. OJO CON LA MONEDA al comparar entre años: fijate en qué moneda están los datos (lo dice el encabezado del resumen); en pesos corrientes los montos viejos están licuados por la inflación.
+${haciendaCache?'PRECIOS DE HACIENDA: más abajo te paso los precios oficiales del Mercado Agroganadero de Cañuelas del último día operado. Usá ESOS números si te preguntan por el precio de la hacienda, aclarando siempre de qué fecha son. NUNCA inventes ni estimes un precio que no esté en esa lista.':'SIN PRECIOS DE MERCADO: en esta consulta no tenés precios de mercado disponibles. NO digas que buscaste, NO simules una búsqueda y NUNCA inventes ni estimes un precio de memoria. Decí derecho que ahora mismo no los podés consultar.'}
+
+NO TENÉS ACCESO A INTERNET más allá de los datos que te paso acá: no busques ni digas que buscaste. Para granos, insumos o cualquier precio que no esté en la lista de hacienda, aclarár que no lo tenés. Lo que SÍ podés hacer siempre: mostrar a qué precio promedio por unidad vendió o compró él (sección VENTAS Y COMPRAS CON CANTIDADES), cómo evolucionó entre meses o años, y cuánto le rindió cada actividad. OJO CON LA MONEDA al comparar entre años: fijate en qué moneda están los datos (lo dice el encabezado del resumen); en pesos corrientes los montos viejos están licuados por la inflación.
 
 LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
 DATOS DEL CAMPO:
-${resumenParaIA()}${dolarInfo}`;
+${resumenParaIA()}${dolarInfo}${hacInfo}`;
 
   iaHistorial.push({role:'user',parts:[{text:q}]});
 
@@ -4051,7 +4126,7 @@ async function iniciar(){
   document.getElementById('f-moneda').value=moneda;
   // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
   if(migrarDatos())guardarLS();
-  actualizarAnios();render();cargarDolar();cargarIndices();chequearBackup();chequearFechas();driveArranque();licBanner();
+  actualizarAnios();render();cargarDolar();cargarHacienda();cargarIndices();chequearBackup();chequearFechas();driveArranque();licBanner();
 
   if(alm.recuperado){
     let f=alm.fechaRecuperado;
