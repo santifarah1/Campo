@@ -805,6 +805,7 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
       <div class="panel" style="padding:0;overflow:hidden">
         <div style="padding:14px 18px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center">
           <h2 style="margin:0"><span class="pin"></span>Asesor del campo <span class="act-tag" id="ia-etiqueta" style="margin-left:6px"></span></h2>
+          <p class="mini-nota" id="ia-cuota" style="display:none;margin:4px 0 0"></p>
           <div style="display:flex;gap:8px">
             <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="verTab('ia',null);document.getElementById('ia-sin-key').style.display='block';document.getElementById('ia-chat').style.display='none'">Cambiar asistente</button>
             <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="cambiarKey()">Cambiar clave</button>
@@ -1533,14 +1534,14 @@ function leerFactura(e){
   const f=e.target.files[0];
   e.target.value='';
   if(!f)return;
-  if(!iaKey||usarGroq()){
-    const claveGem=alm.getItem('campo_gemini_key')||'';
-    if(!claveGem){
-      alert('Para leer facturas con foto hace falta el asistente Gemini.\n\nAndá a la pestaña 🤖 Asesor, elegí Gemini y pegá su clave (es gratis). Después volvés y sacás la foto.');
-      return;
-    }
-  }
+  // La foto se lee con Gemini. Si el cliente no tiene clave propia, va por
+  // nuestro servidor igual que el asesor.
   const keyFactura=alm.getItem('campo_gemini_key')||'';
+  const facturaPorServidor=!keyFactura && !!(lic&&lic.ok);
+  if(!keyFactura && !facturaPorServidor){
+    alert('Para leer facturas con foto hace falta el asesor.\n\nRevisá tu conexión y probá de nuevo, o cargá la factura a mano.');
+    return;
+  }
   const est=document.getElementById('ocr-estado');
   est.style.display='block';
   est.textContent='📖 Leyendo la factura...';
@@ -1553,11 +1554,29 @@ function leerFactura(e){
 Reglas: los montos van como número sin separador de miles ni símbolo (ej 1234567.89). El neto es el importe gravado sin IVA; el IVA es el impuesto; total = neto + IVA + otros. Si sólo ves el total, poné total y dejá neto e iva en null. Si un dato no está claro, poné null. NO inventes.`;
     try{
       const body={contents:[{role:'user',parts:[{inlineData:{mimeType:mime,data:b64}},{text:prompt}]}],generationConfig:{temperature:0,maxOutputTokens:600}};
-      const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${keyFactura}`,{
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
-      });
-      const data=await resp.json();
-      if(data.error){
+      let data;
+      if(facturaPorServidor){
+        const g=licLeer();
+        const r=await fetch(LIC_API+'/asesor',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({clave:g&&g.clave,payload:body})
+        });
+        const j=await r.json().catch(()=>({}));
+        if(j&&typeof j.usadas==='number'){iaCuota={usadas:j.usadas,limite:j.limite};pintarCuotaIA()}
+        if(!r.ok||j.error){
+          est.textContent='⚠️ '+(j.error==='limite'
+            ? (j.mensaje||'Llegaste al límite de consultas de hoy.')
+            : 'No se pudo leer la factura. Cargala a mano o probá de nuevo en un rato.');
+          return;
+        }
+        data=j.data;
+      }else{
+        const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${keyFactura}`,{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+        });
+        data=await resp.json();
+      }
+      if(data&&data.error){
         let m=data.error.message||'error';
         if(/API key not valid|API_KEY_INVALID/i.test(m))m='La clave de Gemini no es válida. Cargá una correcta en la pestaña Asesor.';
         else if(/quota|RESOURCE_EXHAUSTED/i.test(m))m='Se agotó la cuota gratis por hoy. Cargá la factura a mano o probá mañana.';
@@ -3204,6 +3223,14 @@ let iaKey='';
 let iaHistorial=[];
 function claveDe(prov){return alm.getItem(prov==='groq'?'campo_groq_key':'campo_gemini_key')||''}
 function usarGroq(){return iaProveedor==='groq'}
+// El asesor funciona sin que el cliente cargue ninguna clave: las consultas
+// pasan por nuestro servidor. Pedirle a un productor que se cree una cuenta en
+// Google Cloud y pegue una clave de API es pedirle algo que no va a hacer.
+// Quien prefiera usar su propia clave, puede: eso tiene prioridad y no gasta
+// cuota compartida.
+let iaCuota={usadas:0,limite:null};
+function iaPorServidor(){return !iaKey && !!(lic&&lic.ok)}
+function iaDisponible(){return !!iaKey || iaPorServidor()}
 
 function initIA(){
   iaKey=claveDe(iaProveedor);
@@ -3215,17 +3242,26 @@ function initIA(){
     : 'Gemini puede buscar precios de mercado en internet y leer facturas por foto. Si se te agota la cuota gratis del día, podés cambiar a Groq.<br>Sacá la clave gratis en <b>aistudio.google.com/apikey</b>.';
   const inp=document.getElementById('ia-key-input');
   if(inp)inp.placeholder=usarGroq()?'Pegá tu clave de Groq acá':'Pegá tu clave de Gemini acá';
-  if(iaKey){
+  pintarCuotaIA();
+  if(iaDisponible()){
     document.getElementById('ia-sin-key').style.display='none';
     document.getElementById('ia-chat').style.display='block';
     const et=document.getElementById('ia-etiqueta');
-    if(et)et.textContent=usarGroq()?'Groq':'Gemini';
+    if(et)et.textContent=iaKey?(usarGroq()?'Groq':'Gemini'):'Incluido';
     if(!iaHistorial.length)saludoIA();
     renderSugerencias();
   }else{
     document.getElementById('ia-sin-key').style.display='block';
     document.getElementById('ia-chat').style.display='none';
   }
+}
+function pintarCuotaIA(){
+  const el=document.getElementById('ia-cuota');
+  if(!el)return;
+  if(!iaPorServidor()||iaCuota.limite===null){el.style.display='none';return}
+  const quedan=Math.max(0,iaCuota.limite-iaCuota.usadas);
+  el.style.display='block';
+  el.textContent=quedan?`Te quedan ${quedan} consulta${quedan===1?'':'s'} hoy`:'Ya usaste las consultas de hoy. Mañana se renueva.';
 }
 function cambiarProveedor(){
   iaProveedor=document.getElementById('ia-prov-sel').value;
@@ -3305,6 +3341,22 @@ async function llamarGemini(sistema,conBusqueda){
     generationConfig:{temperature:.4,maxOutputTokens:3000}
   };
   if(conBusqueda)body.tools=[{google_search:{}}];
+
+  if(iaPorServidor()){
+    const g=licLeer();
+    const r=await fetch(LIC_API+'/asesor',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({clave:g&&g.clave,payload:body})
+    });
+    const j=await r.json().catch(()=>({}));
+    if(j&&typeof j.usadas==='number'){iaCuota={usadas:j.usadas,limite:j.limite};pintarCuotaIA()}
+    if(!r.ok||j.error){
+      if(j.error==='limite')return {error:{message:j.mensaje||'Llegaste al límite de consultas de hoy.'}};
+      return {error:{message:j.error||'No se pudo consultar al asesor. Probá de nuevo en un rato.'}};
+    }
+    return j.data;
+  }
+
   const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${iaKey}`,{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(body)
