@@ -3239,8 +3239,8 @@ function initIA(){
   if(selP)selP.value=iaProveedor;
   const nota=document.getElementById('ia-prov-nota');
   if(nota)nota.innerHTML=usarGroq()
-    ? 'Con Groq el asesor analiza tus números igual, pero <b>no puede buscar precios de mercado en internet</b> ni leer facturas por foto. Para eso hace falta Gemini. La cuota gratis de Groq es más amplia.<br>Sacá la clave gratis en <b>console.groq.com/keys</b>.'
-    : 'Gemini puede buscar precios de mercado en internet y leer facturas por foto. Si se te agota la cuota gratis del día, podés cambiar a Groq.<br>Sacá la clave gratis en <b>aistudio.google.com/apikey</b>.';
+    ? 'Con Groq el asesor analiza todos tus números igual, pero <b>no puede leer facturas por foto</b>. Para eso hace falta Gemini. La cuota gratis de Groq es más amplia.<br>Sacá la clave gratis en <b>console.groq.com/keys</b>.'
+    : 'Gemini analiza tus números y además <b>lee facturas por foto</b>. Si se te agota la cuota gratis del día, podés cambiar a Groq.<br>Sacá la clave gratis en <b>aistudio.google.com/apikey</b>.';
   const inp=document.getElementById('ia-key-input');
   if(inp)inp.placeholder=usarGroq()?'Pegá tu clave de Groq acá':'Pegá tu clave de Gemini acá';
   pintarCuotaIA();
@@ -3293,8 +3293,8 @@ function saludoIA(){
   const d=datosReales();
   const txt=d.length
     ? (usarGroq()
-      ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Ojo que con Groq no puedo buscar precios de mercado en internet, pero sí analizar todos tus números. Preguntame lo que quieras, en criollo nomás.'
-      : 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Puedo buscar precios de mercado actuales e históricos (ternero, maíz, cebolla) y compararlos con lo que vendiste. Preguntame lo que quieras, en criollo nomás.')
+      ? 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Preguntame lo que quieras sobre tus números, en criollo nomás.'
+      : 'Hola! Soy el asesor del campo. Tengo cargados todos los movimientos, los saldos por cuenta y los márgenes por actividad. Preguntame lo que quieras sobre tus números, en criollo nomás.')
     : 'Hola! Todavía no hay datos cargados. Importá el Excel o cargá algunos movimientos y ya te puedo ayudar a analizarlos.';
   agregarMsg('bot',txt);
 }
@@ -3306,9 +3306,10 @@ function sugerenciasDeAlertas(){
   return calcularAlertas(ult).filter(a=>a.preg).map(a=>a.preg).slice(0,3);
 }
 function renderSugerencias(){
-  const base=usarGroq()
-    ? ['¿Cómo viene la caja para los próximos meses?','¿Qué actividad me deja más plata?','¿Dónde se me está yendo la plata este año?']
-    : ['¿A cuánto está el ternero hoy en Cañuelas?','¿Vendimos a buen precio comparado con el mercado de ese momento?','¿Cómo viene la caja para los próximos meses?'];
+  // Todas las sugerencias se responden con los datos del propio campo.
+  // No prometemos precios de mercado: hoy no se pueden consultar.
+  const base=['¿Qué actividad me deja más plata?','¿Dónde se me está yendo la plata este año?',
+    '¿Cómo viene la caja para los próximos meses?','¿A qué precio promedio vendí este año?'];
   const din=sugerenciasDeAlertas();
   const sugs=[...new Set([...din,...base])].slice(0,4);
   document.getElementById('ia-sugerencias').innerHTML=sugs.map(s=>`<button class="sug" onclick="preguntarIA('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
@@ -3575,9 +3576,7 @@ async function preguntarIA(pregunta){
 
 Tu trabajo: ayudar al productor a entender sus números, detectar problemas y oportunidades, y proyectar a futuro. Basate en los datos que te paso. Si algo no se puede saber con los datos, decilo honestamente en vez de inventar. Cuando des cifras, usá los números del resumen. Sé concreto y accionable. Si detectás algo raro o una oportunidad, señalalo aunque no te lo pregunten.
 
-${usarGroq()?'SIN BÚSQUEDA WEB: No tenés acceso a internet en este modo. Si te preguntan un precio de mercado actual o histórico, aclarále que en este modo no podés consultarlo y sugerí que cambie el asistente a Gemini desde la misma pantalla. NUNCA inventes ni estimes un precio de memoria.':`PRECIOS DE MERCADO ACTUALES: Tenés acceso a búsqueda en Google. Si te preguntan precios actuales de mercado (hacienda/ternero/novillo en Cañuelas o MAG, maíz pizarra Rosario, cebolla, insumos, dólar), BUSCÁ el dato real de hoy en Google y respondé con el precio encontrado citando la fuente y fecha. NUNCA inventes ni estimes un precio de memoria: si no encontrás el dato, decilo.
-
-PRECIOS DE MERCADO HISTÓRICOS: Si te preguntan a cuánto estaba algo en una fecha pasada (ej: "el ternero en marzo 2024", "el maíz cuando lo vendimos"), buscá en Google el precio de ESE período (fuentes útiles: Mercado Agroganadero de Cañuelas, entresurcosycorrales.com, Bolsa de Comercio de Rosario, revista Márgenes Agropecuarios) y aclarár fuente y fecha del dato. Si el campo tiene cantidades cargadas (sección VENTAS Y COMPRAS CON CANTIDADES), compará el precio promedio por unidad del campo contra el mercado de esa misma época. OJO CON LA MONEDA: fijate en qué moneda están los datos del campo (lo dice el encabezado del resumen). Si están en pesos corrientes, compará contra precios en pesos de esa misma época, nunca contra precios de hoy.`}
+SIN ACCESO A INTERNET: No podés consultar precios de mercado, ni actuales ni históricos. NO digas que buscaste, NO simules una búsqueda y NUNCA inventes ni estimes un precio de memoria. Si te preguntan por un precio de mercado, decí derecho que ahora mismo no lo podés consultar, y ofrecé en cambio lo que SÍ podés hacer con los datos del campo: mostrar a qué precio promedio por unidad vendió o compró él (sección VENTAS Y COMPRAS CON CANTIDADES), cómo evolucionó ese precio entre meses o entre años, y cuánto le rindió cada actividad. OJO CON LA MONEDA al comparar entre años: fijate en qué moneda están los datos (lo dice el encabezado del resumen); en pesos corrientes los montos viejos están licuados por la inflación.
 
 LÍMITE IMPORTANTE SOBRE IMPUESTOS: Podés explicar conceptos impositivos generales (qué es el IVA crédito/débito, cómo funciona el impuesto a las Ganancias en el agro, etc.) de forma educativa. Pero NUNCA calcules ni liquides impuestos concretos a pagar, ni des un número de "tenés que pagar X de Ganancias/IVA". Esa liquidación la hace el contador matriculado. Si te preguntan cuánto pagar de un impuesto, explicá el concepto y recomendá confirmarlo con el contador. Sos apoyo a la gestión, no reemplazás al profesional que firma.
 
@@ -3587,10 +3586,9 @@ ${resumenParaIA()}${dolarInfo}`;
   iaHistorial.push({role:'user',parts:[{text:q}]});
 
   try{
-    let data=await llamarGemini(sistema,true);
-    if(!usarGroq()&&data.error&&/search|tool|not supported|INVALID_ARGUMENT/i.test(data.error.message||'')){
-      data=await llamarGemini(sistema,false);
-    }
+    // Sin búsqueda web: no tiene cuota gratuita y cada intento fallido gasta
+    // la cuota que hace falta para leer las fotos de facturas.
+    let data=await llamarGemini(sistema,false);
     pensando.remove();
     if(data.error){
       let msg=data.error.message||'Error desconocido';
@@ -3623,12 +3621,7 @@ ${resumenParaIA()}${dolarInfo}`;
         const fuentes=[...new Map(chunks.filter(c=>c.web).map(c=>[c.web.uri,c.web.title||c.web.uri])).entries()].slice(0,4);
         if(fuentes.length)htmlResp+='<p style="font-size:11.5px;color:var(--tinta-suave);margin-top:8px">🔎 Fuentes: '+fuentes.map(([u,t])=>`<a href="${u}" target="_blank" style="color:var(--cielo)">${esc(t)}</a>`).join(' · ')+'</p>';
       }
-      // Si no se pudo buscar en internet, decirlo: si no, el productor puede
-      // tomar por precio de mercado algo que salió sólo de sus propios datos.
-      if(iaAvisoUltimo==='sin-busqueda'){
-        htmlResp+='<p style="font-size:11.5px;color:var(--tinta-suave);margin-top:8px">Esta respuesta salió de tus propios números: en este momento no se pudo consultar precios de mercado en internet.</p>';
-        iaAvisoUltimo=null;
-      }
+      iaAvisoUltimo=null;
       agregarMsg('bot',htmlResp,true);
       iaHistorial.push({role:'model',parts:[{text:txt}]});
       if(iaHistorial.length>16)iaHistorial=iaHistorial.slice(-16);
