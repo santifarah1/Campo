@@ -807,8 +807,8 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
           <h2 style="margin:0"><span class="pin"></span>Asesor del campo <span class="act-tag" id="ia-etiqueta" style="margin-left:6px"></span></h2>
           <p class="mini-nota" id="ia-cuota" style="display:none;margin:4px 0 0"></p>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="verTab('ia',null);document.getElementById('ia-sin-key').style.display='block';document.getElementById('ia-chat').style.display='none'">Cambiar asistente</button>
-            <button class="btn btn-sec" style="padding:6px 12px;font-size:13px" onclick="cambiarKey()">Cambiar clave</button>
+            <button class="btn btn-sec ia-avanzado" style="padding:6px 12px;font-size:13px" onclick="verTab('ia',null);document.getElementById('ia-sin-key').style.display='block';document.getElementById('ia-chat').style.display='none'">Cambiar asistente</button>
+            <button class="btn btn-sec ia-avanzado" style="padding:6px 12px;font-size:13px" onclick="cambiarKey()">Cambiar clave</button>
           </div>
         </div>
         <div id="ia-mensajes" style="padding:18px;min-height:280px;max-height:520px;overflow-y:auto"></div>
@@ -3229,6 +3229,7 @@ function usarGroq(){return iaProveedor==='groq'}
 // Quien prefiera usar su propia clave, puede: eso tiene prioridad y no gasta
 // cuota compartida.
 let iaCuota={usadas:0,limite:null};
+let iaAvisoUltimo=null;
 function iaPorServidor(){return !iaKey && !!(lic&&lic.ok)}
 function iaDisponible(){return !!iaKey || iaPorServidor()}
 
@@ -3243,6 +3244,9 @@ function initIA(){
   const inp=document.getElementById('ia-key-input');
   if(inp)inp.placeholder=usarGroq()?'Pegá tu clave de Groq acá':'Pegá tu clave de Gemini acá';
   pintarCuotaIA();
+  // Con el asesor incluido no se muestran los botones de claves: al cliente
+  // no le sirven y sólo lo confunden.
+  document.querySelectorAll('.ia-avanzado').forEach(b=>{b.style.display=iaKey?'':'none'});
   if(iaDisponible()){
     document.getElementById('ia-sin-key').style.display='none';
     document.getElementById('ia-chat').style.display='block';
@@ -3351,9 +3355,10 @@ async function llamarGemini(sistema,conBusqueda){
     const j=await r.json().catch(()=>({}));
     if(j&&typeof j.usadas==='number'){iaCuota={usadas:j.usadas,limite:j.limite};pintarCuotaIA()}
     if(!r.ok||j.error){
-      if(j.error==='limite')return {error:{message:j.mensaje||'Llegaste al límite de consultas de hoy.'}};
-      return {error:{message:j.error||'No se pudo consultar al asesor. Probá de nuevo en un rato.'}};
+      if(j.error==='limite')return {error:{message:j.mensaje||'Llegaste al límite de consultas de hoy.',listo:true}};
+      return {error:{message:j.error||'No se pudo consultar al asesor. Probá de nuevo en un rato.',listo:true}};
     }
+    iaAvisoUltimo=j.aviso||null;
     return j.data;
   }
 
@@ -3589,7 +3594,17 @@ ${resumenParaIA()}${dolarInfo}`;
     pensando.remove();
     if(data.error){
       let msg=data.error.message||'Error desconocido';
-      if(/API key not valid|API_KEY_INVALID|invalid_api_key|Invalid API Key/i.test(msg))msg=usarGroq()?'La clave de Groq no es válida. Tocá "Cambiar clave" y cargá una correcta desde console.groq.com/keys':'La clave de Gemini no es válida. Tocá "Cambiar clave" y cargá una correcta desde aistudio.google.com/apikey';
+      if(data.error.listo){
+        // Ya viene escrito para el cliente desde el servidor: no tocarlo.
+      }
+      else if(iaPorServidor()){
+        // Con el asesor incluido no hay claves ni asistentes que cambiar:
+        // el mensaje tiene que hablarle al productor, no al programador.
+        if(/quota|RESOURCE_EXHAUSTED|rate.?limit|429/i.test(msg))
+          msg='El asesor está muy ocupado en este momento. Probá de nuevo en unos minutos.';
+        else msg='No se pudo consultar al asesor. Revisá tu conexión y probá de nuevo.';
+      }
+      else if(/API key not valid|API_KEY_INVALID|invalid_api_key|Invalid API Key/i.test(msg))msg=usarGroq()?'La clave de Groq no es válida. Tocá "Cambiar clave" y cargá una correcta desde console.groq.com/keys':'La clave de Gemini no es válida. Tocá "Cambiar clave" y cargá una correcta desde aistudio.google.com/apikey';
       else if(/quota|RESOURCE_EXHAUSTED|rate.?limit/i.test(msg))msg=usarGroq()?'Se agotó la cuota de Groq por ahora. Esperá un rato o cambiá el asistente a Gemini.':'Se agotó la cuota gratuita de Gemini por hoy. Podés cambiar el asistente a Groq (botón "Cambiar asistente") y seguir trabajando.';
       else if(/no longer available|not found|not supported/i.test(msg))msg='El modelo de IA cambió de nombre en Google. Avisale a Santi para que actualice la app.';
       agregarMsg('bot','⚠️ '+msg);
@@ -3607,6 +3622,12 @@ ${resumenParaIA()}${dolarInfo}`;
       if(chunks&&chunks.length){
         const fuentes=[...new Map(chunks.filter(c=>c.web).map(c=>[c.web.uri,c.web.title||c.web.uri])).entries()].slice(0,4);
         if(fuentes.length)htmlResp+='<p style="font-size:11.5px;color:var(--tinta-suave);margin-top:8px">🔎 Fuentes: '+fuentes.map(([u,t])=>`<a href="${u}" target="_blank" style="color:var(--cielo)">${esc(t)}</a>`).join(' · ')+'</p>';
+      }
+      // Si no se pudo buscar en internet, decirlo: si no, el productor puede
+      // tomar por precio de mercado algo que salió sólo de sus propios datos.
+      if(iaAvisoUltimo==='sin-busqueda'){
+        htmlResp+='<p style="font-size:11.5px;color:var(--tinta-suave);margin-top:8px">Esta respuesta salió de tus propios números: en este momento no se pudo consultar precios de mercado en internet.</p>';
+        iaAvisoUltimo=null;
       }
       agregarMsg('bot',htmlResp,true);
       iaHistorial.push({role:'model',parts:[{text:txt}]});
