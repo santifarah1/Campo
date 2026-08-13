@@ -3959,6 +3959,11 @@ async function iniciar(){
   // --- estado desde el almacén ---
   try{datos=JSON.parse(alm.getItem('campo_datos')||'[]')}catch(_){datos=[]}
   if(!Array.isArray(datos))datos=[];
+  // Un null o algo que no sea un movimiento hace explotar todos los cálculos.
+  // Puede venir de un respaldo viejo o de una escritura cortada por la mitad.
+  const antes=datos.length;
+  datos=datos.filter(x=>x&&typeof x==='object'&&x.fecha);
+  if(datos.length!==antes)console.warn('Se descartaron',antes-datos.length,'registros inválidos');
   moneda=alm.getItem('campo_moneda')||'corriente';
   cargarRubros();
   cargarActividades();
@@ -3991,6 +3996,15 @@ async function iniciar(){
 
 // Si queda una escritura en vuelo y se cierra la pestaña, avisamos en vez de
 // perderla en silencio. En la práctica dura milisegundos y no se ve nunca.
+// Escape cierra lo que esté abierto arriba de todo.
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  const mi=document.getElementById('import-bg');
+  if(mi&&mi.classList.contains('abierto')){cerrarImport();return}
+  const m=document.getElementById('modal-bg');
+  if(m&&m.classList.contains('abierto'))cerrarModal();
+});
+
 window.addEventListener('beforeunload',e=>{
   if(alm.pendientes>0){e.preventDefault();e.returnValue=''}
 });
