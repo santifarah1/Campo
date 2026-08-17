@@ -389,6 +389,23 @@ tr:hover td{background:var(--lienzo)}
 .toast-error{background:var(--ladrillo);color:#fff}
 .toast-info{background:var(--tinta);color:var(--lienzo)}
 @media(prefers-reduced-motion:reduce){.toast{transition:opacity .2s}}
+/* ===== Cotizaciones (precios con evolución) ===== */
+.coti-tg{border:none;background:transparent;padding:6px 12px;font-size:12.5px;font-weight:600;
+  color:var(--tinta-suave);cursor:pointer;font-family:inherit;transition:.15s}
+.coti-tg.on{background:var(--campo);color:#fff}
+.coti-grupo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--campo);margin:16px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--borde)}
+.coti-grupo:first-child{margin-top:4px}
+.coti-fila{padding:11px 0;border-bottom:1px solid var(--borde-suave,rgba(0,0,0,.05))}
+.coti-fila:last-child{border-bottom:none}
+.coti-cab{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.coti-nom{font-weight:600;font-size:15px}
+.coti-precio{font-weight:700;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap;
+  display:inline-flex;align-items:baseline;gap:7px}
+.coti-pie{display:flex;align-items:center;gap:12px;margin-top:5px}
+.coti-spark{width:100px;height:26px;flex-shrink:0}
+.coti-det{font-size:12px;color:var(--tinta-suave)}
+@media(max-width:520px){.coti-spark{width:70px}}
 </style>
 </head>
 <body>
@@ -665,14 +682,25 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     </div>
 
     <div class="panel" data-g="resultado">
+      <h2><span class="pin"></span>Cierre del ejercicio</h2>
+      <div id="g-cierre"></div>
+    </div>
+
+    <div class="panel" data-g="resultado">
       <h2><span class="pin"></span>Margen por actividad</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Ingresos menos costos directos de cada actividad, incluyendo transferencias internas (ej: maíz propio que consume la hacienda cuenta como ingreso de Agricultura y costo de Ganadería). Los costos de estructura van aparte.</p>
       <div id="g-margen"></div>
     </div>
 
     <div class="panel" data-g="resultado">
-      <h2><span class="pin"></span>Precios promedio (rubros con cantidad)</h2>
-      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Monto dividido por las cantidades cargadas (cabezas, kg, litros, qq). Sirve para comparar contra el mercado de esa época — preguntale al asesor.</p>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h2 style="margin:0"><span class="pin"></span>Cotizaciones (tus precios)</h2>
+        <div id="coti-toggle" style="margin-left:auto;display:inline-flex;background:var(--lienzo);border:1px solid var(--borde);border-radius:9px;overflow:hidden">
+          <button class="coti-tg on" data-per="mes" onclick="setCotiPeriodo('mes')">Por mes</button>
+          <button class="coti-tg" data-per="anio" onclick="setCotiPeriodo('anio')">Por año</button>
+        </div>
+      </div>
+      <p class="mini-nota" style="margin-top:6px;margin-bottom:14px">A qué precio vendiste o compraste cada cosa, y cómo evolucionó en el tiempo. La flecha compara contra el período anterior: verde es que te convino, rojo que no. Es tu propia serie, no el precio de mercado.</p>
       <div id="g-precios"></div>
     </div>
 
@@ -739,11 +767,6 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <div class="panel" data-g="control">
       <h2><span class="pin"></span>Alertas</h2>
       <div id="g-alertas"></div>
-    </div>
-
-    <div class="panel" data-g="resultado">
-      <h2><span class="pin"></span>Cierre del ejercicio</h2>
-      <div id="g-cierre"></div>
     </div>
 
     <div class="panel" data-g="plata">
@@ -888,8 +911,20 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
       <p class="mini-nota">El total sigue siendo lo que cuenta para la gestión. El neto y el IVA se guardan aparte para armar el reporte del contador.</p>
     </details>
     <div class="campo">
-      <label>Cantidad (opcional — cabezas, kg, litros, qq)</label>
-      <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal" oninput="ecoCant()" autocomplete="off">
+      <label>Cantidad (opcional)</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="m-cant" placeholder="Ej: 45" inputmode="decimal" oninput="ecoCant()" autocomplete="off" style="flex:1;min-width:0">
+        <select id="m-unidad" onchange="ecoCant()" style="flex:0 0 auto;width:auto">
+          <option value="">unidad…</option>
+          <option value="cabezas">cabezas</option>
+          <option value="kg">kg</option>
+          <option value="tn">toneladas</option>
+          <option value="litros">litros</option>
+          <option value="qq">quintales</option>
+          <option value="unidades">unidades</option>
+          <option value="horas">horas</option>
+        </select>
+      </div>
       <p class="mini-nota" id="eco-cant"></p>
     </div>
     <div class="campo" id="wrap-plazo">
@@ -1607,6 +1642,7 @@ function abrirModal(id){
     document.getElementById('m-neto').value=m.neto?aMontoAR(m.neto):'';
     document.getElementById('m-iva').value=m.iva?aMontoAR(m.iva):'';
     document.getElementById('m-cant').value=m.cant||'';
+    document.getElementById('m-unidad').value=m.unidad||'';
     document.getElementById('m-cta').value=m.cta||'';
     document.getElementById('m-cta-dest').value=m.ctaDest||'';
     document.getElementById('m-prov').value=m.prov||'';
@@ -1630,6 +1666,7 @@ function abrirModal(id){
     document.getElementById('m-neto').value='';
     document.getElementById('m-iva').value='';
     document.getElementById('m-cant').value='';
+    document.getElementById('m-unidad').value='';
     document.getElementById('m-cta').value='';
     document.getElementById('m-cta-dest').value='';
     document.getElementById('m-prov').value='';
@@ -1750,6 +1787,8 @@ function guardar(){
     return;
   }
   const cant=parseMontoAR(document.getElementById('m-cant').value)||null;
+  // Unidad de la cantidad (kg, tn, cabezas...). Solo se guarda si hay cantidad.
+  const unidad=cant?(document.getElementById('m-unidad').value||''):'';
   const esPlazo=tipoActual!=='transfer'&&document.getElementById('m-plazo').checked;
   const venc=document.getElementById('m-venc').value;
   if(esPlazo&&!venc){toast('Marcaste que es a plazo: falta la fecha de vencimiento (cuándo se cobra o se paga).','error');return}
@@ -1761,7 +1800,7 @@ function guardar(){
     if(o===de){toast('La actividad que entrega y la que recibe no pueden ser la misma','error');return}
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
-      tipo:'transfer',fecha,monto:Math.abs(monto),cant,
+      tipo:'transfer',fecha,monto:Math.abs(monto),cant,unidad,
       actOrigen:o,actDestino:de,
       cat:document.getElementById('m-cat').value.trim()||'Consumo interno',
       det:document.getElementById('m-det').value.trim(),
@@ -1781,7 +1820,7 @@ function guardar(){
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
       // en un pase la plata sale del origen: se guarda como egreso de esa cuenta
       // y como entrada en la de destino (lo resuelve saldosPorCuenta)
-      tipo:ctaDest?'egreso':tipoActual,fecha,monto:Math.abs(monto),cant,neto,iva,
+      tipo:ctaDest?'egreso':tipoActual,fecha,monto:Math.abs(monto),cant,unidad,neto,iva,
       plazo:esPlazo,venc:esPlazo?venc:null,
       cta,ctaDest,
       prov:esInterno?'':formaCanonica(document.getElementById('m-prov').value,'prov'),
@@ -2554,7 +2593,8 @@ function ecoCant(){
   const el=document.getElementById('eco-cant');if(!el)return;
   const v=document.getElementById('m-cant').value.trim();
   const n=parseMontoAR(v);
-  el.innerHTML=v&&n?`Se guarda <b>${n.toLocaleString('es-AR',{maximumFractionDigits:3})}</b>`:'';
+  const u=document.getElementById('m-unidad').value;
+  el.innerHTML=v&&n?`Se guarda <b>${n.toLocaleString('es-AR',{maximumFractionDigits:3})}${u?' '+u:''}</b>`:'';
 }
 // Número → texto en formato argentino, para volver a mostrarlo en un campo
 // de carga. Sin signo $ ni nada: sólo lo que el usuario tipearía.
@@ -4112,26 +4152,140 @@ function margenActividad(){
   }).join('');
 }
 
+// Período de las cotizaciones: 'mes' o 'anio'. Se cambia con el toggle.
+let cotiPeriodo='mes';
+function setCotiPeriodo(p){
+  cotiPeriodo=p;
+  document.querySelectorAll('.coti-tg').forEach(b=>b.classList.toggle('on',b.dataset.per===p));
+  preciosPromedio();
+}
+
+// Clasifica un rubro en un grupo por su nombre. Conservador: si no reconoce
+// nada, cae en "Otros". No inventa.
+function grupoRubro(cat){
+  const n=norm(cat);
+  if(/ternero|novillo|vaquillona|vaca|toro|hacienda|invernada|cabeza|ternera|vientre|kilo vivo/.test(n))return 'Hacienda';
+  if(/maiz|soja|trigo|girasol|sorgo|cebada|grano|poroto|avena|centeno/.test(n))return 'Granos';
+  if(/gasoil|gas oil|combustible|nafta|fertiliz|urea|semilla|agroquimic|herbicid|glifosato|insumo|labranza|siembra/.test(n))return 'Insumos';
+  return 'Otros';
+}
+
+// Unidad honesta según el grupo. La app no guarda la unidad real, así que solo
+// afirma lo que puede: hacienda es por cabeza; el resto, "por unidad".
+function unidadDeRubro(g){ return g==='Hacienda'?'por cabeza':'por unidad'; }
+
 function preciosPromedio(){
   const d=datosGestion().filter(x=>x.cant>0&&x.tipo!=='transfer');
   const el=document.getElementById('g-precios');
-  if(!d.length){el.innerHTML='<p style="color:var(--tinta-suave)">No hay movimientos con cantidades cargadas. Vienen de la columna "Cantidades" del Excel o del campo Cantidad al cargar a mano.</p>';return}
-  const grupos={};
+  if(!d.length){el.innerHTML='<p style="color:var(--tinta-suave)">Todavía no hay movimientos con cantidades cargadas. Vienen de la columna "Cantidades" del Excel o del campo Cantidad al cargar a mano. Sin cantidades no se puede calcular un precio por unidad.</p>';return}
+
+  // Agrupo por rubro+tipo, y dentro por período (mes AAAA-MM o año AAAA).
+  const rubros={};
   d.forEach(x=>{
     const k=x.cat+'|'+x.tipo;
-    if(!grupos[k])grupos[k]={cant:0,monto:0};
-    grupos[k].cant+=x.cant;
-    grupos[k].monto+=mv(x);
+    const per=cotiPeriodo==='mes'?x.fecha.slice(0,7):x.fecha.slice(0,4);
+    if(!rubros[k])rubros[k]={cat:x.cat,tipo:x.tipo,periodos:{},cantTot:0,montoTot:0,unidades:{}};
+    const r=rubros[k];
+    if(!r.periodos[per])r.periodos[per]={cant:0,monto:0};
+    r.periodos[per].cant+=x.cant;
+    r.periodos[per].monto+=mv(x);
+    r.cantTot+=x.cant; r.montoTot+=mv(x);
+    // contar qué unidad usó (la más frecuente gana)
+    if(x.unidad)r.unidades[x.unidad]=(r.unidades[x.unidad]||0)+1;
   });
-  const filas=Object.entries(grupos).map(([k,v])=>{
-    const [cat,tipo]=k.split('|');
-    return {cat,tipo,cant:v.cant,prom:v.monto/v.cant,total:v.monto};
-  }).sort((a,b)=>b.total-a.total);
-  el.innerHTML=filas.map(f=>`
-    <div class="g-fila">
-      <span>${esc(f.cat)} <span class="pill ${f.tipo==='ingreso'?'ing':'egr'}" style="margin-left:6px">${f.tipo==='ingreso'?'Venta':'Compra'}</span></span>
-      <div class="g-nums"><b>${fmt(f.prom)} /u</b>${f.cant.toLocaleString('es-AR',{maximumFractionDigits:3})} unidades · total ${fmt(f.total)}</div>
-    </div>`).join('');
+
+  // Armo cada "cotización" con su serie ordenada por período.
+  const cotis=Object.values(rubros).map(r=>{
+    const serie=Object.entries(r.periodos)
+      .map(([per,v])=>({per,precio:v.monto/v.cant,cant:v.cant}))
+      .sort((a,b)=>a.per.localeCompare(b.per));
+    const ultimo=serie[serie.length-1];
+    const previo=serie.length>=2?serie[serie.length-2]:null;
+    let variacion=null;
+    if(previo&&previo.precio>0){
+      variacion=(ultimo.precio-previo.precio)/previo.precio*100;
+    }
+    // la unidad más usada en este rubro (si el usuario la cargó)
+    const unidadTop=Object.entries(r.unidades).sort((a,b)=>b[1]-a[1])[0];
+    return {
+      cat:r.cat, tipo:r.tipo, grupo:grupoRubro(r.cat),
+      serie, actual:ultimo.precio, variacion,
+      unidad:unidadTop?unidadTop[0]:'',
+      promGeneral:r.montoTot/r.cantTot, cantTot:r.cantTot, montoTot:r.montoTot
+    };
+  }).sort((a,b)=>b.montoTot-a.montoTot);
+
+  // Agrupo visualmente por Hacienda / Granos / Insumos / Otros.
+  const ordenGrupos=['Hacienda','Granos','Insumos','Otros'];
+  const porGrupo={};
+  cotis.forEach(c=>{ (porGrupo[c.grupo]=porGrupo[c.grupo]||[]).push(c); });
+
+  let html='';
+  ordenGrupos.forEach(g=>{
+    const items=porGrupo[g];
+    if(!items||!items.length)return;
+    html+=`<div class="coti-grupo">${g}</div>`;
+    html+=items.map(c=>cotiFilaHTML(c)).join('');
+  });
+  el.innerHTML=html;
+}
+
+// El HTML de una cotización: precio actual, flecha de variación y sparkline.
+function cotiFilaHTML(c){
+  const esVenta=c.tipo==='ingreso';
+  // Flecha y color por CONVENIENCIA: subir una venta es bueno (verde),
+  // subir una compra es malo (rojo). Bajar, al revés.
+  let flecha='';
+  if(c.variacion!==null&&Math.abs(c.variacion)>=0.5){
+    const subio=c.variacion>0;
+    const conviene=esVenta?subio:!subio;   // venta que sube o compra que baja
+    const color=conviene?'var(--campo)':'var(--ladrillo)';
+    const signo=subio?'▲':'▼';
+    flecha=`<span style="color:${color};font-weight:700;font-size:13px;white-space:nowrap">${signo} ${Math.abs(c.variacion).toFixed(0)}%</span>`;
+  }
+  const spark=c.serie.length>=2?sparklineHTML(c):'';
+  const nPer=c.serie.length;
+  // Etiqueta de unidad: la real si el usuario la cargó; si no, la del grupo.
+  const nombresUnidad={cabezas:'por cabeza',kg:'por kg',tn:'por tonelada',litros:'por litro',qq:'por quintal',unidades:'por unidad',horas:'por hora'};
+  const uniTxt=c.unidad?(nombresUnidad[c.unidad]||('por '+c.unidad)):unidadDeRubro(c.grupo);
+  const detalle=nPer>=2
+    ?`${nPer} ${cotiPeriodo==='mes'?'meses':'años'} · ${c.cantTot.toLocaleString('es-AR',{maximumFractionDigits:3})} ${c.unidad||''} en total`
+    :`1 ${cotiPeriodo==='mes'?'mes':'año'} · ${c.cantTot.toLocaleString('es-AR',{maximumFractionDigits:3})} ${c.unidad||'unidades'}`;
+  return `<div class="coti-fila">
+    <div class="coti-cab">
+      <span class="coti-nom">${esc(c.cat)} <span class="pill ${esVenta?'ing':'egr'}" style="margin-left:4px">${esVenta?'Venta':'Compra'}</span></span>
+      <span class="coti-precio">${fmt(c.actual)} <span style="font-size:12px;font-weight:400;color:var(--tinta-suave)">${uniTxt}</span> ${flecha}</span>
+    </div>
+    <div class="coti-pie">
+      ${spark}
+      <span class="coti-det">${detalle}</span>
+    </div>
+  </div>`;
+}
+
+// Mini-gráfico de línea (sparkline) en SVG puro, sin librerías.
+function sparklineHTML(c){
+  const precios=c.serie.map(s=>s.precio);
+  const min=Math.min(...precios), max=Math.max(...precios);
+  const rango=max-min||1;
+  const w=100, h=26, pad=2;
+  const pts=c.serie.map((s,i)=>{
+    const x=pad+(i/(c.serie.length-1))*(w-2*pad);
+    const y=h-pad-((s.precio-min)/rango)*(h-2*pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  // color de la línea según conveniencia de la última variación
+  const esVenta=c.tipo==='ingreso';
+  const subio=(c.variacion||0)>0;
+  const conviene=esVenta?subio:!subio;
+  const color=c.variacion===null?'var(--tinta-suave)':(conviene?'var(--campo)':'var(--ladrillo)');
+  // último punto marcado
+  const ultimo=c.serie[c.serie.length-1];
+  const ux=pad+(w-2*pad), uy=h-pad-((ultimo.precio-min)/rango)*(h-2*pad);
+  return `<svg class="coti-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" r="2.2" fill="${color}"/>
+  </svg>`;
 }
 
 // Agrupa por cliente (ingresos) y proveedor (egresos) según el campo prov.
