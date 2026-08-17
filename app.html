@@ -406,6 +406,21 @@ tr:hover td{background:var(--lienzo)}
 .coti-spark{width:100px;height:26px;flex-shrink:0}
 .coti-det{font-size:12px;color:var(--tinta-suave)}
 @media(max-width:520px){.coti-spark{width:70px}}
+/* ===== Ranking "¿En qué se va la plata?" ===== */
+.rk-tg{border:none;background:transparent;padding:6px 14px;font-size:12.5px;font-weight:600;
+  color:var(--tinta-suave);cursor:pointer;font-family:inherit;transition:.15s}
+.rk-tg.on{background:var(--campo);color:#fff}
+.rk-fila{padding:12px 0;border-bottom:1px solid var(--borde-suave,rgba(0,0,0,.05))}
+.rk-fila:last-of-type{border-bottom:none}
+.rk-cab{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
+.rk-nom{font-weight:600;font-size:15px}
+.rk-num{font-variant-numeric:tabular-nums;color:var(--tinta-suave);font-size:12px;font-weight:500;margin-right:4px}
+.rk-monto{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rk-barra-bg{height:8px;background:var(--lienzo);border-radius:5px;overflow:hidden}
+.rk-barra{height:100%;border-radius:5px;transition:width .4s cubic-bezier(.16,1,.3,1)}
+.rk-pie{font-size:11.5px;color:var(--tinta-suave);margin-top:5px}
+.rk-total{margin-top:14px;padding-top:12px;border-top:1px solid var(--borde);
+  font-size:13px;color:var(--tinta-suave)}
 </style>
 </head>
 <body>
@@ -694,13 +709,13 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
 
     <div class="panel" data-g="resultado">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <h2 style="margin:0"><span class="pin"></span>Cotizaciones (tus precios)</h2>
-        <div id="coti-toggle" style="margin-left:auto;display:inline-flex;background:var(--lienzo);border:1px solid var(--borde);border-radius:9px;overflow:hidden">
-          <button class="coti-tg on" data-per="mes" onclick="setCotiPeriodo('mes')">Por mes</button>
-          <button class="coti-tg" data-per="anio" onclick="setCotiPeriodo('anio')">Por año</button>
+        <h2 style="margin:0"><span class="pin"></span>¿En qué se va la plata?</h2>
+        <div id="rk-toggle" style="margin-left:auto;display:inline-flex;background:var(--lienzo);border:1px solid var(--borde);border-radius:9px;overflow:hidden">
+          <button class="rk-tg on" data-t="egreso" onclick="setRankTipo('egreso')">Gastos</button>
+          <button class="rk-tg" data-t="ingreso" onclick="setRankTipo('ingreso')">Ingresos</button>
         </div>
       </div>
-      <p class="mini-nota" style="margin-top:6px;margin-bottom:14px">A qué precio vendiste o compraste cada cosa, y cómo evolucionó en el tiempo. La flecha compara contra el período anterior: verde es que te convino, rojo que no. Es tu propia serie, no el precio de mercado.</p>
+      <p class="mini-nota" id="rk-nota" style="margin-top:6px;margin-bottom:14px">Tus rubros ordenados de mayor a menor, en el período que elijas arriba. De un vistazo ves dónde se te está yendo la plata.</p>
       <div id="g-precios"></div>
     </div>
 
@@ -4174,12 +4189,57 @@ function grupoRubro(cat){
 // afirma lo que puede: hacienda es por cabeza; el resto, "por unidad".
 function unidadDeRubro(g){ return g==='Hacienda'?'por cabeza':'por unidad'; }
 
+// Ranking "¿En qué se va la plata?": rubros ordenados por monto, con barra.
+// Muestra egresos o ingresos según el toggle. Usa datosGestion() para respetar
+// el filtro de ejercicio y excluir pases entre cuentas.
+let rankTipo='egreso';
+function setRankTipo(t){
+  rankTipo=t;
+  document.querySelectorAll('.rk-tg').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  const nota=document.getElementById('rk-nota');
+  if(nota)nota.textContent=t==='egreso'
+    ?'Tus gastos por rubro, de mayor a menor, en el período que elijas. De un vistazo ves dónde se te está yendo la plata.'
+    :'Tus ingresos por rubro, de mayor a menor. De dónde viene la plata que entra al campo.';
+  preciosPromedio();
+}
+
 function preciosPromedio(){
+  const el=document.getElementById('g-precios');
+  // solo lo que es plata de verdad: sin pases entre cuentas ni transferencias
+  const d=soloResultado(datosGestion()).filter(x=>x.tipo===rankTipo);
+  if(!d.length){
+    el.innerHTML=`<p style="color:var(--tinta-suave)">No hay ${rankTipo==='egreso'?'gastos':'ingresos'} cargados en este período.</p>`;
+    return;
+  }
+  // sumar por rubro
+  const porRubro={};
+  d.forEach(x=>{ const c=x.cat||'Sin rubro'; porRubro[c]=(porRubro[c]||0)+mv(x); });
+  const filas=Object.entries(porRubro).sort((a,b)=>b[1]-a[1]);
+  const total=filas.reduce((s,[,v])=>s+v,0);
+  const max=filas[0][1]||1;
+  const color=rankTipo==='egreso'?'var(--campo)':'var(--campo)';
+  el.innerHTML=filas.map(([rub,monto],i)=>{
+    const pct=Math.round(monto/max*100);
+    const pctTotal=total>0?Math.round(monto/total*100):0;
+    return `<div class="rk-fila">
+      <div class="rk-cab">
+        <span class="rk-nom"><span class="rk-num">${String(i+1).padStart(2,'0')}</span> ${esc(rub)}</span>
+        <span class="rk-monto">${fmt(monto)}</span>
+      </div>
+      <div class="rk-barra-bg"><div class="rk-barra" style="width:${pct}%;background:${color}"></div></div>
+      <div class="rk-pie">${pctTotal}% del total${rankTipo==='egreso'?' de gastos':' de ingresos'}</div>
+    </div>`;
+  }).join('')
+  +`<div class="rk-total">Total ${rankTipo==='egreso'?'gastos':'ingresos'}: <b>${fmt(total)}</b> · ${filas.length} rubro${filas.length===1?'':'s'}</div>`;
+}
+
+// ===== COTIZACIONES (guardado para el futuro, hoy no se usa) =====
+// La lógica de precios por unidad con evolución quedó acá abajo por si se
+// retoma. No está enganchada a ningún botón; el ranking la reemplazó.
+function _cotizacionesGuardado(){
   const d=datosGestion().filter(x=>x.cant>0&&x.tipo!=='transfer');
   const el=document.getElementById('g-precios');
-  if(!d.length){el.innerHTML='<p style="color:var(--tinta-suave)">Todavía no hay movimientos con cantidades cargadas. Vienen de la columna "Cantidades" del Excel o del campo Cantidad al cargar a mano. Sin cantidades no se puede calcular un precio por unidad.</p>';return}
-
-  // Agrupo por rubro+tipo, y dentro por período (mes AAAA-MM o año AAAA).
+  if(!d.length){el.innerHTML='<p style="color:var(--tinta-suave)">Sin cantidades cargadas.</p>';return}
   const rubros={};
   d.forEach(x=>{
     const k=x.cat+'|'+x.tipo;
@@ -4190,11 +4250,8 @@ function preciosPromedio(){
     r.periodos[per].cant+=x.cant;
     r.periodos[per].monto+=mv(x);
     r.cantTot+=x.cant; r.montoTot+=mv(x);
-    // contar qué unidad usó (la más frecuente gana)
     if(x.unidad)r.unidades[x.unidad]=(r.unidades[x.unidad]||0)+1;
   });
-
-  // Armo cada "cotización" con su serie ordenada por período.
   const cotis=Object.values(rubros).map(r=>{
     const serie=Object.entries(r.periodos)
       .map(([per,v])=>({per,precio:v.monto/v.cant,cant:v.cant}))
@@ -4202,24 +4259,13 @@ function preciosPromedio(){
     const ultimo=serie[serie.length-1];
     const previo=serie.length>=2?serie[serie.length-2]:null;
     let variacion=null;
-    if(previo&&previo.precio>0){
-      variacion=(ultimo.precio-previo.precio)/previo.precio*100;
-    }
-    // la unidad más usada en este rubro (si el usuario la cargó)
+    if(previo&&previo.precio>0)variacion=(ultimo.precio-previo.precio)/previo.precio*100;
     const unidadTop=Object.entries(r.unidades).sort((a,b)=>b[1]-a[1])[0];
-    return {
-      cat:r.cat, tipo:r.tipo, grupo:grupoRubro(r.cat),
-      serie, actual:ultimo.precio, variacion,
-      unidad:unidadTop?unidadTop[0]:'',
-      promGeneral:r.montoTot/r.cantTot, cantTot:r.cantTot, montoTot:r.montoTot
-    };
+    return {cat:r.cat,tipo:r.tipo,grupo:grupoRubro(r.cat),serie,actual:ultimo.precio,variacion,unidad:unidadTop?unidadTop[0]:'',promGeneral:r.montoTot/r.cantTot,cantTot:r.cantTot,montoTot:r.montoTot};
   }).sort((a,b)=>b.montoTot-a.montoTot);
-
-  // Agrupo visualmente por Hacienda / Granos / Insumos / Otros.
   const ordenGrupos=['Hacienda','Granos','Insumos','Otros'];
   const porGrupo={};
   cotis.forEach(c=>{ (porGrupo[c.grupo]=porGrupo[c.grupo]||[]).push(c); });
-
   let html='';
   ordenGrupos.forEach(g=>{
     const items=porGrupo[g];
