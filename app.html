@@ -374,6 +374,21 @@ tr:hover td{background:var(--lienzo)}
 .um-sub{font-size:12px;color:var(--tinta-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .um-monto{font-family:"Space Grotesk";font-weight:600;font-size:14.5px;white-space:nowrap}
 
+/* ===== Diálogo y toast propios ===== */
+.dlg-inp{width:100%;padding:11px 13px;border:1px solid var(--borde);border-radius:11px;background:var(--lienzo);color:var(--tinta);font-size:15px;transition:.15s}
+.dlg-inp:focus{outline:none;border-color:var(--campo);box-shadow:0 0 0 3px var(--campo-suave);background:var(--tarjeta)}
+.btn-borrar{background:var(--ladrillo);color:#fff;box-shadow:var(--s1)}
+.btn-borrar:hover{background:#8E4430;box-shadow:var(--s2);transform:translateY(-1px)}
+#toast-wrap{position:fixed;left:0;right:0;bottom:0;z-index:300;display:flex;flex-direction:column;
+  align-items:center;gap:8px;padding:0 16px 22px;pointer-events:none}
+.toast{max-width:440px;width:fit-content;padding:12px 17px;border-radius:13px;font-size:14px;font-weight:500;
+  line-height:1.4;box-shadow:0 6px 24px rgba(43,42,38,.22);opacity:0;transform:translateY(14px);
+  transition:opacity .24s,transform .24s cubic-bezier(.16,1,.3,1);white-space:pre-line;text-align:center}
+.toast.on{opacity:1;transform:translateY(0)}
+.toast-ok{background:var(--campo-hondo);color:#fff}
+.toast-error{background:var(--ladrillo);color:#fff}
+.toast-info{background:var(--tinta);color:var(--lienzo)}
+@media(prefers-reduced-motion:reduce){.toast{transition:opacity .2s}}
 </style>
 </head>
 <body>
@@ -912,7 +927,7 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     </div>
     <div class="campo" id="wrap-prov">
       <label>Cliente / Proveedor (opcional)</label>
-      <input type="text" id="m-prov" list="provs" placeholder="Ej: acopio, YPF, consignatario...">
+      <input type="text" id="m-prov" list="provs" placeholder="Ej: Gilardi, YPF, consignatario...">
       <datalist id="provs"></datalist>
     </div>
     <div class="campo">
@@ -995,6 +1010,114 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
   </div>
 </div>
 
+<!-- Diálogo propio: reemplaza los confirm/prompt/alert nativos del navegador.
+     Un solo cuadro que sirve para confirmaciones sí/no y para pedir un dato.
+     Los avisos simples (éxito/error) usan el toast de abajo, no este cuadro. -->
+<div class="modal-bg" id="dlg-bg" style="z-index:200">
+  <div class="modal" style="max-width:440px" onclick="event.stopPropagation()">
+    <h2 id="dlg-titulo" style="font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px"></h2>
+    <div id="dlg-cuerpo" style="font-size:14.5px;color:var(--tinta-2);line-height:1.55;white-space:pre-line"></div>
+    <label id="dlg-input-l" for="dlg-input" style="display:none;font-size:12.5px;font-weight:600;color:var(--tinta-2);margin:14px 0 5px"></label>
+    <input id="dlg-input" class="dlg-inp" style="display:none" enterkeyhint="done">
+    <div id="dlg-err" style="display:none;color:var(--ladrillo);font-size:13px;margin-top:8px"></div>
+    <div class="modal-btns">
+      <button class="btn btn-sec" id="dlg-cancelar" onclick="cerrarDialogo(false)">Cancelar</button>
+      <button class="btn btn-primario" id="dlg-ok" onclick="confirmarDialogo()">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast: aviso que aparece abajo y se va solo. Para éxitos y errores de
+     validación que no necesitan que el usuario toque un botón. -->
+<div id="toast-wrap" aria-live="polite"></div>
+
+<script>
+// ============ AVISOS Y DIÁLOGOS PROPIOS ============
+// Reemplazan alert/confirm/prompt nativos. toast() para avisos que se van
+// solos; dialogo() (con await) para confirmar o pedir un dato.
+
+// --- Toast ---
+let _toastTimer=null;
+function toast(msg,tipo){
+  // tipo: 'ok' (verde, default) | 'error' (ladrillo) | 'info'
+  const wrap=document.getElementById('toast-wrap');
+  const t=document.createElement('div');
+  t.className='toast toast-'+(tipo||'ok');
+  t.textContent=msg;
+  wrap.appendChild(t);
+  // Se va solo. Los errores quedan un poco más (se leen más despacio).
+  const vida=(tipo==='error')?5200:3400;
+  requestAnimationFrame(()=>t.classList.add('on'));
+  setTimeout(()=>{ t.classList.remove('on'); setTimeout(()=>t.remove(),260); },vida);
+}
+
+// --- Diálogo (confirmar / pedir dato) ---
+let _dlgResolver=null,_dlgConfig=null;
+function dialogo(cfg){
+  _dlgConfig=cfg||{};
+  document.getElementById('dlg-titulo').textContent=cfg.titulo||'';
+  const c=document.getElementById('dlg-cuerpo');
+  c.textContent=cfg.cuerpo||'';
+  c.style.display=cfg.cuerpo?'block':'none';
+  const inpL=document.getElementById('dlg-input-l');
+  const inp=document.getElementById('dlg-input');
+  const err=document.getElementById('dlg-err');
+  err.style.display='none';
+  const ok=document.getElementById('dlg-ok');
+  ok.textContent=cfg.ok||'Aceptar';
+  ok.className='btn '+(cfg.peligro?'btn-borrar':'btn-primario');
+  const cancelar=document.getElementById('dlg-cancelar');
+  cancelar.textContent=cfg.cancelar||'Cancelar';
+  cancelar.style.display=cfg.sinCancelar?'none':'';
+  if(cfg.pedir){
+    inpL.textContent=cfg.pedir;
+    inpL.style.display='block';
+    inp.style.display='block';
+    inp.value=cfg.valor||'';
+    inp.setAttribute('inputmode',cfg.inputmode||'text');
+    setTimeout(()=>{inp.focus();try{inp.select();}catch(_){} },70);
+  }else{
+    inpL.style.display='none';
+    inp.style.display='none';
+  }
+  document.getElementById('dlg-bg').style.display='flex';
+  return new Promise(res=>{ _dlgResolver=res; });
+}
+function confirmarDialogo(){
+  const cfg=_dlgConfig||{};
+  const inp=document.getElementById('dlg-input');
+  const err=document.getElementById('dlg-err');
+  if(cfg.pedir){
+    const val=inp.value.trim();
+    if(cfg.debeCoincidir!==undefined && val!==cfg.debeCoincidir){
+      err.textContent='No coincide. Escribilo tal cual para confirmar.';
+      err.style.display='block';return;
+    }
+    if(cfg.obligatorio && !val){
+      err.textContent='No puede quedar vacío.';
+      err.style.display='block';return;
+    }
+    _cerrarDlg(val);
+  }else{ _cerrarDlg(true); }
+}
+function cerrarDialogo(v){ _cerrarDlg(v?true:false); }
+function _cerrarDlg(valor){
+  document.getElementById('dlg-bg').style.display='none';
+  const r=_dlgResolver; _dlgResolver=null; _dlgConfig=null;
+  if(r)r(valor);
+}
+document.getElementById('dlg-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();confirmarDialogo();}
+});
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('dlg-bg').style.display!=='flex')return;
+  if(e.key==='Escape')cerrarDialogo(false);
+});
+document.getElementById('dlg-bg').addEventListener('click',function(e){
+  if(e.target===this)cerrarDialogo(false);
+});
+</script>
+
 <script>
 // ============ ALMACÉN ============
 // Toda la app lee y escribe con `alm` como si fuera localStorage (sincrónico),
@@ -1018,7 +1141,7 @@ const alm=(function(){
     console.error('Error al guardar:',e);
     const b=document.getElementById('banner-guardado');
     if(b)b.style.display='flex';
-    else alert('⚠️ No se pudo guardar en este navegador. Guardá una copia de seguridad AHORA y probá con otro navegador.');
+    else toast('⚠️ No se pudo guardar en este navegador. Guardá una copia de seguridad AHORA y probá con otro navegador.','error');
   }
 
   function abrir(){
@@ -1543,7 +1666,7 @@ function leerFactura(e){
   const keyFactura=alm.getItem('campo_gemini_key')||'';
   const facturaPorServidor=!keyFactura && !!(lic&&lic.ok);
   if(!keyFactura && !facturaPorServidor){
-    alert('Para leer facturas con foto hace falta el asesor.\n\nRevisá tu conexión y probá de nuevo, o cargá la factura a mano.');
+    toast('Para leer facturas con foto hace falta el asesor.\n\nRevisá tu conexión y probá de nuevo, o cargá la factura a mano.','error');
     return;
   }
   const est=document.getElementById('ocr-estado');
@@ -1615,26 +1738,26 @@ Reglas: los montos van como número sin separador de miles ni símbolo (ej 12345
 function guardar(){
   const fecha=document.getElementById('m-fecha').value;
   const monto=parseMontoAR(document.getElementById('m-monto').value);
-  if(!fecha){alert('Falta la fecha.');return}
-  if(!monto){alert('Falta el monto, o no se entiende lo que escribiste.\n\nPodés escribirlo como quieras: 1500 · 1500,50 · 1.500,50');return}
+  if(!fecha){toast('Falta la fecha.','error');return}
+  if(!monto){toast('Falta el monto, o no se entiende lo que escribiste.\n\nPodés escribirlo como quieras: 1500 · 1500,50 · 1.500,50','error');return}
   // Un año mal tipeado (2206 en vez de 2026) entra sin chistar y descoloca
   // los gráficos por mes, la proyección y el cierre de ejercicio.
   const anio=parseInt(fecha.slice(0,4));
   const maxAnio=new Date().getFullYear()+1;
   if(!(anio>=2015&&anio<=maxAnio)){
-    alert('La fecha parece estar mal: el año es '+anio+'. Revisala.');
+    toast('La fecha parece estar mal: el año es '+anio+'. Revisala.','error');
     return;
   }
   const cant=parseMontoAR(document.getElementById('m-cant').value)||null;
   const esPlazo=tipoActual!=='transfer'&&document.getElementById('m-plazo').checked;
   const venc=document.getElementById('m-venc').value;
-  if(esPlazo&&!venc){alert('Marcaste que es a plazo: falta la fecha de vencimiento (cuándo se cobra o se paga).');return}
+  if(esPlazo&&!venc){toast('Marcaste que es a plazo: falta la fecha de vencimiento (cuándo se cobra o se paga).','error');return}
   const neto=parseMontoAR(document.getElementById('m-neto').value)||null;
   const iva=parseMontoAR(document.getElementById('m-iva').value)||null;
   let obj;
   if(tipoActual==='transfer'){
     const o=document.getElementById('m-origen').value, de=document.getElementById('m-destino').value;
-    if(o===de){alert('La actividad que entrega y la que recibe no pueden ser la misma');return}
+    if(o===de){toast('La actividad que entrega y la que recibe no pueden ser la misma','error');return}
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
       tipo:'transfer',fecha,monto:Math.abs(monto),cant,
@@ -1650,8 +1773,8 @@ function guardar(){
     // Si no se indica cuenta destino, se comporta como siempre (una sola punta).
     let ctaDest=esInterno?formaCanonica(document.getElementById('m-cta-dest').value,'cta'):'';
     if(ctaDest){
-      if(!cta){alert('Marcaste que es un pase entre cuentas: falta la cuenta de la que sale la plata.');return}
-      if(normCta(cta)===normCta(ctaDest)){alert('La cuenta de origen y la de destino no pueden ser la misma.');return}
+      if(!cta){toast('Marcaste que es un pase entre cuentas: falta la cuenta de la que sale la plata.','error');return}
+      if(normCta(cta)===normCta(ctaDest)){toast('La cuenta de origen y la de destino no pueden ser la misma.','error');return}
     }
     obj={
       id:editandoId||Date.now()+''+Math.random().toString(36).slice(2,6),
@@ -1673,10 +1796,12 @@ function guardar(){
   guardarLS();cerrarModal();
   render();renderTabla();actualizarAnios();
 }
-function borrar(id){
-  if(!confirm('¿Borrar este movimiento?'))return;
+async function borrar(id){
+  const ok=await dialogo({titulo:'¿Borrar este movimiento?',cuerpo:'Se saca de la lista. Si querés recuperarlo después, tenés que cargarlo de nuevo a mano.',ok:'Borrar',peligro:true});
+  if(!ok)return;
   datos=datos.filter(d=>d.id!==id);
   guardarLS();render();renderTabla();actualizarAnios();
+  toast('Movimiento borrado');
 }
 function actualizarCats(){
   const alfa=(a,b)=>a.localeCompare(b,'es',{sensitivity:'base'});
@@ -1741,8 +1866,8 @@ function altaRubro(n,t,a){
 function agregarRubro(){
   const inp=document.getElementById('r-nombre');
   const nom=inp.value.trim();
-  if(!nom){alert('Escribí el nombre del rubro (ej: gasoil, veterinaria, venta de hacienda).');inp.focus();return}
-  if(buscarRubro(nom)){alert('Ese rubro ya está en tu lista.');inp.select();return}
+  if(!nom){toast('Escribí el nombre del rubro (ej: gasoil, veterinaria, venta de hacienda).','error');inp.focus();return}
+  if(buscarRubro(nom)){toast('Ese rubro ya está en tu lista.','error');inp.select();return}
   altaRubro(nom,document.getElementById('r-tipo').value,document.getElementById('r-act').value);
   inp.value='';inp.focus();
   guardarRubros();rubrosPanel();
@@ -1762,7 +1887,7 @@ function importarRubrosUsados(){
     if(d.act)vistos[k].acts[d.act]=(vistos[k].acts[d.act]||0)+1;
   });
   const lista=Object.values(vistos);
-  if(!lista.length){alert('Todavía no hay movimientos cargados, así que no hay rubros para traer. Agregalos a mano o cargá la lista sugerida.');return}
+  if(!lista.length){toast('Todavía no hay movimientos cargados, así que no hay rubros para traer. Agregalos a mano o cargá la lista sugerida.','error');return}
   let n=0;
   lista.forEach(v=>{
     const t=v.ing&&v.egr?'ambos':(v.ing?'ingreso':'egreso');
@@ -1773,42 +1898,48 @@ function importarRubrosUsados(){
     if(altaRubro(v.n,t,a))n++;
   });
   guardarRubros();rubrosPanel();
-  alert(n?`Se agregaron ${n} rubros a tu lista, con el tipo y la actividad que venís usando.`:'Ya tenías todos los rubros que usás en la lista.');
+  toast(n?`Se agregaron ${n} rubros a tu lista, con el tipo y la actividad que venís usando.`:'Ya tenías todos los rubros que usás en la lista.','ok');
 }
 function cargarRubrosSugeridos(){
   let n=0;
   RUBROS_SUGERIDOS.forEach(r=>{if(altaRubro(r.n,r.t,r.a))n++});
   guardarRubros();rubrosPanel();
-  alert(n?`Se agregaron ${n} rubros típicos de campo. Borrá los que no uses y agregá los tuyos.`:'Ya tenías cargados todos los rubros de la lista sugerida.');
+  toast(n?`Se agregaron ${n} rubros típicos de campo. Borrá los que no uses y agregá los tuyos.`:'Ya tenías cargados todos los rubros de la lista sugerida.','ok');
 }
-function renombrarRubro(i){
+async function renombrarRubro(i){
   const r=rubros[i];if(!r)return;
-  const nuevo=prompt('Nuevo nombre para el rubro:',r.n);
-  if(nuevo===null)return;
+  const nuevo=await dialogo({titulo:'Renombrar rubro',pedir:'Nuevo nombre',valor:r.n,ok:'Guardar',obligatorio:true});
+  if(nuevo===false)return;
   const nom=nuevo.trim();
-  if(!nom){alert('El nombre no puede quedar vacío.');return}
+  if(!nom)return;
   const otro=buscarRubro(nom);
-  if(otro&&otro!==r){alert('Ya tenés otro rubro con ese nombre.');return}
+  if(otro&&otro!==r){toast('Ya tenés otro rubro con ese nombre.','error');return}
   const usados=datos.filter(d=>norm(d.cat)===norm(r.n));
   const viejo=r.n;
   r.n=nom;
-  if(usados.length&&confirm(`Hay ${usados.length} movimientos cargados con "${viejo}". ¿Renombrarlos también?`)){
-    usados.forEach(d=>d.cat=nom);
-    guardarLS();renderTodo();
+  if(usados.length){
+    const tambien=await dialogo({titulo:'Renombrar también los movimientos',cuerpo:`Hay ${usados.length} movimiento${usados.length===1?'':'s'} cargado${usados.length===1?'':'s'} con "${viejo}". ¿Querés renombrarlos también?`,ok:'Sí, renombrar todo',cancelar:'No, solo el rubro'});
+    if(tambien){
+      usados.forEach(d=>d.cat=nom);
+      guardarLS();renderTodo();
+    }
   }
   guardarRubros();rubrosPanel();
+  toast('Rubro renombrado');
 }
 function cambiarTipoRubro(i,t){if(rubros[i]){rubros[i].t=t;guardarRubros();rubrosPanel()}}
 function cambiarActRubro(i,a){if(rubros[i]){rubros[i].a=a;guardarRubros();rubrosPanel()}}
-function borrarRubro(i){
+async function borrarRubro(i){
   const r=rubros[i];if(!r)return;
   const usados=datos.filter(d=>norm(d.cat)===norm(r.n)).length;
-  const aviso=usados
-    ?`"${r.n}" se sacaría de tu lista, pero los ${usados} movimientos ya cargados con ese rubro no se tocan (siguen igual). ¿Sacarlo?`
-    :`¿Sacar "${r.n}" de tu lista de rubros?`;
-  if(!confirm(aviso))return;
+  const cuerpo=usados
+    ?`Se saca de tu lista, pero los ${usados} movimiento${usados===1?'':'s'} ya cargado${usados===1?'':'s'} con ese rubro no se tocan (siguen igual).`
+    :`No hay ningún movimiento cargado con este rubro.`;
+  const ok=await dialogo({titulo:`¿Sacar "${r.n}"?`,cuerpo,ok:'Sacar',peligro:true});
+  if(!ok)return;
   rubros.splice(i,1);
   guardarRubros();rubrosPanel();
+  toast('Rubro sacado de la lista');
 }
 // ===== PANEL DE ACTIVIDADES =====
 function usoActividad(n){
@@ -1819,7 +1950,7 @@ function agregarActividad(){
   const nom=inp.value.trim();
   if(!nom){inp.focus();return}
   if(actividades.some(a=>norm(a.e)===norm(nom)||norm(a.n)===norm(nom))){
-    alert('Ya tenés una actividad con ese nombre.');return;
+    toast('Ya tenés una actividad con ese nombre.','error');return;
   }
   actividades.push({n:nom,e:nom,c:document.getElementById('a-color').value||colorLibre()});
   guardarActividades();
@@ -1828,34 +1959,36 @@ function agregarActividad(){
   actividadesPanel();renderTodo();
 }
 function agregarActSugerida(nom){
-  if(actividades.some(a=>norm(a.e)===norm(nom))){alert('Esa actividad ya está en tu lista.');return}
+  if(actividades.some(a=>norm(a.e)===norm(nom))){toast('Esa actividad ya está en tu lista.','error');return}
   actividades.push({n:nom,e:nom,c:colorLibre()});
   guardarActividades();actividadesPanel();renderTodo();
 }
 // Renombrar solo cambia la etiqueta: la clave guardada en los movimientos
 // queda igual, así que no se toca ni un dato.
-function renombrarActividad(i){
+async function renombrarActividad(i){
   const a=actividades[i];if(!a)return;
-  const nom=prompt('Nuevo nombre para "'+a.e+'":',a.e);
-  if(nom===null)return;
+  const nom=await dialogo({titulo:'Renombrar actividad',cuerpo:`Actividad actual: "${a.e}"`,pedir:'Nuevo nombre',valor:a.e,ok:'Guardar',obligatorio:true});
+  if(nom===false)return;
   const t=nom.trim();
   if(!t)return;
-  if(actividades.some((x,j)=>j!==i&&norm(x.e)===norm(t))){alert('Ya tenés otra actividad con ese nombre.');return}
+  if(actividades.some((x,j)=>j!==i&&norm(x.e)===norm(t))){toast('Ya tenés otra actividad con ese nombre.','error');return}
   a.e=t;
   guardarActividades();actividadesPanel();renderTodo();
+  toast('Actividad renombrada');
 }
 function colorActividad(i,c){
   if(!actividades[i])return;
   actividades[i].c=c;
   guardarActividades();actividadesPanel();renderTodo();
 }
-function borrarActividad(i){
+async function borrarActividad(i){
   const a=actividades[i];if(!a)return;
-  if(a.estructura){alert('"'+a.e+'" no se puede borrar: es la actividad donde van los gastos que no son de ninguna actividad en particular (sueldos, impuestos, seguros).\n\nSi el nombre no te gusta, cambialo con ✎.');return}
+  if(a.estructura){toast('"'+a.e+'" no se puede borrar: es donde van los gastos generales (sueldos, impuestos, seguros). Si el nombre no te gusta, cambialo con ✎.','error');return}
   const usos=usoActividad(a.n);
   const dest=actEstructura();
   if(usos){
-    if(!confirm(`Hay ${usos} movimiento${usos===1?'':'s'} cargado${usos===1?'':'s'} con la actividad "${a.e}".\n\nSi la borrás, esos movimientos pasan a "${actEtiqueta(dest)}". No se pierde ningún movimiento ni ningún monto, pero vas a tener que reimputarlos a mano si querés ponerlos en otra actividad.\n\n¿Borrar igual?`))return;
+    const ok=await dialogo({titulo:`¿Borrar "${a.e}"?`,cuerpo:`Hay ${usos} movimiento${usos===1?'':'s'} cargado${usos===1?'':'s'} con esta actividad.\n\nSi la borrás, esos movimientos pasan a "${actEtiqueta(dest)}". No se pierde ningún movimiento ni ningún monto, pero vas a tener que reimputarlos a mano si querés ponerlos en otra actividad.`,ok:'Borrar igual',peligro:true});
+    if(!ok)return;
     datos.forEach(x=>{
       if(x.act===a.n)x.act=dest;
       if(x.actOrigen===a.n)x.actOrigen=dest;
@@ -1863,7 +1996,8 @@ function borrarActividad(i){
     });
     guardarLS();
   }else{
-    if(!confirm(`¿Sacar "${a.e}" de tu lista de actividades? No hay ningún movimiento cargado con ella.`))return;
+    const ok=await dialogo({titulo:`¿Sacar "${a.e}"?`,cuerpo:'No hay ningún movimiento cargado con esta actividad.',ok:'Sacar',peligro:true});
+    if(!ok)return;
   }
   // los rubros que la tenían fija quedan sin actividad, no rotos
   rubros.forEach(r=>{if(r.a===a.n)r.a=''});
@@ -1871,6 +2005,7 @@ function borrarActividad(i){
   actividades.splice(i,1);
   guardarActividades();
   actividadesPanel();actualizarAnios();renderTodo();
+  toast('Actividad borrada');
 }
 function actividadesPanel(){
   const el=document.getElementById('g-actividades');
@@ -1928,13 +2063,13 @@ function rubrosPanel(){
 // Desde el modal de carga: guardar el rubro que se acaba de escribir.
 function rubroDesdeModal(){
   const nom=document.getElementById('m-cat').value.trim();
-  if(!nom){alert('Escribí primero la categoría y después tocá ＋ para guardarla en tu lista.');return}
-  if(buscarRubro(nom)){alert('"'+nom+'" ya está en tu lista de rubros.');return}
+  if(!nom){toast('Escribí primero la categoría y después tocá ＋ para guardarla en tu lista.','error');return}
+  if(buscarRubro(nom)){toast('"'+nom+'" ya está en tu lista de rubros.','error');return}
   const t=tipoActual==='transfer'?'ambos':tipoActual;
   const a=tipoActual==='transfer'?'':document.getElementById('m-act').value;
   altaRubro(nom,t,a);
   guardarRubros();rubrosPanel();
-  alert('✓ "'+nom+'" quedó guardado en tus rubros. La próxima vez lo elegís de la lista.');
+  toast('✓ "'+nom+'" quedó guardado en tus rubros. La próxima vez lo elegís de la lista.','ok');
 }
 // Si el rubro elegido tiene actividad fija, la completa sola.
 function autoActRubro(){
@@ -2313,7 +2448,7 @@ function leerArchivo(e){
     const wb=XLSX.read(ev.target.result,{type:'binary',cellDates:true});
     const ws=wb.Sheets[wb.SheetNames[0]];
     rawImport=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true,cellDates:true});
-    if(!rawImport.length){alert('El archivo parece vacío');return}
+    if(!rawImport.length){toast('El archivo parece vacío','error');return}
     colsImport=Object.keys(rawImport[0]);
     const opts='<option value="">— ninguna —</option>'+colsImport.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
     ['map-fecha','map-monto','map-tipo','map-egrcol','map-cta','map-prov','map-cant','map-act','map-cat','map-det'].forEach(id=>document.getElementById(id).innerHTML=opts);
@@ -2506,7 +2641,7 @@ function confirmarImport(){
   const cAct=document.getElementById('map-act').value;
   const cCat=document.getElementById('map-cat').value;
   const cDet=document.getElementById('map-det').value;
-  if(!cFecha||!cMonto){alert('Necesito al menos la columna de fecha y la de monto');return}
+  if(!cFecha||!cMonto){toast('Necesito al menos la columna de fecha y la de monto','error');return}
   let nuevos=[],errores=0;
   rawImport.forEach(fila=>{
     const fecha=parseFecha(fila[cFecha]);
@@ -2534,17 +2669,17 @@ function confirmarImport(){
       det:cDet&&fila[cDet]?(''+fila[cDet]).trim():''
     });
   });
-  if(!nuevos.length){alert('No se pudo importar ninguna fila. Revisá el mapeo de columnas.');return}
+  if(!nuevos.length){toast('No se pudo importar ninguna fila. Revisá el mapeo de columnas.','error');return}
   const {limpios,dupes}=filtrarDuplicados(nuevos);
-  if(!limpios.length){alert('Todas las filas ya estaban cargadas (duplicados detectados). No se importó nada.');return}
+  if(!limpios.length){toast('Todas las filas ya estaban cargadas (duplicados detectados). No se importó nada.','error');return}
   datos=datos.concat(limpios);
   const unif=unificarRubros()+unificarCuentas()+unificarProv();
   guardarLS();
   cerrarImport();actualizarAnios();render();renderTabla();
-  alert(`Importados ${limpios.length} movimientos.`
+  toast(`Importados ${limpios.length} movimientos.`
     +(dupes?`\n${dupes} duplicados salteados (misma fecha, monto, rubro y detalle).`:'')
     +(unif?`\n${unif} rubros/cuentas escritos distinto se unificaron.`:'')
-    +(errores?`\n${errores} filas sin fecha válida se saltearon.`:''));
+    +(errores?`\n${errores} filas sin fecha válida se saltearon.`:''),'ok');
 }
 function mapAct(v){
   return clasificarRubro(v).act;
@@ -2576,7 +2711,7 @@ function importarDirecto(e){
   reader.onload=ev=>{
     let wb;
     try{wb=XLSX.read(ev.target.result,{type:'binary',cellDates:true})}
-    catch(err){alert('No pude leer el archivo. ¿Es un Excel válido?');return}
+    catch(err){toast('No pude leer el archivo. ¿Es un Excel válido?','error');return}
     let hoja=wb.SheetNames.find(n=>/base de datos/i.test(n))||wb.SheetNames[0];
     const ws=wb.Sheets[hoja];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true,cellDates:true});
@@ -2585,7 +2720,7 @@ function importarDirecto(e){
       const fila=(rows[i]||[]).map(c=>(''+c).toLowerCase());
       if(fila.some(c=>c.includes('fecha'))&&fila.some(c=>c.includes('ingreso'))){hIdx=i;break}
     }
-    if(hIdx<0){alert('No encontré los encabezados (Fecha / Ingresos / Egresos). ¿Es la planilla de gestión? Si es otro formato, usá la opción de emparejar columnas.');return}
+    if(hIdx<0){toast('No encontré los encabezados (Fecha / Ingresos / Egresos). ¿Es la planilla de gestión? Si es otro formato, usá la opción de emparejar columnas.','error');return}
     const H=rows[hIdx].map(c=>(''+(c||'')).toLowerCase().trim());
     const col=n=>H.findIndex(h=>h.includes(n));
     const iFecha=col('fecha'),iIng=col('ingreso'),iEgr=col('egreso'),iRubro=col('rubro'),iCuenta=col('cuenta'),iCant=col('cantidad'),iObs=col('observ'),iProv=col('client')>=0?col('client'):col('proveedor');
@@ -2614,12 +2749,12 @@ function importarDirecto(e){
         det:[obs,cuenta?('['+cuenta+']'):''].filter(Boolean).join(' ')
       });
     }
-    if(!nuevos.length){alert('No se importó ninguna fila. Revisá que sea la planilla correcta.');return}
+    if(!nuevos.length){toast('No se importó ninguna fila. Revisá que sea la planilla correcta.','error');return}
     const {limpios,dupes}=filtrarDuplicados(nuevos);
     if(!limpios.length){
       // igual unificamos cuentas por si la base vieja no tenía el campo
       migrarDatos();guardarLS();renderGestion();
-      alert('Todas las filas de esta planilla ya estaban cargadas. No se importó nada nuevo (anti-duplicados).');return;
+      toast('Todas las filas de esta planilla ya estaban cargadas. No se importó nada nuevo (anti-duplicados).','error');return;
     }
     datos=datos.concat(limpios);
     migrarDatos();
@@ -2628,12 +2763,12 @@ function importarDirecto(e){
     cerrarImport();actualizarAnios();render();renderTabla();
     const internos=limpios.filter(n=>n.interno).length;
     const conCant=limpios.filter(n=>n.cant).length;
-    alert(`✓ Importados ${limpios.length} movimientos.`
+    toast(`✓ Importados ${limpios.length} movimientos.`
       +(dupes?`\n${dupes} ya estaban cargados y se saltearon (anti-duplicados).`:'')
       +(conCant?`\n${conCant} traen cantidades (cabezas/kg/litros) de la columna Cantidades.`:'')
       +(internos?`\n${internos} son pases entre cuentas, ajustes o saldos iniciales — no cuentan en el resultado pero sí en los saldos por cuenta.`:'')
       +(unif?`\n${unif} rubros/cuentas escritos distinto se unificaron.`:'')
-      +(saltadas?`\n${saltadas} filas sin fecha válida se saltearon.`:''));
+      +(saltadas?`\n${saltadas} filas sin fecha válida se saltearon.`:''),'ok');
   };
   reader.readAsBinaryString(f);
 }
@@ -2659,7 +2794,7 @@ function migrarDatos(){
 
 // ============ EXPORT ============
 function exportar(){
-  if(!datos.length){alert('No hay datos para exportar');return}
+  if(!datos.length){toast('No hay datos para exportar','error');return}
   const ws=XLSX.utils.json_to_sheet(datos.map(d=>({
     Fecha:d.fecha,
     Tipo:d.tipo==='transfer'?'transferencia':d.tipo,
@@ -2732,8 +2867,11 @@ function armarRespaldo(){
     datos:juntarDatosLS()
   },null,2);
 }
-function respaldar(){
-  if(!datos.length&&!confirm('Todavía no hay movimientos cargados. ¿Guardar igual la copia?'))return;
+async function respaldar(){
+  if(!datos.length){
+    const ok=await dialogo({titulo:'No hay movimientos',cuerpo:'Todavía no cargaste ningún movimiento. ¿Guardar igual la copia (va a estar vacía)?',ok:'Guardar igual'});
+    if(!ok)return;
+  }
   const hoy=new Date();
   const nombre='respaldo-campo-'+hoy.toISOString().slice(0,10)+'.json';
   bajarArchivo(nombre,armarRespaldo());
@@ -2741,7 +2879,7 @@ function respaldar(){
   alm.removeItem('campo_backup_snooze');
   document.getElementById('banner-backup').style.display='none';
   estadoBackup();
-  alert('✓ Copia guardada como:\n'+nombre+'\n\nFijate en la carpeta de Descargas. Muy importante: mandátela por WhatsApp o subila a tu Drive. Si la dejás solo en esta computadora y la computadora se rompe, la copia se pierde con ella.\n\n(La clave del asesor no se incluye en el archivo, así podés compartirlo tranquilo. Si restaurás en una computadora nueva, la pegás una vez y listo.)');
+  await dialogo({titulo:'✓ Copia guardada',cuerpo:'Se guardó como:\n'+nombre+'\n\nFijate en la carpeta de Descargas. Muy importante: mandátela por WhatsApp o subila a tu Drive. Si la dejás solo en esta computadora y la computadora se rompe, la copia se pierde con ella.\n\n(La clave del asesor no se incluye en el archivo, así podés compartirlo tranquilo. Si restaurás en una computadora nueva, la pegás una vez y listo.)',ok:'Entendido',sinCancelar:true});
 }
 function restaurar(e){
   const f=e.target.files[0];
@@ -2751,13 +2889,13 @@ function restaurar(e){
   reader.onload=async ev=>{
     let j;
     try{j=JSON.parse(ev.target.result)}
-    catch(_){alert('⚠️ Ese archivo no se puede leer. Tiene que ser el archivo respaldo-campo-....json que bajó esta misma app.');return}
+    catch(_){await dialogo({titulo:'No se puede leer',cuerpo:'Ese archivo no se puede leer. Tiene que ser el archivo respaldo-campo-....json que bajó esta misma app.',ok:'Entendido',sinCancelar:true});return}
     if(!j||j.app!==RESPALDO_MARCA||!j.datos||typeof j.datos!=='object'){
-      alert('⚠️ Ese archivo no es una copia de seguridad de esta app.\n\nBuscá el archivo que empieza con "respaldo-campo-" y termina en .json. No sirve el Excel.');
+      await dialogo({titulo:'No es una copia válida',cuerpo:'Ese archivo no es una copia de seguridad de esta app.\n\nBuscá el archivo que empieza con "respaldo-campo-" y termina en .json. No sirve el Excel.',ok:'Entendido',sinCancelar:true});
       return;
     }
     if(j.version>RESPALDO_VERSION){
-      alert('⚠️ Esa copia se hizo con una versión más nueva de la app. Actualizá la app antes de restaurarla.');
+      await dialogo({titulo:'Copia más nueva',cuerpo:'Esa copia se hizo con una versión más nueva de la app. Actualizá la app antes de restaurarla.',ok:'Entendido',sinCancelar:true});
       return;
     }
     let fTxt='desconocida';
@@ -2768,13 +2906,15 @@ function restaurar(e){
     let movs=j.movimientos;
     if(movs==null&&j.datos.campo_datos){try{movs=JSON.parse(j.datos.campo_datos).length}catch(_){}}
     const ahora=datos.length;
-    if(!confirm(`COPIA DEL ${fTxt}\nTiene ${movs!=null?movs:'?'} movimientos.\n\nAhora en la app hay ${ahora} movimientos, y se van a REEMPLAZAR por los de la copia.\n\nAntes de hacerlo se va a bajar automáticamente una copia de lo que tenés ahora, por si te arrepentís.\n\n¿Seguimos?`))return;
+    const seguir=await dialogo({titulo:'Reemplazar datos actuales',cuerpo:`COPIA DEL ${fTxt}\nTiene ${movs!=null?movs:'?'} movimientos.\n\nAhora en la app hay ${ahora} movimientos, y se van a REEMPLAZAR por los de la copia.\n\nAntes de hacerlo se va a bajar automáticamente una copia de lo que tenés ahora, por si te arrepentís.`,ok:'Sí, restaurar',peligro:true});
+    if(!seguir)return;
     // copia de seguridad de lo que había, por si se equivocó de archivo
     try{
       bajarArchivo('respaldo-anterior-'+new Date().toISOString().slice(0,10)+'.json',armarRespaldo());
     }catch(err){
-      if(!confirm('⚠️ No se pudo generar la copia de lo que tenés ahora (puede ser que el navegador haya bloqueado la descarga).\n\nSi seguís, los datos actuales se van a reemplazar sin red de seguridad: si esta copia no era la que buscabas, no hay vuelta atrás.\n\n¿Querés continuar igual?')){
-        alert('No se tocó nada. Tus datos siguen como estaban.');
+      const igual=await dialogo({titulo:'Sin red de seguridad',cuerpo:'No se pudo generar la copia de lo que tenés ahora (puede ser que el navegador haya bloqueado la descarga).\n\nSi seguís, los datos actuales se van a reemplazar sin red de seguridad: si esta copia no era la que buscabas, no hay vuelta atrás.',ok:'Continuar igual',peligro:true});
+      if(!igual){
+        toast('No se tocó nada. Tus datos siguen como estaban.');
         return;
       }
     }
@@ -2795,7 +2935,7 @@ function restaurar(e){
     // Con IndexedDB la escritura es asincrónica: si recargamos antes de que
     // termine, la restauración se pierde a medias.
     await alm.flush();
-    alert('✓ Listo, se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.');
+    await dialogo({titulo:'✓ Datos restaurados',cuerpo:'Se restauraron los datos de la copia del '+fTxt+'.\n\nLa app se va a recargar.',ok:'Recargar',sinCancelar:true});
     location.reload();
   };
   reader.readAsText(f);
@@ -3045,7 +3185,7 @@ async function driveSubir(manual){
   }catch(e){
     console.error('Drive:',e);
     gdUltError=(''+e.message).startsWith('sin-token')||(''+e.message).includes('oauth')?'permiso':'error';
-    if(manual)alert('⚠️ No se pudo subir la copia a Drive.\n\nProbá tocando "Conectar Google Drive" de nuevo. Mientras tanto, guardá una copia en archivo con el botón de abajo.');
+    if(manual)dialogo({titulo:'No se pudo subir a Drive',cuerpo:'Probá tocando "Conectar Google Drive" de nuevo. Mientras tanto, guardá una copia en archivo con el botón de abajo.',ok:'Entendido',sinCancelar:true});
     return false;
   }finally{
     gdSubiendo=false;driveEstado();estadoBackup();
@@ -3059,34 +3199,37 @@ function driveProgramar(){
   driveEstado();
 }
 async function driveConectar(){
-  if(!driveListo()){alert('No se pudo cargar el conector de Google (¿sin internet?). Probá de nuevo en un rato.');return}
+  if(!driveListo()){toast('No se pudo cargar el conector de Google (¿sin internet?). Probá de nuevo en un rato.','error');return}
   try{
     await gdPedirToken(true);
     alm.setItem('campo_drive_on','1');
     driveEstado();ofrecerDrive();
     const ok=await driveSubir(true);
-    if(ok)alert('✓ Listo. Desde ahora la copia se sube sola a tu Google Drive cada vez que cargues algo.\n\nNo tenés que hacer nada más.');
+    if(ok)toast('✓ Listo. Desde ahora la copia se sube sola a tu Google Drive cada vez que cargues algo.\n\nNo tenés que hacer nada más.','ok');
   }catch(e){
     console.error(e);
-    alert('No se completó la conexión con Google. Si cerraste la ventana sin dar permiso, probá de nuevo.');
+    toast('No se completó la conexión con Google. Si cerraste la ventana sin dar permiso, probá de nuevo.','error');
   }
 }
-function driveDesconectar(){
-  if(!confirm('¿Dejar de subir copias a tu Google Drive?\n\nLas copias que ya subiste quedan en tu Drive, no se borran. Pero de acá en más vas a tener que acordarte de guardar copias a mano.'))return;
+async function driveDesconectar(){
+  const ok=await dialogo({titulo:'¿Dejar de subir a Drive?',cuerpo:'Las copias que ya subiste quedan en tu Drive, no se borran. Pero de acá en más vas a tener que acordarte de guardar copias a mano.',ok:'Desconectar',peligro:true});
+  if(!ok)return;
   alm.setItem('campo_drive_on','0');
   gdToken=null;gdVence=0;clearTimeout(gdTimer);
   alm.setItem('campo_drive_ofr',''+Date.now());   // recién desconectó: no molestar enseguida
   driveEstado();ofrecerDrive();
+  toast('Respaldo automático desconectado');
 }
 async function driveRestaurar(){
-  if(!driveListo()){alert('No se pudo cargar el conector de Google. Probá en un rato.');return}
+  if(!driveListo()){toast('No se pudo cargar el conector de Google. Probá en un rato.','error');return}
   try{
     if(!gdToken)await gdPedirToken(true);
     const archivos=await gdListar();
-    if(!archivos.length){alert('No hay ninguna copia en tu Drive todavía.');return}
+    if(!archivos.length){await dialogo({titulo:'Sin copias en Drive',cuerpo:'Todavía no hay ninguna copia en tu Drive.',ok:'Entendido',sinCancelar:true});return}
     const f=archivos[0];
     const fecha=f.name.replace('respaldo-campo-','').replace('.json','');
-    if(!confirm(`La copia más nueva en tu Drive es del ${fecha}.\n\nAhora en la app hay ${datos.length} movimientos, y se van a REEMPLAZAR por los de esa copia.\n\n¿Seguimos?`))return;
+    const ok=await dialogo({titulo:'Restaurar desde Drive',cuerpo:`La copia más nueva en tu Drive es del ${fecha}.\n\nAhora en la app hay ${datos.length} movimientos, y se van a REEMPLAZAR por los de esa copia.`,ok:'Sí, restaurar',peligro:true});
+    if(!ok)return;
     const r=await gdFetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media');
     if(!r.ok)throw new Error('bajar-'+r.status);
     const j=await r.json();
@@ -3095,11 +3238,11 @@ async function driveRestaurar(){
     alm.claves().filter(k=>!NO_RESPALDAR.includes(k)).forEach(k=>alm.removeItem(k));
     Object.entries(j.datos).forEach(([k,v])=>{if(k&&k.startsWith('campo_')&&!NO_RESPALDAR.includes(k))alm.setItem(k,v)});
     await alm.flush();
-    alert('✓ Restaurado desde la copia del '+fecha+'. La app se va a recargar.');
+    await dialogo({titulo:'✓ Restaurado',cuerpo:'Se restauró desde la copia del '+fecha+'. La app se va a recargar.',ok:'Recargar',sinCancelar:true});
     location.reload();
   }catch(e){
     console.error('Drive:',e);
-    alert('⚠️ No se pudo restaurar desde Drive. Probá con el archivo .json si tenés uno.');
+    await dialogo({titulo:'No se pudo restaurar',cuerpo:'No se pudo restaurar desde Drive. Probá con el archivo .json si tenés uno.',ok:'Entendido',sinCancelar:true});
   }
 }
 // El respaldo automático que nadie activa no sirve de nada: si está apagado,
@@ -3374,13 +3517,14 @@ function cambiarProveedor(){
 }
 function guardarKey(){
   const k=document.getElementById('ia-key-input').value.trim();
-  if(!k){alert('Pegá la clave primero');return}
+  if(!k){toast('Pegá la clave primero','error');return}
   alm.setItem(usarGroq()?'campo_groq_key':'campo_gemini_key',k);
   document.getElementById('ia-key-input').value='';
   initIA();
 }
-function cambiarKey(){
-  if(!confirm('¿Borrar la clave guardada y cargar otra?'))return;
+async function cambiarKey(){
+  const ok=await dialogo({titulo:'¿Cambiar la clave?',cuerpo:'Se borra la clave guardada del asesor y podés cargar otra.',ok:'Borrar y cambiar',peligro:true});
+  if(!ok)return;
   alm.removeItem(usarGroq()?'campo_groq_key':'campo_gemini_key');
   iaKey='';
   iaHistorial=[];document.getElementById('ia-mensajes').innerHTML='';
@@ -3866,22 +4010,24 @@ function pendientesPanel(){
 }
 // Al saldar: se marca como movido hoy (o en la fecha que confirme el usuario),
 // deja de ser a plazo y pide la cuenta por la que entró/salió la plata.
-function saldarPendiente(id){
+async function saldarPendiente(id){
   const x=datos.find(d=>d.id===id);
   if(!x)return;
   const hoy=new Date().toISOString().slice(0,10);
-  const f=prompt(`¿En qué fecha se ${x.tipo==='ingreso'?'cobró':'pagó'}? (AAAA-MM-DD)`,hoy);
-  if(f===null)return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){alert('Fecha inválida. Usá el formato AAAA-MM-DD, por ejemplo '+hoy);return}
+  const f=await dialogo({titulo:x.tipo==='ingreso'?'¿Cuándo se cobró?':'¿Cuándo se pagó?',cuerpo:'Fecha en formato AAAA-MM-DD.',pedir:'Fecha',valor:hoy,ok:'Siguiente'});
+  if(f===false)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){toast('Fecha inválida. Usá el formato AAAA-MM-DD, por ejemplo '+hoy,'error');return}
   const anio=parseInt(f.slice(0,4));
-  if(!(anio>=2015&&anio<=new Date().getFullYear()+1)){alert('El año '+anio+' parece mal. Revisá la fecha.');return}
-  const cta=prompt('¿Por qué cuenta entró/salió la plata? (Efectivo, Banco Rio, Echeq...)',x.cta||'');
+  if(!(anio>=2015&&anio<=new Date().getFullYear()+1)){toast('El año '+anio+' parece mal. Revisá la fecha.','error');return}
+  const cta=await dialogo({titulo:'¿Por qué cuenta?',cuerpo:'Cuenta por la que entró o salió la plata (Efectivo, Banco Rio, Echeq...).',pedir:'Cuenta',valor:x.cta||'',ok:'Guardar'});
+  if(cta===false)return;
   x.plazo=false;
   x.venc=null;
   x.fecha=f;
   if(cta)x.cta=formaCanonica(cta,'cta');
   guardarLS();
   render();renderTabla();renderGestion();
+  toast('✓ Movimiento saldado');
 }
 
 
@@ -4108,11 +4254,14 @@ function cierreEjercicio(){
 }
 
 // ============ INIT ============
-function borrarTodo(){
-  if(!datos.length){alert('No hay datos.');return}
-  if(!confirm(`¿Borrar TODOS los ${datos.length} movimientos? Esto no se puede deshacer.\n\nSi querés poder recuperarlos, cancelá y primero guardá una copia de seguridad (pestaña Gestión, abajo de todo).`))return;
-  if(!confirm('¿Seguro? Última confirmación.'))return;
+async function borrarTodo(){
+  if(!datos.length){toast('No hay datos para borrar.','error');return}
+  const uno=await dialogo({titulo:`¿Borrar TODOS los ${datos.length} movimientos?`,cuerpo:'Esto no se puede deshacer.\n\nSi querés poder recuperarlos, cancelá y primero guardá una copia de seguridad (pestaña Gestión, abajo de todo).',ok:'Borrar todo',peligro:true});
+  if(!uno)return;
+  const dos=await dialogo({titulo:'Última confirmación',cuerpo:`Vas a borrar ${datos.length} movimientos de forma definitiva. ¿Seguro?`,ok:'Sí, borrar definitivamente',peligro:true});
+  if(!dos)return;
   datos=[];guardarLS();actualizarAnios();render();renderTabla();
+  toast('Se borraron todos los movimientos');
 }
 // El arranque espera a que abra IndexedDB antes de leer nada: hasta que no
 // termine, `datos` está vacío y no hay que renderizar ni dejar tocar botones.
@@ -4157,7 +4306,7 @@ async function iniciar(){
   if(alm.recuperado){
     let f=alm.fechaRecuperado;
     try{f=new Date(f).toLocaleDateString('es-AR')}catch(_){}
-    alert('⚠️ El navegador había borrado los datos de la app.\n\nSe recuperó la copia interna que había quedado guardada el '+f+', con '+datos.length+' movimientos.\n\nRevisá que no falte lo cargado después de esa fecha. Si falta algo, restaurá tu último respaldo .json.');
+    dialogo({titulo:'Datos recuperados',cuerpo:'El navegador había borrado los datos de la app.\n\nSe recuperó la copia interna que había quedado guardada el '+f+', con '+datos.length+' movimientos.\n\nRevisá que no falte lo cargado después de esa fecha. Si falta algo, restaurá tu último respaldo .json.',ok:'Entendido',sinCancelar:true});
   }
 }
 
