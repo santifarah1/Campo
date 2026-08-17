@@ -633,6 +633,7 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
           <thead><tr><th>Fecha</th><th>Detalle</th><th>Cuenta</th><th>Actividad</th><th>Categoría</th><th>Tipo</th><th style="text-align:right">Monto</th><th></th></tr></thead>
           <tbody id="tabla-body"></tbody>
         </table>
+        <div id="tabla-centinela" style="display:none;text-align:center;padding:14px;color:var(--tinta-suave);font-size:13px">Cargando más…</div>
       </div>
       <div class="vacio" id="tabla-vacia" style="display:none">
         <div class="ico">🌾</div>
@@ -927,7 +928,7 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     </div>
     <div class="campo" id="wrap-prov">
       <label>Cliente / Proveedor (opcional)</label>
-      <input type="text" id="m-prov" list="provs" placeholder="Ej: Gilardi, YPF, consignatario...">
+      <input type="text" id="m-prov" list="provs" placeholder="Ej: acopio, YPF, consignatario...">
       <datalist id="provs"></datalist>
     </div>
     <div class="campo">
@@ -2334,6 +2335,61 @@ function etiquetaPlazo(x){
   if(vencido)return ` <span class="act-tag" style="background:rgba(166,83,58,.15);color:var(--ladrillo)">⚠ ${txt} · vencido ${x.venc}</span>`;
   return ` <span class="act-tag" style="background:rgba(201,162,75,.18);color:var(--trigo)">⏳ ${txt}${x.venc?' · vence '+x.venc:''}</span>`;
 }
+// El HTML de una fila. Se separó de renderTabla para poder pintar de a tandas
+// (scroll infinito): con cientos de movimientos, volcarlos todos de una colgaba
+// la solapa al abrirla.
+function filaMovHTML(x){
+  const esT=x.tipo==='transfer';
+  // si el detalle termina en [Cuenta] y ya tenemos la cuenta aparte, no lo repetimos
+  let detTxt=x.det||'';
+  if(x.cta&&detTxt.endsWith('['+x.cta+']'))detTxt=detTxt.slice(0,-(x.cta.length+2)).trim();
+  detTxt=esc(detTxt);
+  const actCell=esT
+    ?`<span class="act-tag">${esc(actEtiqueta(x.actOrigen))} → ${esc(actEtiqueta(x.actDestino))}</span>`
+    :`<span class="act-tag">${esc(actEtiqueta(x.act))}</span>`;
+  const esPase=!esT&&!!x.ctaDest;
+  const pill=esT?'<span class="pill tra">Transf.</span>'
+    :esPase?'<span class="pill pase">Pase</span>'
+    :`<span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span>`;
+  const monto=esT
+    ?`<td style="text-align:right" class="monto-tra">${fmt(mv(x))}</td>`
+    :esPase
+    ?`<td style="text-align:right" class="monto-pase">${fmt(mv(x))}</td>`
+    :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
+  const ctaCell=esPase
+    ?`<span class="act-tag">${esc(x.cta)}</span> <span style="color:var(--tinta-suave)">→</span> <span class="act-tag">${esc(x.ctaDest)}</span>`
+    :x.cta?`<span class="act-tag">${esc(x.cta)}</span>`:'<span style="color:var(--tinta-suave)">—</span>';
+  return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
+    <td style="white-space:nowrap">${x.fecha}</td>
+    <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${esc(x.prov)}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant.toLocaleString('es-AR',{maximumFractionDigits:3})}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo);white-space:nowrap" title="Pase entre cuentas propias o ajuste: la plata solo cambió de caja, no cuenta en el resultado del campo">pase interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
+    <td>${ctaCell}</td>
+    <td>${actCell}</td>
+    <td>${esc(x.cat)}</td>
+    <td>${pill}</td>
+    ${monto}
+    <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
+  </tr>`;
+}
+
+// Scroll infinito: se pintan de a TANDA_MOV filas y el resto se carga solo al
+// bajar. Con 800 movimientos, pintarlos todos de golpe colgaba la solapa ~700ms.
+const TANDA_MOV=100;
+let _movFiltrados=[];   // la lista completa ya filtrada y ordenada
+let _movPintados=0;     // cuántas filas ya están en el DOM
+let _movObserver=null;
+
+function pintarTandaMov(){
+  const body=document.getElementById('tabla-body');
+  const centinela=document.getElementById('tabla-centinela');
+  const trozo=_movFiltrados.slice(_movPintados,_movPintados+TANDA_MOV);
+  if(trozo.length){
+    body.insertAdjacentHTML('beforeend',trozo.map(filaMovHTML).join(''));
+    _movPintados+=trozo.length;
+  }
+  // si ya no queda nada por pintar, se desconecta el observer
+  if(centinela)centinela.style.display=_movPintados<_movFiltrados.length?'block':'none';
+}
+
 function renderTabla(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
   const ft=document.getElementById('f-tipo').value;
@@ -2344,42 +2400,23 @@ function renderTabla(){
   if(fp==='ocultar')d=d.filter(x=>!x.plazo);
   else if(fp==='solo')d=d.filter(x=>x.plazo);
   if(q)d=d.filter(x=>((x.cat||'')+(x.det||'')+(x.act||'')+(x.cta||'')+(x.ctaDest||'')+(x.prov||'')+(x.actOrigen||'')+(x.actDestino||'')).toLowerCase().includes(q));
-  const body=document.getElementById('tabla-body');
   document.getElementById('tabla-vacia').style.display=datos.length?'none':'block';
   document.getElementById('tabla').style.display=datos.length?'table':'none';
-  body.innerHTML=d.map(x=>{
-    const esT=x.tipo==='transfer';
-    // si el detalle termina en [Cuenta] y ya tenemos la cuenta aparte, no lo repetimos
-    let detTxt=x.det||'';
-    if(x.cta&&detTxt.endsWith('['+x.cta+']'))detTxt=detTxt.slice(0,-(x.cta.length+2)).trim();
-    detTxt=esc(detTxt);
-    const actCell=esT
-      ?`<span class="act-tag">${esc(actEtiqueta(x.actOrigen))} → ${esc(actEtiqueta(x.actDestino))}</span>`
-      :`<span class="act-tag">${esc(actEtiqueta(x.act))}</span>`;
-    const esPase=!esT&&!!x.ctaDest;
-    const pill=esT?'<span class="pill tra">Transf.</span>'
-      :esPase?'<span class="pill pase">Pase</span>'
-      :`<span class="pill ${x.tipo==='ingreso'?'ing':'egr'}">${x.tipo==='ingreso'?'Ingreso':'Egreso'}</span>`;
-    const monto=esT
-      ?`<td style="text-align:right" class="monto-tra">${fmt(mv(x))}</td>`
-      :esPase
-      ?`<td style="text-align:right" class="monto-pase">${fmt(mv(x))}</td>`
-      :`<td style="text-align:right" class="${x.tipo==='ingreso'?'monto-ing':'monto-egr'}">${x.tipo==='ingreso'?'+':'−'}${fmt(mv(x))}</td>`;
-    const ctaCell=esPase
-      ?`<span class="act-tag">${esc(x.cta)}</span> <span style="color:var(--tinta-suave)">→</span> <span class="act-tag">${esc(x.ctaDest)}</span>`
-      :x.cta?`<span class="act-tag">${esc(x.cta)}</span>`:'<span style="color:var(--tinta-suave)">—</span>';
-    return `<tr onclick="abrirModal('${x.id}')" style="cursor:pointer">
-      <td style="white-space:nowrap">${x.fecha}</td>
-      <td>${detTxt||'<span style="color:var(--tinta-suave)">—</span>'}${x.prov?` <span class="act-tag">👤 ${esc(x.prov)}</span>`:''}${x.cant?` <span class="act-tag">cant: ${x.cant.toLocaleString('es-AR',{maximumFractionDigits:3})}</span>`:''}${x.interno?' <span class="act-tag" style="background:rgba(74,107,138,.15);color:var(--cielo);white-space:nowrap" title="Pase entre cuentas propias o ajuste: la plata solo cambió de caja, no cuenta en el resultado del campo">pase interno</span>':''}${x.financiero?' <span class="act-tag" style="background:rgba(107,74,46,.15);color:var(--tierra)">financiero</span>':''}${etiquetaPlazo(x)}</td>
-      <td>${ctaCell}</td>
-      <td>${actCell}</td>
-      <td>${esc(x.cat)}</td>
-      <td>${pill}</td>
-      ${monto}
-      <td><button class="borrar" onclick="event.stopPropagation();borrar('${x.id}')">✕</button></td>
-    </tr>`;
-  }).join('');
+  // reiniciar el estado del scroll infinito y pintar la primera tanda
+  _movFiltrados=d;
+  _movPintados=0;
+  document.getElementById('tabla-body').innerHTML='';
+  pintarTandaMov();
+  // preparar el observer que carga más al llegar al final (una sola vez)
+  const centinela=document.getElementById('tabla-centinela');
+  if(centinela&&!_movObserver&&'IntersectionObserver' in window){
+    _movObserver=new IntersectionObserver(entradas=>{
+      if(entradas[0].isIntersecting)pintarTandaMov();
+    },{rootMargin:'300px'});
+    _movObserver.observe(centinela);
+  }
 }
+function nombreAct(a){return actEtiqueta(a)}
 function nombreAct(a){return actEtiqueta(a)}
 
 // ============ PROYECCIÓN ============
