@@ -3186,6 +3186,7 @@ const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
 const GDRIVE_COPIAS=30;
 const GDRIVE_ESPERA=8000;   // se sube recién cuando deja de cargar
 let gdToken=null, gdVence=0, gdCliente=null, gdTimer=null, gdSubiendo=false, gdUltError=null;
+let gdRenovTimer=null;   // renueva el token en segundo plano antes de que venza
 
 function driveActivo(){return alm.getItem('campo_drive_on')==='1'}
 function driveListo(){return typeof google!=='undefined'&&google.accounts&&google.accounts.oauth2}
@@ -3206,6 +3207,7 @@ function gdPedirToken(pedirConsentimiento){
       if(r&&r.access_token){
         gdToken=r.access_token;
         gdVence=Date.now()+((r.expires_in||3600)-120)*1000;
+        gdProgramarRenov();
         res(gdToken);
       }else rej(new Error(r&&r.error||'sin-token'));
     };
@@ -3217,6 +3219,23 @@ function gdPedirToken(pedirConsentimiento){
 async function gdToken_(){
   if(gdToken&&Date.now()<gdVence)return gdToken;
   return await gdPedirToken(false);
+}
+// Renovar el token en segundo plano, unos minutos ANTES de que venza. Así,
+// cuando el usuario guarda un movimiento, el token ya está fresco y Google no
+// tiene motivo para mostrar la ventana de "elegí una cuenta". Antes se pedía
+// el token recién al momento de guardar, y ahí a veces saltaba la pantalla.
+function gdProgramarRenov(){
+  clearTimeout(gdRenovTimer);
+  if(!driveActivo())return;
+  // renovar 4 minutos antes del vencimiento (o ya mismo si falta poco)
+  const falta=Math.max(gdVence-Date.now()-4*60*1000, 5000);
+  gdRenovTimer=setTimeout(()=>{
+    if(!driveActivo()||!navigator.onLine)return;
+    // renovación silenciosa: si Google igual pediría pantalla, la callback
+    // devuelve error y no hacemos nada (esperamos al próximo intento), en vez
+    // de forzarle la ventana al usuario en un momento cualquiera.
+    gdPedirToken(false).catch(()=>{});
+  }, falta);
 }
 async function gdFetch(url,opt){
   const t=await gdToken_();
