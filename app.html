@@ -3391,7 +3391,7 @@ function driveEstado(){
   let cuerpo;
   if(gdSubiendo)cuerpo='<div class="alerta amar"><span class="ai">⏳</span><div>Subiendo la copia a tu Drive...</div></div>';
   else if(gdUltError==='sin-internet')cuerpo='<div class="alerta amar"><span class="ai">📡</span><div><b>Sin internet.</b> Seguí cargando tranquilo: se guarda todo en la computadora y la copia se sube sola cuando vuelva la señal.'+(cuando?' Última copia subida '+cuando+'.':'')+'</div></div>';
-  else if(gdUltError==='permiso')cuerpo='<div class="alerta roja"><span class="ai">⚠️</span><div><b>Google pidió permiso de nuevo.</b> Tocá "Conectar Google Drive" para volver a autorizarlo. Hasta entonces no se están subiendo copias.</div></div>';
+  else if(gdUltError==='permiso')cuerpo='<div class="alerta amar"><span class="ai">☁️</span><div><b>Reconectá Google Drive para seguir guardando copias.</b> Tus datos están a salvo en esta computadora. Tocá "Conectar Google Drive" cuando puedas, así se vuelve a subir la copia de seguridad.'+(cuando?' Última copia: '+cuando+'.':'')+'</div></div>';
   else if(gdUltError)cuerpo='<div class="alerta roja"><span class="ai">⚠️</span><div><b>No se pudo subir la última copia.</b> Probá de nuevo o guardá una copia en archivo.'+(cuando?' Última copia buena: '+cuando+'.':'')+'</div></div>';
   else if(!ult)cuerpo='<div class="alerta amar"><span class="ai">☁️</span><div>Conectado. Todavía no se subió ninguna copia.</div></div>';
   else cuerpo=`<div class="alerta verde"><span class="ai">✅</span><div><b>Respaldado ${cuando}</b> en tu Google Drive. Se guarda una copia por día y se conservan los últimos ${GDRIVE_COPIAS} días.</div></div>`;
@@ -3406,8 +3406,19 @@ async function driveArranque(){
   if(!driveActivo())return;
   for(let i=0;i<20&&!driveListo();i++)await new Promise(r=>setTimeout(r,250));
   if(!driveListo())return;
-  try{await gdPedirToken(false);gdUltError=null}
-  catch(e){gdUltError='permiso'}
+  // Reintenta la reconexión silenciosa varias veces antes de mostrar el aviso.
+  // Google a veces rechaza el primer intento pero acepta el segundo/tercero,
+  // sobre todo si la sesión de Google todavía se está "asentando" al abrir.
+  let reconecto=false;
+  for(let i=0;i<3;i++){
+    try{
+      await gdPedirToken(false);
+      gdUltError=null; reconecto=true; break;
+    }catch(e){
+      if(i<2)await new Promise(r=>setTimeout(r,1500)); // esperá y reintentá
+    }
+  }
+  if(!reconecto) gdUltError='permiso';
   driveEstado();
 }
 window.addEventListener('online',()=>{if(driveActivo()&&gdUltError==='sin-internet')driveSubir(false)});
