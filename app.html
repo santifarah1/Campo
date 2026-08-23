@@ -197,6 +197,8 @@ tr:hover td{background:var(--lienzo)}
 .sv-linea-serv{background:var(--tarjeta);border:1px solid var(--borde);border-radius:12px;padding:12px;margin-bottom:10px;position:relative}
 .sv-linea-serv .sv-quitar{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--ladrillo);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
 .sv-linea-total{font-size:13px;color:var(--tinta-2);text-align:right;margin-top:4px}
+.link-peligro{background:none;border:none;color:var(--ladrillo);font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px;transition:.15s}
+.link-peligro:hover{background:var(--ladrillo-suave)}
 .campo{margin-bottom:16px}
 .campo label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--tinta)}
 .campo input,.campo select,.campo textarea{width:100%;padding:11px 13px;border:1px solid var(--borde);border-radius:11px;background:var(--lienzo);color:var(--tinta);font-size:15px;transition:.15s}
@@ -4836,8 +4838,8 @@ function svAbrirServicio(id){
 function svGuardarServicio(){
   const nom=document.getElementById('sv-serv-nom').value.trim();
   const precio=parseMontoAR(document.getElementById('sv-serv-precio').value);
-  if(!nom){ alert('Poné el nombre del servicio'); return; }
-  if(!precio||precio<=0){ alert('Poné un precio válido'); return; }
+  if(!nom){ toast('Poné el nombre del servicio','error'); return; }
+  if(!precio||precio<=0){ toast('Poné un precio válido','error'); return; }
   const id=document.getElementById('sv-serv-id').value;
   if(id){
     const s=svData.servicios.find(x=>x.id===id);
@@ -4847,14 +4849,15 @@ function svGuardarServicio(){
   }
   svGuardar(); svCerrar('sv-modal-servicio'); svRender();
 }
-function svBorrarServicio(){
+async function svBorrarServicio(){
   const id=document.getElementById('sv-serv-id').value;
   if(!id) return;
   const usos=svData.trabajos.filter(t=>t.servId===id).length;
-  const msg=usos>0
-    ? `Este servicio está usado en ${usos} trabajo(s) ya registrado(s). Si lo borrás, esos trabajos quedan sin nombre de servicio (pero se mantiene el monto). ¿Borrar igual?`
-    : '¿Borrar este servicio?';
-  if(!confirm(msg)) return;
+  const cuerpo=usos>0
+    ? `Este servicio está usado en ${usos} trabajo(s) ya registrado(s). Si lo borrás, esos trabajos quedan sin nombre de servicio (pero se mantiene el monto).`
+    : 'Se saca de la lista de servicios.';
+  const ok=await dialogo({titulo:'¿Borrar este servicio?',cuerpo,ok:'Borrar',peligro:true});
+  if(!ok) return;
   svData.servicios=svData.servicios.filter(x=>x.id!==id);
   svGuardar(); svCerrar('sv-modal-servicio'); svRender();
 }
@@ -4895,7 +4898,7 @@ function svAbrirCliente(id){
 function svGuardarCliente(){
   const nom=document.getElementById('sv-cli-nom').value.trim();
   const tel=document.getElementById('sv-cli-tel').value.trim();
-  if(!nom){ alert('Poné el nombre del cliente'); return; }
+  if(!nom){ toast('Poné el nombre del cliente','error'); return; }
   const id=document.getElementById('sv-cli-id').value;
   if(id){
     const c=svData.clientes.find(x=>x.id===id);
@@ -4905,14 +4908,15 @@ function svGuardarCliente(){
   }
   svGuardar(); svCerrar('sv-modal-cliente'); svRender();
 }
-function svBorrarCliente(){
+async function svBorrarCliente(){
   const id=document.getElementById('sv-cli-id').value;
   if(!id) return;
   const usos=svData.trabajos.filter(t=>t.cliId===id).length;
-  const msg=usos>0
-    ? `Este cliente tiene ${usos} trabajo(s) registrado(s). Si lo borrás, se borran también esos trabajos. ¿Borrar igual?`
-    : '¿Borrar este cliente?';
-  if(!confirm(msg)) return;
+  const cuerpo=usos>0
+    ? `Este cliente tiene ${usos} trabajo(s) registrado(s). Si lo borrás, se borran también esos trabajos.`
+    : 'Se saca de la lista de clientes.';
+  const ok=await dialogo({titulo:'¿Borrar este cliente?',cuerpo,ok:'Borrar',peligro:true});
+  if(!ok) return;
   svData.clientes=svData.clientes.filter(x=>x.id!==id);
   svData.trabajos=svData.trabajos.filter(t=>t.cliId!==id);
   svGuardar(); svCerrar('sv-modal-cliente'); svRender();
@@ -4923,8 +4927,8 @@ function svNomServicio(id){ const s=svData.servicios.find(x=>x.id===id); return 
 function svNomCliente(id){ const c=svData.clientes.find(x=>x.id===id); return c?c.nom:'(cliente borrado)'; }
 
 function svAbrirTrabajo(id){
-  if(!svData.clientes.length){ alert('Primero cargá al menos un cliente (pestaña "Mis clientes").'); return; }
-  if(!svData.servicios.length){ alert('Primero cargá al menos un servicio con su precio (pestaña "Mis servicios y precios").'); return; }
+  if(!svData.clientes.length){ toast('Primero cargá al menos un cliente','error'); return; }
+  if(!svData.servicios.length){ toast('Primero cargá al menos un servicio con su precio','error'); return; }
   const t=id?svData.trabajos.find(x=>x.id===id):null;
   document.getElementById('sv-tra-tit').textContent=t?'Editar trabajo':'Registrar trabajo';
   document.getElementById('sv-tra-id').value=t?t.id:'';
@@ -5005,7 +5009,7 @@ function svEcoTrabajo(){
 }
 function svGuardarTrabajo(){
   const cliId=document.getElementById('sv-tra-cli').value;
-  if(!cliId){ alert('Elegí un cliente'); return; }
+  if(!cliId){ toast('Elegí un cliente','error'); return; }
   const lineas=document.querySelectorAll('#sv-tra-lineas .sv-linea-serv');
   // validar y juntar
   const aGuardar=[];
@@ -5013,12 +5017,12 @@ function svGuardarTrabajo(){
     const servId=l.querySelector('.sv-l-serv').value;
     const cant=parseInt((l.querySelector('.sv-l-cant').value||'').replace(/[^0-9]/g,''))||0;
     const fecha=l.querySelector('.sv-l-fecha').value;
-    if(cant<=0){ alert('Poné una cantidad válida en todos los servicios (o quitá los que estén vacíos).'); return; }
-    if(!fecha){ alert('Poné la fecha en todos los servicios.'); return; }
+    if(cant<=0){ toast('Poné una cantidad válida en todos los servicios','error'); return; }
+    if(!fecha){ toast('Poné la fecha en todos los servicios','error'); return; }
     const s=svData.servicios.find(x=>x.id===servId);
     aGuardar.push({servId,cant,fecha,precioUnit:s?s.precio:0});
   }
-  if(!aGuardar.length){ alert('Agregá al menos un servicio'); return; }
+  if(!aGuardar.length){ toast('Agregá al menos un servicio','error'); return; }
   const id=document.getElementById('sv-tra-id').value;
   if(id){
     // editar: era un solo trabajo, se actualiza con la primera línea
@@ -5037,10 +5041,11 @@ function svGuardarTrabajo(){
   }
   svGuardar(); svCerrar('sv-modal-trabajo'); svRender();
 }
-function svBorrarTrabajo(){
+async function svBorrarTrabajo(){
   const id=document.getElementById('sv-tra-id').value;
   if(!id) return;
-  if(!confirm('¿Borrar este trabajo?')) return;
+  const ok=await dialogo({titulo:'¿Borrar este trabajo?',cuerpo:'Se saca de la lista. Si querés recuperarlo, tenés que cargarlo de nuevo.',ok:'Borrar',peligro:true});
+  if(!ok) return;
   svData.trabajos=svData.trabajos.filter(x=>x.id!==id);
   svGuardar(); svCerrar('sv-modal-trabajo'); svRender();
 }
