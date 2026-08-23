@@ -331,6 +331,16 @@ p{max-width:62ch}
 .rev.visible{opacity:1;transform:none}
 .rev.d1{transition-delay:.08s} .rev.d2{transition-delay:.16s} .rev.d3{transition-delay:.24s}
 
+/* Animación de entrada del hero al cargar (para que no se vea estático en PC) */
+@keyframes heroEntra{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.hero-anim{opacity:0;animation:heroEntra .7s cubic-bezier(.2,.7,.3,1) forwards}
+.hero-anim.h1{animation-delay:.05s}
+.hero-anim.h2{animation-delay:.15s}
+.hero-anim.h3{animation-delay:.25s}
+.hero-anim.h4{animation-delay:.35s}
+.hero-anim.h5{animation-delay:.45s}
+.hero-anim.h6{animation-delay:.3s}
+
 /* ===== RESPONSIVE ===== */
 @media(max-width:1080px){
   .nav{display:none}
@@ -380,6 +390,7 @@ p{max-width:62ch}
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
     transition-duration:.001ms!important;scroll-behavior:auto!important}
   .rev{opacity:1;transform:none}
+  .hero-anim{opacity:1;animation:none}
   .margen .bar i,.fila .bar i{transform:scaleX(1)}
 }
 </style>
@@ -407,7 +418,7 @@ p{max-width:62ch}
     </nav>
     <div class="der">
       <a class="btn btn-sec" href="app.html">Entrar</a>
-      <a class="btn btn-pri" href="#precio">Probalo gratis</a>
+      <a class="btn btn-pri" href="#precio">Pedir una cuenta</a>
     </div>
   </div>
 </header>
@@ -427,14 +438,14 @@ p{max-width:62ch}
   </div>
   <div class="marco hero-grid">
     <div>
-      <p class="eti">Gestión financiera para el campo</p>
-      <h1>Sabé qué está dejando <span class="sub">realmente tu campo.</span></h1>
-      <p class="entrada">Ingresos, gastos, cuentas y resultado por actividad. Sin fórmulas rotas, sin perder horas peleando con Excel.</p>
-      <div class="hero-cta">
-        <a class="btn btn-pri btn-gr" href="#precio">Probalo gratis</a>
+      <p class="eti hero-anim h1">Gestión financiera para el campo</p>
+      <h1 class="hero-anim h2">Sabé qué está dejando <span class="sub">realmente tu campo.</span></h1>
+      <p class="entrada hero-anim h3">Ingresos, gastos, cuentas y resultado por actividad. Sin fórmulas rotas, sin perder horas peleando con Excel.</p>
+      <div class="hero-cta hero-anim h4">
+        <a class="btn btn-pri btn-gr" href="#precio">Pedir una cuenta</a>
         <a class="btn btn-sec btn-gr" href="#como">Ver cómo funciona</a>
       </div>
-      <div class="hero-pie">
+      <div class="hero-pie hero-anim h5">
         <span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           Primer mes sin cargo
@@ -446,7 +457,7 @@ p{max-width:62ch}
       </div>
     </div>
 
-    <div class="escena">
+    <div class="escena hero-anim h6">
       <div class="v-fondo" aria-hidden="true">
         <div class="ventana"><img src="cap-movimientos.png" alt="" loading="lazy"></div>
       </div>
@@ -767,7 +778,7 @@ p{max-width:62ch}
     <h2 class="rev">Tu campo ya genera los números. <em>Ahora entendelos.</em></h2>
     <p class="rev d1">Probá Gestión del Campo con tus propios datos y empezá a ver qué está dejando realmente cada actividad.</p>
     <div class="cierre-cta rev d2">
-      <a class="btn btn-pri btn-gr" href="https://wa.me/5492920244050?text=Hola%20Santiago%21%20Vi%20Gesti%C3%B3n%20del%20Campo%20y%20quer%C3%ADa%20saber%20m%C3%A1s.%20%C2%BFC%C3%B3mo%20la%20puedo%20probar%20con%20los%20n%C3%BAmeros%20de%20mi%20campo%3F" target="_blank" rel="noopener">Probalo gratis</a>
+      <a class="btn btn-pri btn-gr" href="https://wa.me/5492920244050?text=Hola%20Santiago%21%20Vi%20Gesti%C3%B3n%20del%20Campo%20y%20quer%C3%ADa%20saber%20m%C3%A1s.%20%C2%BFC%C3%B3mo%20la%20puedo%20probar%20con%20los%20n%C3%BAmeros%20de%20mi%20campo%3F" target="_blank" rel="noopener">Pedir una cuenta</a>
       <a class="btn btn-sec btn-gr" href="#precio">Ver el precio</a>
     </div>
     <div class="asomo rev d3" aria-hidden="true">
@@ -826,16 +837,33 @@ p{max-width:62ch}
   var onScroll=function(){ tope.classList.toggle('pegado', window.scrollY>8) };
   onScroll(); window.addEventListener('scroll',onScroll,{passive:true});
 
-  var elems=document.querySelectorAll('.rev');
+  var elems=Array.prototype.slice.call(document.querySelectorAll('.rev'));
   if(!('IntersectionObserver' in window)){
-    Array.prototype.forEach.call(elems,function(e){e.classList.add('visible')}); return;
+    elems.forEach(function(e){e.classList.add('visible')}); return;
   }
+
+  // Revela los que YA están en pantalla al cargar, de forma escalonada,
+  // así en pantallas grandes (PC) también se ve la animación de entrada
+  // en vez de aparecer todo seco de una.
+  function enPantalla(el){
+    var r=el.getBoundingClientRect();
+    var h=window.innerHeight||document.documentElement.clientHeight;
+    return r.top < h*0.92 && r.bottom > 0;
+  }
+  var yaVisibles=elems.filter(enPantalla);
+  var restantes=elems.filter(function(e){return yaVisibles.indexOf(e)===-1});
+
+  yaVisibles.forEach(function(e,i){
+    setTimeout(function(){ e.classList.add('visible'); }, 90*i + 60);
+  });
+
+  // Los que están más abajo, se revelan al hacer scroll.
   var io=new IntersectionObserver(function(entradas){
     entradas.forEach(function(e){
       if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target) }
     });
-  },{rootMargin:'0px 0px -8% 0px',threshold:.12});
-  Array.prototype.forEach.call(elems,function(e){io.observe(e)});
+  },{rootMargin:'0px 0px -12% 0px',threshold:.12});
+  restantes.forEach(function(e){io.observe(e)});
 })();
 </script>
 </body>
