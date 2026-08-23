@@ -4762,6 +4762,13 @@ function svInit(){
   // Al abrir la vista: asegura que la sub-pestaña "Por cobrar" esté visible
   // y dibuja todo. Protegido para que un error no deje la pantalla en blanco.
   try{
+    // Garantizar que la vista de servicios esté activa (a veces queda sin
+    // la clase 'on' y colapsa a altura 0, mostrándose en blanco).
+    const vista=document.getElementById('v-serv');
+    if(vista && !vista.classList.contains('on')){
+      document.querySelectorAll('.vista').forEach(v=>v.classList.remove('on'));
+      vista.classList.add('on');
+    }
     document.querySelectorAll('#v-serv .subtabs button').forEach(b=>b.classList.remove('on'));
     const btnCobros=document.querySelector('#v-serv .subtabs button[data-sv="cobros"]');
     if(btnCobros)btnCobros.classList.add('on');
