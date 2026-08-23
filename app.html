@@ -2324,7 +2324,16 @@ function render(){
 function ultimosMov(){
   const el=document.getElementById('ultimos-mov');
   if(!el)return;
-  const d=[...filtrados()].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,7);
+  // Ordena por fecha (más nueva primero). Cuando dos son del mismo día,
+  // desempata por el orden en que se cargaron (el último cargado, arriba),
+  // así los del mismo día no salen "en cualquier orden".
+  const base=filtrados();
+  const pos=new Map(datos.map((m,i)=>[m,i]));
+  const d=[...base].sort((a,b)=>{
+    const f=b.fecha.localeCompare(a.fecha);
+    if(f!==0)return f;
+    return (pos.get(b)??0)-(pos.get(a)??0);
+  }).slice(0,7);
   if(!d.length){el.innerHTML='<p class="mini-nota">Todavía no hay movimientos este ejercicio.</p>';return}
   const ICO={ingreso:{c:'campo',s:'\u2197'},egreso:{c:'ladrillo',s:'\u2198'},transfer:{c:'cielo',s:'\u21c4'}};
   el.innerHTML=d.map(x=>{
@@ -2564,7 +2573,12 @@ function renderTabla(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
   const ft=document.getElementById('f-tipo').value;
   const fp=document.getElementById('f-pend').value;
-  let d=[...datos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const _pos=new Map(datos.map((m,i)=>[m,i]));
+  let d=[...datos].sort((a,b)=>{
+    const f=b.fecha.localeCompare(a.fecha);
+    if(f!==0)return f;
+    return (_pos.get(b)??0)-(_pos.get(a)??0);
+  });
   if(ft==='interno')d=d.filter(x=>x.interno);
   else if(ft)d=d.filter(x=>x.tipo===ft);
   if(fp==='ocultar')d=d.filter(x=>!x.plazo);
