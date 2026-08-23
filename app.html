@@ -421,6 +421,17 @@ tr:hover td{background:var(--lienzo)}
 .rk-pie{font-size:11.5px;color:var(--tinta-suave);margin-top:5px}
 .rk-total{margin-top:14px;padding-top:12px;border-top:1px solid var(--borde);
   font-size:13px;color:var(--tinta-suave)}
+/* ===== Servicios a clientes ===== */
+.fila-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 15px;background:var(--tarjeta);border:1px solid var(--linea);border-radius:12px}
+.fila-item:hover{border-color:var(--primario-claro)}
+.vacio-nota{text-align:center;padding:34px 20px;color:var(--tinta-suave);font-size:14px;background:var(--tarjeta);border:1px dashed var(--linea);border-radius:12px}
+.btn-mini{padding:6px 11px;font-size:13px}
+.sv-cli-card{background:var(--tarjeta);border:1px solid var(--linea);border-radius:14px;overflow:hidden}
+.sv-cli-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--linea);background:var(--fondo-suave,transparent)}
+.sv-trab-lista{display:flex;flex-direction:column}
+.sv-trab{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--linea)}
+.sv-trab:last-child{border-bottom:none}
+.sv-trab.sv-cobrado{opacity:.6}
 </style>
 </head>
 <body>
@@ -473,10 +484,13 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <button class="nav-item" onclick="verTab('proj',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17 9 11l4 4 8-8"/><path d="M15 7h6v6"/></svg></span> Proyección</button>
     <button class="nav-item" onclick="verTab('ia',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 14.2 8.6 20 10.8l-5.8 2.2L12 19l-2.2-5.9L4 10.8l5.8-2.2z"/></svg></span> Asesor</button>
 
+    <button class="nav-item" onclick="verTab('serv',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4v4M19 3l-6 6"/><path d="M10.5 8.5 5 14a2 2 0 0 0 0 3l2 2a2 2 0 0 0 3 0l5.5-5.5"/><path d="m8 11 3 3"/></svg></span> Servicios a clientes</button>
+
     <div class="nav-rotulo">Gestión</div>
     <button class="nav-item" onclick="verTabGrupo('gestion','plata',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10.5h19M7 15h4"/></svg></span> Saldos y cuentas</button>
     <button class="nav-item" onclick="verTabGrupo('gestion','resultado',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" opacity=".85"/></svg></span> Resultado</button>
     <button class="nav-item" onclick="verTabGrupo('gestion','gente',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 5.2M17.5 20a6 6 0 0 0-2.2-4.6"/></svg></span> Clientes y costos</button>
+    <button class="nav-item" onclick="verTabGrupo('gestion','servicios',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 3 6.5v5c0 4.5 3.5 8.5 9 10 5.5-1.5 9-5.5 9-10v-5z"/><path d="m8.5 12 2.2 2.2L15.5 9.5"/></svg></span> Servicios a clientes</button>
 
     <div class="nav-rotulo">Herramientas</div>
     <button class="nav-item" onclick="verTabGrupo('gestion','rubros',this)"><span class="ni-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="4" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="14.5" width="7.5" height="5.5" rx="1.6"/><rect x="13.5" y="14.5" width="7.5" height="5.5" rx="1.6"/></svg></span> Rubros y categorías</button>
@@ -565,6 +579,7 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     <button onclick="verTab('gestion',this)">📈 Gestión</button>
     <button onclick="verTab('proj',this)">🔮 Proyección</button>
     <button onclick="verTab('ia',this)">🤖 Asesor</button>
+    <button onclick="verTab('serv',this)">🩺 Servicios</button>
   </div>
 
   <!-- ===== ANÁLISIS ===== -->
@@ -880,7 +895,105 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
       </div>
     </div>
   </div>
+
+  <!-- ===== SERVICIOS A CLIENTES (veterinario / prestador) ===== -->
+  <div class="vista" id="v-serv">
+    <div style="margin-bottom:18px">
+      <h2 style="font-size:20px;margin-bottom:4px">Servicios a clientes</h2>
+      <p style="color:var(--tinta-suave);font-size:13.5px;max-width:620px">Para llevar la cuenta de qué trabajo le hiciste a cada cliente y cuánto te tiene que pagar. Ideal si hacés tacto, vacunación, inseminación u otros servicios a varios campos. Queda todo anotado con fecha, así nadie te discute cuánto le hiciste.</p>
+    </div>
+
+    <!-- Sub-pestañas -->
+    <div class="subtabs" style="margin-bottom:18px">
+      <button class="on" data-sv="cobros" onclick="svSubtab('cobros',this)">Por cobrar</button>
+      <button data-sv="clientes" onclick="svSubtab('clientes',this)">Mis clientes</button>
+      <button data-sv="precios" onclick="svSubtab('precios',this)">Mis servicios y precios</button>
+    </div>
+
+    <!-- POR COBRAR: resumen por cliente + registrar trabajo -->
+    <div class="sv-sub" id="sv-cobros">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div class="mini-nota" id="sv-total-general"></div>
+        <button class="btn btn-primario" onclick="svAbrirTrabajo()">+ Registrar trabajo</button>
+      </div>
+      <div id="sv-cobros-lista" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="sv-sub" id="sv-clientes" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn btn-primario" onclick="svAbrirCliente()">+ Nuevo cliente</button>
+      </div>
+      <div id="sv-clientes-lista" style="display:flex;flex-direction:column;gap:9px"></div>
+    </div>
+
+    <!-- SERVICIOS Y PRECIOS -->
+    <div class="sv-sub" id="sv-precios" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <p class="mini-nota" style="margin:0;max-width:420px">Cargá cada servicio con su precio. Después, al registrar un trabajo, elegís el servicio y la app calcula sola cuánto es.</p>
+        <button class="btn btn-primario" onclick="svAbrirServicio()">+ Nuevo servicio</button>
+      </div>
+      <div id="sv-precios-lista" style="display:flex;flex-direction:column;gap:9px"></div>
+    </div>
+  </div>
 </main>
+
+<!-- MODAL: nuevo/editar servicio -->
+<div class="modal-bg" id="sv-modal-servicio">
+  <div class="modal" style="max-width:420px">
+    <h3 id="sv-serv-tit">Nuevo servicio</h3>
+    <input type="hidden" id="sv-serv-id">
+    <label class="lbl">Nombre del servicio</label>
+    <input type="text" id="sv-serv-nom" placeholder="Ej: Tacto, Vacuna brucelosis, Inseminación" style="width:100%">
+    <label class="lbl" style="margin-top:12px">Precio por unidad ($)</label>
+    <input type="text" inputmode="decimal" id="sv-serv-precio" placeholder="Ej: 1.500" style="width:100%">
+    <p class="mini-nota" id="sv-serv-eco" style="margin-top:6px"></p>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-servicio')">Cancelar</button>
+      <button class="btn btn-primario" style="flex:1" onclick="svGuardarServicio()">Guardar</button>
+    </div>
+    <div style="text-align:center"><button id="sv-serv-borrar" class="link-peligro" style="display:none;margin-top:12px" onclick="svBorrarServicio()">Borrar servicio</button></div>
+  </div>
+</div>
+
+<!-- MODAL: nuevo/editar cliente -->
+<div class="modal-bg" id="sv-modal-cliente">
+  <div class="modal" style="max-width:420px">
+    <h3 id="sv-cli-tit">Nuevo cliente</h3>
+    <input type="hidden" id="sv-cli-id">
+    <label class="lbl">Nombre del cliente</label>
+    <input type="text" id="sv-cli-nom" placeholder="Ej: Alejandro / Campo La Esperanza" style="width:100%">
+    <label class="lbl" style="margin-top:12px">Teléfono (opcional)</label>
+    <input type="text" inputmode="tel" id="sv-cli-tel" placeholder="Ej: 2920 44-0000" style="width:100%">
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-cliente')">Cancelar</button>
+      <button class="btn btn-primario" style="flex:1" onclick="svGuardarCliente()">Guardar</button>
+    </div>
+    <div style="text-align:center"><button id="sv-cli-borrar" class="link-peligro" style="display:none;margin-top:12px" onclick="svBorrarCliente()">Borrar cliente</button></div>
+  </div>
+</div>
+
+<!-- MODAL: registrar trabajo -->
+<div class="modal-bg" id="sv-modal-trabajo">
+  <div class="modal" style="max-width:440px">
+    <h3 id="sv-tra-tit">Registrar trabajo</h3>
+    <input type="hidden" id="sv-tra-id">
+    <label class="lbl">Cliente</label>
+    <select id="sv-tra-cli" style="width:100%"></select>
+    <label class="lbl" style="margin-top:12px">Servicio</label>
+    <select id="sv-tra-serv" onchange="svEcoTrabajo()" style="width:100%"></select>
+    <label class="lbl" style="margin-top:12px">Cantidad</label>
+    <input type="text" inputmode="numeric" id="sv-tra-cant" placeholder="Ej: 40" oninput="svEcoTrabajo()" style="width:100%">
+    <label class="lbl" style="margin-top:12px">Fecha</label>
+    <input type="date" id="sv-tra-fecha" style="width:100%">
+    <p class="mini-nota" id="sv-tra-eco" style="margin-top:8px;font-size:14px"></p>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-trabajo')">Cancelar</button>
+      <button class="btn btn-primario" style="flex:1" onclick="svGuardarTrabajo()">Guardar</button>
+    </div>
+    <div style="text-align:center"><button id="sv-tra-borrar" class="link-peligro" style="display:none;margin-top:12px" onclick="svBorrarTrabajo()">Borrar trabajo</button></div>
+  </div>
+</div>
 
 <!-- botón "nuevo movimiento" vive en la barra superior -->
 
@@ -1497,7 +1610,8 @@ const PAG_INFO={
   mov:['Movimientos','Todo lo que entró y salió'],
   gestion:['Gestión','Saldos, márgenes, cuentas y control'],
   proj:['Proyección','Estimación de caja y rentabilidad'],
-  ia:['Asesor','Consultá sobre los números del campo']
+  ia:['Asesor','Consultá sobre los números del campo'],
+  serv:['Servicios a clientes','Qué le hiciste a cada cliente y cuánto te debe']
 };
 function verTab(t,btn){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
@@ -1515,12 +1629,14 @@ function verTab(t,btn){
   if(t==='gestion'){renderGestion();aplicarGrupo()}
   if(t==='proj')renderProj();
   if(t==='ia')initIA();
+  if(t==='serv')svRender();
 }
 // Entra a Gestión y abre directo un grupo de sub-pestañas desde el menú lateral.
 const GRUPO_INFO={
   resultado:['Resultado','Márgenes, precios y cierre del ejercicio'],
   plata:['Saldos y cuentas','Cajas, cuentas a cobrar y pagar, inversiones'],
   gente:['Clientes y costos','Con quién operás y los costos de estructura'],
+  servicios:['Servicios a clientes','Registrá lo que le hacés a cada cliente y cuánto te debe'],
   rubros:['Rubros y categorías','Tu lista propia para clasificar los movimientos'],
   control:['Alertas y respaldo','Avisos del sistema y copias de seguridad']
 };
@@ -4597,6 +4713,282 @@ document.addEventListener('visibilitychange',()=>{
     clearTimeout(gdTimer);gdTimer=null;driveSubir(false);
   }
 });
+
+
+/* ============================================================
+   SERVICIOS A CLIENTES  (para veterinarios/prestadores)
+   Módulo independiente: no toca las cuentas del campo.
+   Guarda en 'campo_servicios' con backup a Drive (driveProgramar).
+   Todo con prefijo sv* para no chocar con el resto de la app.
+   ============================================================ */
+let svData = svCargar();
+
+function svCargar(){
+  try{
+    const d=JSON.parse(alm.getItem('campo_servicios')||'null');
+    if(d && d.servicios && d.clientes && d.trabajos) return d;
+  }catch(_){}
+  return { servicios:[], clientes:[], trabajos:[] };
+}
+function svGuardar(){
+  alm.setItem('campo_servicios',JSON.stringify(svData));
+  if(typeof driveProgramar==='function') driveProgramar();
+}
+function svId(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function svMoney(n){ return '$'+numAR(n,true); }
+function svFecha(iso){
+  if(!iso) return '';
+  const p=(''+iso).split('-'); // yyyy-mm-dd
+  if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0];
+  return iso;
+}
+
+/* ---------- navegación entre sub-pestañas ---------- */
+function svSubtab(cual,btn){
+  document.querySelectorAll('#v-serv .subtabs button').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  document.querySelectorAll('#v-serv .sv-sub').forEach(s=>s.style.display='none');
+  const el=document.getElementById('sv-'+cual);
+  if(el) el.style.display='block';
+  svRender();
+}
+
+/* ---------- render principal ---------- */
+function svRender(){
+  svRenderPrecios();
+  svRenderClientes();
+  svRenderCobros();
+}
+
+/* ===== SERVICIOS Y PRECIOS ===== */
+function svRenderPrecios(){
+  const cont=document.getElementById('sv-precios-lista');
+  if(!cont) return;
+  if(!svData.servicios.length){
+    cont.innerHTML='<div class="vacio-nota">Todavía no cargaste servicios. Tocá "+ Nuevo servicio" y poné, por ejemplo, "Tacto" con su precio por animal.</div>';
+    return;
+  }
+  cont.innerHTML=svData.servicios.map(s=>`
+    <div class="fila-item" onclick="svAbrirServicio('${s.id}')" style="cursor:pointer">
+      <div><b>${esc(s.nom)}</b></div>
+      <div style="font-weight:600">${svMoney(s.precio)} <span class="mini-nota">c/u</span></div>
+    </div>`).join('');
+}
+
+function svAbrirServicio(id){
+  const s=id?svData.servicios.find(x=>x.id===id):null;
+  document.getElementById('sv-serv-tit').textContent=s?'Editar servicio':'Nuevo servicio';
+  document.getElementById('sv-serv-id').value=s?s.id:'';
+  document.getElementById('sv-serv-nom').value=s?s.nom:'';
+  document.getElementById('sv-serv-precio').value=s?numAR(s.precio,true):'';
+  document.getElementById('sv-serv-eco').textContent='';
+  document.getElementById('sv-serv-borrar').style.display=s?'inline-block':'none';
+  svAbrir('sv-modal-servicio');
+}
+function svGuardarServicio(){
+  const nom=document.getElementById('sv-serv-nom').value.trim();
+  const precio=parseMontoAR(document.getElementById('sv-serv-precio').value);
+  if(!nom){ alert('Poné el nombre del servicio'); return; }
+  if(!precio||precio<=0){ alert('Poné un precio válido'); return; }
+  const id=document.getElementById('sv-serv-id').value;
+  if(id){
+    const s=svData.servicios.find(x=>x.id===id);
+    if(s){ s.nom=nom; s.precio=precio; }
+  }else{
+    svData.servicios.push({id:svId('s'),nom,precio});
+  }
+  svGuardar(); svCerrar('sv-modal-servicio'); svRender();
+}
+function svBorrarServicio(){
+  const id=document.getElementById('sv-serv-id').value;
+  if(!id) return;
+  const usos=svData.trabajos.filter(t=>t.servId===id).length;
+  const msg=usos>0
+    ? `Este servicio está usado en ${usos} trabajo(s) ya registrado(s). Si lo borrás, esos trabajos quedan sin nombre de servicio (pero se mantiene el monto). ¿Borrar igual?`
+    : '¿Borrar este servicio?';
+  if(!confirm(msg)) return;
+  svData.servicios=svData.servicios.filter(x=>x.id!==id);
+  svGuardar(); svCerrar('sv-modal-servicio'); svRender();
+}
+// eco en vivo del precio mientras escribe
+document.addEventListener('input',function(e){
+  if(e.target && e.target.id==='sv-serv-precio'){
+    const v=parseMontoAR(e.target.value);
+    document.getElementById('sv-serv-eco').textContent = v>0 ? 'Se guarda como: '+svMoney(v)+' por unidad' : '';
+  }
+});
+
+/* ===== CLIENTES ===== */
+function svRenderClientes(){
+  const cont=document.getElementById('sv-clientes-lista');
+  if(!cont) return;
+  if(!svData.clientes.length){
+    cont.innerHTML='<div class="vacio-nota">Todavía no cargaste clientes. Tocá "+ Nuevo cliente".</div>';
+    return;
+  }
+  cont.innerHTML=svData.clientes.map(c=>{
+    const tel=(c.tel||'').replace(/[^0-9]/g,'');
+    const wa=tel?`<a class="btn btn-sec btn-mini" href="https://wa.me/${tel.length<=10?'549'+tel:tel}" target="_blank" onclick="event.stopPropagation()">💬</a>`:'';
+    return `<div class="fila-item" onclick="svAbrirCliente('${c.id}')" style="cursor:pointer">
+      <div><b>${esc(c.nom)}</b>${c.tel?' <span class="mini-nota">'+esc(c.tel)+'</span>':''}</div>
+      <div>${wa}</div>
+    </div>`;
+  }).join('');
+}
+function svAbrirCliente(id){
+  const c=id?svData.clientes.find(x=>x.id===id):null;
+  document.getElementById('sv-cli-tit').textContent=c?'Editar cliente':'Nuevo cliente';
+  document.getElementById('sv-cli-id').value=c?c.id:'';
+  document.getElementById('sv-cli-nom').value=c?c.nom:'';
+  document.getElementById('sv-cli-tel').value=c?(c.tel||''):'';
+  document.getElementById('sv-cli-borrar').style.display=c?'inline-block':'none';
+  svAbrir('sv-modal-cliente');
+}
+function svGuardarCliente(){
+  const nom=document.getElementById('sv-cli-nom').value.trim();
+  const tel=document.getElementById('sv-cli-tel').value.trim();
+  if(!nom){ alert('Poné el nombre del cliente'); return; }
+  const id=document.getElementById('sv-cli-id').value;
+  if(id){
+    const c=svData.clientes.find(x=>x.id===id);
+    if(c){ c.nom=nom; c.tel=tel; }
+  }else{
+    svData.clientes.push({id:svId('c'),nom,tel});
+  }
+  svGuardar(); svCerrar('sv-modal-cliente'); svRender();
+}
+function svBorrarCliente(){
+  const id=document.getElementById('sv-cli-id').value;
+  if(!id) return;
+  const usos=svData.trabajos.filter(t=>t.cliId===id).length;
+  const msg=usos>0
+    ? `Este cliente tiene ${usos} trabajo(s) registrado(s). Si lo borrás, se borran también esos trabajos. ¿Borrar igual?`
+    : '¿Borrar este cliente?';
+  if(!confirm(msg)) return;
+  svData.clientes=svData.clientes.filter(x=>x.id!==id);
+  svData.trabajos=svData.trabajos.filter(t=>t.cliId!==id);
+  svGuardar(); svCerrar('sv-modal-cliente'); svRender();
+}
+
+/* ===== TRABAJOS + POR COBRAR ===== */
+function svNomServicio(id){ const s=svData.servicios.find(x=>x.id===id); return s?s.nom:'(servicio borrado)'; }
+function svNomCliente(id){ const c=svData.clientes.find(x=>x.id===id); return c?c.nom:'(cliente borrado)'; }
+
+function svAbrirTrabajo(id){
+  if(!svData.clientes.length){ alert('Primero cargá al menos un cliente (pestaña "Mis clientes").'); return; }
+  if(!svData.servicios.length){ alert('Primero cargá al menos un servicio con su precio (pestaña "Mis servicios y precios").'); return; }
+  const t=id?svData.trabajos.find(x=>x.id===id):null;
+  document.getElementById('sv-tra-tit').textContent=t?'Editar trabajo':'Registrar trabajo';
+  document.getElementById('sv-tra-id').value=t?t.id:'';
+  // llenar selects
+  document.getElementById('sv-tra-cli').innerHTML=svData.clientes.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('');
+  document.getElementById('sv-tra-serv').innerHTML=svData.servicios.map(s=>`<option value="${s.id}">${esc(s.nom)} (${svMoney(s.precio)})</option>`).join('');
+  document.getElementById('sv-tra-cli').value=t?t.cliId:svData.clientes[0].id;
+  document.getElementById('sv-tra-serv').value=t?t.servId:svData.servicios[0].id;
+  document.getElementById('sv-tra-cant').value=t?t.cant:'';
+  document.getElementById('sv-tra-fecha').value=t?t.fecha:new Date().toISOString().slice(0,10);
+  document.getElementById('sv-tra-borrar').style.display=t?'inline-block':'none';
+  svEcoTrabajo();
+  svAbrir('sv-modal-trabajo');
+}
+function svEcoTrabajo(){
+  const servId=document.getElementById('sv-tra-serv').value;
+  const s=svData.servicios.find(x=>x.id===servId);
+  const cant=parseInt((document.getElementById('sv-tra-cant').value||'').replace(/[^0-9]/g,''))||0;
+  const eco=document.getElementById('sv-tra-eco');
+  if(s && cant>0){
+    eco.innerHTML=`<b>${cant}</b> × ${svMoney(s.precio)} = <b>${svMoney(cant*s.precio)}</b>`;
+  }else{
+    eco.textContent='';
+  }
+}
+function svGuardarTrabajo(){
+  const cliId=document.getElementById('sv-tra-cli').value;
+  const servId=document.getElementById('sv-tra-serv').value;
+  const cant=parseInt((document.getElementById('sv-tra-cant').value||'').replace(/[^0-9]/g,''))||0;
+  const fecha=document.getElementById('sv-tra-fecha').value;
+  if(!cliId||!servId){ alert('Elegí cliente y servicio'); return; }
+  if(cant<=0){ alert('Poné una cantidad válida'); return; }
+  if(!fecha){ alert('Poné la fecha'); return; }
+  const s=svData.servicios.find(x=>x.id===servId);
+  const precio=s?s.precio:0;
+  const id=document.getElementById('sv-tra-id').value;
+  if(id){
+    const t=svData.trabajos.find(x=>x.id===id);
+    if(t){ t.cliId=cliId; t.servId=servId; t.cant=cant; t.fecha=fecha; t.precioUnit=precio; }
+  }else{
+    svData.trabajos.push({id:svId('t'),cliId,servId,cant,fecha,precioUnit:precio,cobrado:false});
+  }
+  svGuardar(); svCerrar('sv-modal-trabajo'); svRender();
+}
+function svBorrarTrabajo(){
+  const id=document.getElementById('sv-tra-id').value;
+  if(!id) return;
+  if(!confirm('¿Borrar este trabajo?')) return;
+  svData.trabajos=svData.trabajos.filter(x=>x.id!==id);
+  svGuardar(); svCerrar('sv-modal-trabajo'); svRender();
+}
+function svToggleCobrado(id){
+  const t=svData.trabajos.find(x=>x.id===id);
+  if(!t) return;
+  t.cobrado=!t.cobrado;
+  svGuardar(); svRenderCobros();
+}
+
+// Resumen "Por cobrar": agrupa trabajos por cliente, muestra deuda y detalle.
+function svRenderCobros(){
+  const cont=document.getElementById('sv-cobros-lista');
+  const totalEl=document.getElementById('sv-total-general');
+  if(!cont) return;
+  if(!svData.trabajos.length){
+    cont.innerHTML='<div class="vacio-nota">Todavía no registraste trabajos. Tocá "+ Registrar trabajo" para anotar lo que le hiciste a un cliente.</div>';
+    if(totalEl) totalEl.textContent='';
+    return;
+  }
+  // agrupar por cliente
+  const porCli={};
+  svData.trabajos.forEach(t=>{
+    if(!porCli[t.cliId]) porCli[t.cliId]=[];
+    porCli[t.cliId].push(t);
+  });
+  let totalPorCobrar=0;
+  let html='';
+  Object.keys(porCli).forEach(cliId=>{
+    const trabajos=porCli[cliId].slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const deuda=trabajos.filter(t=>!t.cobrado).reduce((a,t)=>a+t.cant*t.precioUnit,0);
+    totalPorCobrar+=deuda;
+    const filas=trabajos.map(t=>{
+      const monto=t.cant*t.precioUnit;
+      return `<div class="sv-trab ${t.cobrado?'sv-cobrado':''}">
+        <div style="flex:1">
+          <div>${svFecha(t.fecha)} · <b>${esc(svNomServicio(t.servId))}</b></div>
+          <div class="mini-nota">${t.cant} × ${svMoney(t.precioUnit)} = ${svMoney(monto)}${t.cobrado?' · <span style="color:var(--verde,#5C7A3D)">cobrado ✓</span>':''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-sec btn-mini" onclick="svToggleCobrado('${t.id}')">${t.cobrado?'Marcar impago':'Cobré'}</button>
+          <button class="btn btn-sec btn-mini" onclick="svAbrirTrabajo('${t.id}')">✎</button>
+        </div>
+      </div>`;
+    }).join('');
+    html+=`<div class="sv-cli-card">
+      <div class="sv-cli-head">
+        <div><b style="font-size:16px">${esc(svNomCliente(cliId))}</b></div>
+        <div style="text-align:right">
+          <div class="mini-nota">Te debe</div>
+          <div style="font-size:18px;font-weight:700;color:${deuda>0?'var(--ladrillo,#A6533A)':'var(--verde,#5C7A3D)'}">${svMoney(deuda)}</div>
+        </div>
+      </div>
+      <div class="sv-trab-lista">${filas}</div>
+    </div>`;
+  });
+  cont.innerHTML=html;
+  if(totalEl) totalEl.innerHTML='Total por cobrar (todos los clientes): <b>'+svMoney(totalPorCobrar)+'</b>';
+}
+
+/* ---------- helpers de modales ---------- */
+function svAbrir(id){ const m=document.getElementById(id); if(m) m.classList.add('abierto'); }
+function svCerrar(id){ const m=document.getElementById(id); if(m) m.classList.remove('abierto'); }
+
 
 iniciar();
 </script>
