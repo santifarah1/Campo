@@ -192,6 +192,11 @@ tr:hover td{background:var(--lienzo)}
 @media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:20px}}
 @keyframes sube{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
 .modal h3{font-size:19px;margin-bottom:18px;font-weight:600}
+.modal h3.con-sub{margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--tinta-2);margin-bottom:18px;line-height:1.4}
+.sv-linea-serv{background:var(--tarjeta);border:1px solid var(--borde);border-radius:12px;padding:12px;margin-bottom:10px;position:relative}
+.sv-linea-serv .sv-quitar{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--ladrillo);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
+.sv-linea-total{font-size:13px;color:var(--tinta-2);text-align:right;margin-top:4px}
 .campo{margin-bottom:16px}
 .campo label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--tinta)}
 .campo input,.campo select,.campo textarea{width:100%;padding:11px 13px;border:1px solid var(--borde);border-radius:11px;background:var(--lienzo);color:var(--tinta);font-size:15px;transition:.15s}
@@ -939,13 +944,18 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
 <!-- MODAL: nuevo/editar servicio -->
 <div class="modal-bg" id="sv-modal-servicio">
   <div class="modal" style="max-width:420px">
-    <h3 id="sv-serv-tit">Nuevo servicio</h3>
+    <h3 id="sv-serv-tit" class="con-sub">Nuevo servicio</h3>
+    <p class="modal-sub">Cargá cada cosa que hacés con su precio (ej: un tacto, una vacuna). Después, al registrar un trabajo, la app multiplica sola por la cantidad.</p>
     <input type="hidden" id="sv-serv-id">
-    <label class="lbl">Nombre del servicio</label>
-    <input type="text" id="sv-serv-nom" placeholder="Ej: Tacto, Vacuna brucelosis, Inseminación" style="width:100%">
-    <label class="lbl" style="margin-top:12px">Precio por unidad ($)</label>
-    <input type="text" inputmode="decimal" id="sv-serv-precio" placeholder="Ej: 1.500" style="width:100%">
-    <p class="mini-nota" id="sv-serv-eco" style="margin-top:6px"></p>
+    <div class="campo">
+      <label>Nombre del servicio</label>
+      <input type="text" id="sv-serv-nom" placeholder="Ej: Tacto, Vacuna brucelosis, Inseminación">
+    </div>
+    <div class="campo">
+      <label>Precio por unidad ($)</label>
+      <input type="text" inputmode="decimal" id="sv-serv-precio" placeholder="Ej: 1.500">
+      <p class="mini-nota" id="sv-serv-eco" style="margin-top:6px"></p>
+    </div>
     <div style="display:flex;gap:8px;margin-top:18px">
       <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-servicio')">Cancelar</button>
       <button class="btn btn-primario" style="flex:1" onclick="svGuardarServicio()">Guardar</button>
@@ -957,12 +967,17 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
 <!-- MODAL: nuevo/editar cliente -->
 <div class="modal-bg" id="sv-modal-cliente">
   <div class="modal" style="max-width:420px">
-    <h3 id="sv-cli-tit">Nuevo cliente</h3>
+    <h3 id="sv-cli-tit" class="con-sub">Nuevo cliente</h3>
+    <p class="modal-sub">Cada campo o persona a la que le hacés trabajos. El teléfono es opcional, pero te deja escribirle por WhatsApp de un toque.</p>
     <input type="hidden" id="sv-cli-id">
-    <label class="lbl">Nombre del cliente</label>
-    <input type="text" id="sv-cli-nom" placeholder="Ej: Alejandro / Campo La Esperanza" style="width:100%">
-    <label class="lbl" style="margin-top:12px">Teléfono (opcional)</label>
-    <input type="text" inputmode="tel" id="sv-cli-tel" placeholder="Ej: 2920 44-0000" style="width:100%">
+    <div class="campo">
+      <label>Nombre del cliente</label>
+      <input type="text" id="sv-cli-nom" placeholder="Ej: Alejandro / Campo La Esperanza">
+    </div>
+    <div class="campo">
+      <label>Teléfono (opcional)</label>
+      <input type="text" inputmode="tel" id="sv-cli-tel" placeholder="Ej: 2920 44-0000">
+    </div>
     <div style="display:flex;gap:8px;margin-top:18px">
       <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-cliente')">Cancelar</button>
       <button class="btn btn-primario" style="flex:1" onclick="svGuardarCliente()">Guardar</button>
@@ -971,21 +986,20 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
   </div>
 </div>
 
-<!-- MODAL: registrar trabajo -->
+<!-- MODAL: registrar trabajo (múltiples servicios) -->
 <div class="modal-bg" id="sv-modal-trabajo">
-  <div class="modal" style="max-width:440px">
-    <h3 id="sv-tra-tit">Registrar trabajo</h3>
+  <div class="modal" style="max-width:480px">
+    <h3 id="sv-tra-tit" class="con-sub">Registrar trabajo</h3>
+    <p class="modal-sub">Elegí el cliente y cargá lo que le hiciste. Podés sumar varios servicios de una (cada uno con su fecha), así no lo cargás por separado.</p>
     <input type="hidden" id="sv-tra-id">
-    <label class="lbl">Cliente</label>
-    <select id="sv-tra-cli" style="width:100%"></select>
-    <label class="lbl" style="margin-top:12px">Servicio</label>
-    <select id="sv-tra-serv" onchange="svEcoTrabajo()" style="width:100%"></select>
-    <label class="lbl" style="margin-top:12px">Cantidad</label>
-    <input type="text" inputmode="numeric" id="sv-tra-cant" placeholder="Ej: 40" oninput="svEcoTrabajo()" style="width:100%">
-    <label class="lbl" style="margin-top:12px">Fecha</label>
-    <input type="date" id="sv-tra-fecha" style="width:100%">
-    <p class="mini-nota" id="sv-tra-eco" style="margin-top:8px;font-size:14px"></p>
-    <div style="display:flex;gap:8px;margin-top:18px">
+    <div class="campo">
+      <label>Cliente</label>
+      <select id="sv-tra-cli"></select>
+    </div>
+    <div id="sv-tra-lineas"></div>
+    <button class="btn btn-sec" style="width:100%;justify-content:center;border-style:dashed;margin-bottom:6px" onclick="svAgregarLinea()">+ Agregar otro servicio</button>
+    <p class="mini-nota" id="sv-tra-total" style="text-align:right;font-size:15px;margin-top:6px"></p>
+    <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-trabajo')">Cancelar</button>
       <button class="btn btn-primario" style="flex:1" onclick="svGuardarTrabajo()">Guardar</button>
     </div>
@@ -4914,44 +4928,112 @@ function svAbrirTrabajo(id){
   const t=id?svData.trabajos.find(x=>x.id===id):null;
   document.getElementById('sv-tra-tit').textContent=t?'Editar trabajo':'Registrar trabajo';
   document.getElementById('sv-tra-id').value=t?t.id:'';
-  // llenar selects
+  // cliente
   document.getElementById('sv-tra-cli').innerHTML=svData.clientes.map(c=>`<option value="${c.id}">${esc(c.nom)}</option>`).join('');
-  document.getElementById('sv-tra-serv').innerHTML=svData.servicios.map(s=>`<option value="${s.id}">${esc(s.nom)} (${svMoney(s.precio)})</option>`).join('');
   document.getElementById('sv-tra-cli').value=t?t.cliId:svData.clientes[0].id;
-  document.getElementById('sv-tra-serv').value=t?t.servId:svData.servicios[0].id;
-  document.getElementById('sv-tra-cant').value=t?t.cant:'';
-  document.getElementById('sv-tra-fecha').value=t?t.fecha:new Date().toISOString().slice(0,10);
+  // líneas de servicio
+  const cont=document.getElementById('sv-tra-lineas');
+  cont.innerHTML='';
+  if(t){
+    // editar: una sola línea con los datos del trabajo
+    svAgregarLinea({servId:t.servId,cant:t.cant,fecha:t.fecha});
+  }else{
+    svAgregarLinea(); // una línea vacía para empezar
+  }
   document.getElementById('sv-tra-borrar').style.display=t?'inline-block':'none';
   svEcoTrabajo();
   svAbrir('sv-modal-trabajo');
 }
-function svEcoTrabajo(){
-  const servId=document.getElementById('sv-tra-serv').value;
-  const s=svData.servicios.find(x=>x.id===servId);
-  const cant=parseInt((document.getElementById('sv-tra-cant').value||'').replace(/[^0-9]/g,''))||0;
-  const eco=document.getElementById('sv-tra-eco');
-  if(s && cant>0){
-    eco.innerHTML=`<b>${cant}</b> × ${svMoney(s.precio)} = <b>${svMoney(cant*s.precio)}</b>`;
+// Agrega una línea de servicio (servicio + cantidad + fecha) al modal de trabajo.
+function svAgregarLinea(datos){
+  const cont=document.getElementById('sv-tra-lineas');
+  const idx=cont.children.length;
+  const hoy=new Date().toISOString().slice(0,10);
+  const opts=svData.servicios.map(s=>`<option value="${s.id}">${esc(s.nom)} (${svMoney(s.precio)})</option>`).join('');
+  const div=document.createElement('div');
+  div.className='sv-linea-serv';
+  div.innerHTML=`
+    ${idx>0?'<button class="sv-quitar" title="Quitar" onclick="svQuitarLinea(this)">×</button>':''}
+    <div class="campo" style="margin-bottom:10px">
+      <label>Servicio</label>
+      <select class="sv-l-serv" onchange="svEcoTrabajo()">${opts}</select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="campo" style="margin-bottom:0;flex:1">
+        <label>Cantidad</label>
+        <input type="text" inputmode="numeric" class="sv-l-cant" placeholder="Ej: 40" oninput="svEcoTrabajo()">
+      </div>
+      <div class="campo" style="margin-bottom:0;flex:1">
+        <label>Fecha</label>
+        <input type="date" class="sv-l-fecha">
+      </div>
+    </div>
+    <div class="sv-linea-total"></div>`;
+  cont.appendChild(div);
+  // setear valores
+  if(datos){
+    div.querySelector('.sv-l-serv').value=datos.servId||svData.servicios[0].id;
+    div.querySelector('.sv-l-cant').value=datos.cant||'';
+    div.querySelector('.sv-l-fecha').value=datos.fecha||hoy;
   }else{
-    eco.textContent='';
+    div.querySelector('.sv-l-fecha').value=hoy;
   }
+  svEcoTrabajo();
+}
+function svQuitarLinea(btn){
+  const div=btn.closest('.sv-linea-serv');
+  if(div) div.remove();
+  svEcoTrabajo();
+}
+function svEcoTrabajo(){
+  const lineas=document.querySelectorAll('#sv-tra-lineas .sv-linea-serv');
+  let total=0;
+  lineas.forEach(l=>{
+    const servId=l.querySelector('.sv-l-serv').value;
+    const s=svData.servicios.find(x=>x.id===servId);
+    const cant=parseInt((l.querySelector('.sv-l-cant').value||'').replace(/[^0-9]/g,''))||0;
+    const tot=l.querySelector('.sv-linea-total');
+    if(s && cant>0){
+      const sub=cant*s.precio; total+=sub;
+      tot.innerHTML=`${cant} × ${svMoney(s.precio)} = <b>${svMoney(sub)}</b>`;
+    }else{
+      tot.textContent='';
+    }
+  });
+  const totEl=document.getElementById('sv-tra-total');
+  if(totEl) totEl.innerHTML = total>0 ? 'Total: <b>'+svMoney(total)+'</b>' : '';
 }
 function svGuardarTrabajo(){
   const cliId=document.getElementById('sv-tra-cli').value;
-  const servId=document.getElementById('sv-tra-serv').value;
-  const cant=parseInt((document.getElementById('sv-tra-cant').value||'').replace(/[^0-9]/g,''))||0;
-  const fecha=document.getElementById('sv-tra-fecha').value;
-  if(!cliId||!servId){ alert('Elegí cliente y servicio'); return; }
-  if(cant<=0){ alert('Poné una cantidad válida'); return; }
-  if(!fecha){ alert('Poné la fecha'); return; }
-  const s=svData.servicios.find(x=>x.id===servId);
-  const precio=s?s.precio:0;
+  if(!cliId){ alert('Elegí un cliente'); return; }
+  const lineas=document.querySelectorAll('#sv-tra-lineas .sv-linea-serv');
+  // validar y juntar
+  const aGuardar=[];
+  for(const l of lineas){
+    const servId=l.querySelector('.sv-l-serv').value;
+    const cant=parseInt((l.querySelector('.sv-l-cant').value||'').replace(/[^0-9]/g,''))||0;
+    const fecha=l.querySelector('.sv-l-fecha').value;
+    if(cant<=0){ alert('Poné una cantidad válida en todos los servicios (o quitá los que estén vacíos).'); return; }
+    if(!fecha){ alert('Poné la fecha en todos los servicios.'); return; }
+    const s=svData.servicios.find(x=>x.id===servId);
+    aGuardar.push({servId,cant,fecha,precioUnit:s?s.precio:0});
+  }
+  if(!aGuardar.length){ alert('Agregá al menos un servicio'); return; }
   const id=document.getElementById('sv-tra-id').value;
   if(id){
+    // editar: era un solo trabajo, se actualiza con la primera línea
     const t=svData.trabajos.find(x=>x.id===id);
-    if(t){ t.cliId=cliId; t.servId=servId; t.cant=cant; t.fecha=fecha; t.precioUnit=precio; }
+    if(t){ const g=aGuardar[0]; t.cliId=cliId; t.servId=g.servId; t.cant=g.cant; t.fecha=g.fecha; t.precioUnit=g.precioUnit; }
+    // si agregó más líneas al editar, se guardan como trabajos nuevos
+    for(let i=1;i<aGuardar.length;i++){
+      const g=aGuardar[i];
+      svData.trabajos.push({id:svId('t'),cliId,servId:g.servId,cant:g.cant,fecha:g.fecha,precioUnit:g.precioUnit,cobrado:false});
+    }
   }else{
-    svData.trabajos.push({id:svId('t'),cliId,servId,cant,fecha,precioUnit:precio,cobrado:false});
+    // nuevo: cada línea es un trabajo
+    aGuardar.forEach(g=>{
+      svData.trabajos.push({id:svId('t'),cliId,servId:g.servId,cant:g.cant,fecha:g.fecha,precioUnit:g.precioUnit,cobrado:false});
+    });
   }
   svGuardar(); svCerrar('sv-modal-trabajo'); svRender();
 }
