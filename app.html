@@ -199,6 +199,13 @@ tr:hover td{background:var(--lienzo)}
 .sv-linea-total{font-size:13px;color:var(--tinta-2);text-align:right;margin-top:4px}
 .link-peligro{background:none;border:none;color:var(--ladrillo);font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px;transition:.15s}
 .link-peligro:hover{background:var(--ladrillo-suave)}
+/* Tira de resultado por actividad (arriba, números directos) */
+.tira-act-tit{font-size:13px;font-weight:600;color:var(--tinta-2);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.tira-act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.tira-act-card{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:13px 15px;border-left:4px solid var(--linea)}
+.tira-act-card .ta-nom{font-size:13px;color:var(--tinta-2);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.tira-act-card .ta-res{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.tira-act-card .ta-det{font-size:11.5px;color:var(--tinta-suave);margin-top:3px}
 .campo{margin-bottom:16px}
 .campo label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--tinta)}
 .campo input,.campo select,.campo textarea{width:100%;padding:11px 13px;border:1px solid var(--borde);border-radius:11px;background:var(--lienzo);color:var(--tinta);font-size:15px;transition:.15s}
@@ -617,6 +624,8 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
       <div class="kpi saldo"><div class="franja"></div><div class="et">Resultado</div><div class="val" id="k-res">$0</div><div class="det" id="k-res-d"></div></div>
       <div class="kpi proj"><div class="franja"></div><div class="et">Movimientos</div><div class="val" id="k-cant">0</div><div class="det" id="k-cant-d"></div></div>
     </div>
+
+    <div id="tira-actividades" style="margin-bottom:22px"></div>
 
     <div class="grid-hero">
       <div class="panel">
@@ -2332,7 +2341,31 @@ function render(){
   chartMes(r);chartSaldo(r);chartAct(r);chartCat(r);chartAnios();
   llenarSelectRubro(d);chartRubro();
   ultimosMov();
+  tiraActividades(r);
   bannerPendientes();
+}
+// Tira de resultado por actividad, arriba de todo, con números directos.
+// Pedido de una contadora: ver el número de cada actividad al entrar, sin gráfico.
+function tiraActividades(r){
+  const el=document.getElementById('tira-actividades');
+  if(!el)return;
+  const agg=actAgg(r);
+  // resultado por actividad = ingresos - egresos
+  const filas=Object.entries(agg)
+    .map(([nom,v])=>({nom,res:v.ing-v.egr,ing:v.ing,egr:v.egr,n:v.n}))
+    .filter(x=>x.n>0)
+    .sort((a,b)=>b.res-a.res);
+  if(!filas.length){ el.innerHTML=''; return; }
+  const cards=filas.map(f=>{
+    const pos=f.res>=0;
+    const color=pos?css('--campo'):css('--ladrillo');
+    return `<div class="tira-act-card" style="border-left-color:${actColor(f.nom)}">
+      <div class="ta-nom"><span style="width:9px;height:9px;border-radius:50%;background:${actColor(f.nom)};display:inline-block"></span>${esc(f.nom)}</div>
+      <div class="ta-res" style="color:${color}">${fmt(f.res)}</div>
+      <div class="ta-det">${f.n} mov · ingresos ${fmt(f.ing)} · egresos ${fmt(f.egr)}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div class="tira-act-tit"><span class="pin"></span>Resultado por actividad</div><div class="tira-act-grid">${cards}</div>`;
 }
 // Últimos movimientos con ícono redondo de color por tipo (estilo tarjeta de actividad).
 function ultimosMov(){
