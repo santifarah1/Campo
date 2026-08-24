@@ -1495,7 +1495,7 @@ function cargarActividades(){
   let g=null;
   try{g=JSON.parse(alm.getItem('campo_actividades')||'null')}catch(_){g=null}
   if(Array.isArray(g)&&g.length){
-    actividades=g.filter(a=>a&&a.n).map(a=>({n:''+a.n,e:''+(a.e||a.n),c:a.c||'#888',maq:!!a.maq,estructura:!!a.estructura}));
+    actividades=g.filter(a=>a&&a.n).map(a=>({n:''+a.n,e:''+(a.e||a.n),c:a.c||'#888',maq:!!a.maq,estructura:!!a.estructura,ha:(typeof a.ha==='number'&&a.ha>0)?a.ha:null}));
   }else{
     // Primera vez: se arranca de las que ya venía usando la app, pero solo se
     // conservan las que realmente aparecen en los datos cargados. Así un
@@ -2170,6 +2170,26 @@ async function renombrarActividad(i){
   guardarActividades();actividadesPanel();renderTodo();
   toast('Actividad renombrada');
 }
+// Cargar/editar las hectáreas de una actividad (opcional, para el margen por hectárea).
+async function editarHaActividad(i){
+  const a=actividades[i];if(!a)return;
+  const actual=a.ha?numAR(a.ha,false):'';
+  const val=await dialogo({
+    titulo:'Hectáreas de '+a.e,
+    cuerpo:'Poné cuántas hectáreas tiene esta actividad. Con eso la app te muestra el margen por hectárea. Si la dejás vacía, no se calcula (es opcional). Para borrarla, dejala en blanco y guardá.',
+    pedir:'Hectáreas',valor:actual,ok:'Guardar'
+  });
+  if(val===false)return;
+  const limpio=(''+val).trim();
+  if(!limpio){ a.ha=null; }
+  else{
+    const n=parseMontoAR(limpio);
+    if(!n||n<=0){ toast('Poné un número de hectáreas válido','error'); return; }
+    a.ha=n;
+  }
+  guardarActividades();actividadesPanel();render();
+  toast(a.ha?'Hectáreas guardadas':'Hectáreas borradas');
+}
 function colorActividad(i,c){
   if(!actividades[i])return;
   actividades[i].c=c;
@@ -2213,8 +2233,10 @@ function actividadesPanel(){
         <span class="act-tag">${n?n+' mov.':'sin usar'}</span>
         ${a.estructura?'<span class="act-tag" title="Acá van los gastos que no son de una actividad puntual">estructura</span>':''}
         ${a.maq?'<span class="act-tag" title="Alimenta el panel de costo de maquinaria por hectárea">maquinaria</span>':''}
+        ${(!a.estructura&&a.ha)?`<span class="act-tag" style="background:var(--campo-suave);color:var(--campo)" title="Hectáreas cargadas">${numAR(a.ha,false)} ha</span>`:''}
       </span>
       <span style="display:flex;align-items:center;gap:6px">
+        ${a.estructura?'':`<button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="editarHaActividad(${i})" title="Cargar hectáreas (para ver el margen por hectárea)">${a.ha?'ha':'+ ha'}</button>`}
         <input type="color" value="${esc(a.c)}" onchange="colorActividad(${i},this.value)" title="Color en los gráficos" style="width:38px;height:28px;padding:2px;cursor:pointer">
         <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="renombrarActividad(${i})" title="Cambiar el nombre">✎</button>
         <button class="btn btn-sec" style="padding:5px 9px;font-size:12px" onclick="borrarActividad(${i})" title="${a.estructura?'No se puede borrar':'Borrar'}"${a.estructura?' disabled style="opacity:.35;padding:5px 9px;font-size:12px"':''}>✕</button>
@@ -2359,10 +2381,17 @@ function tiraActividades(r){
   const cards=filas.map(f=>{
     const pos=f.res>=0;
     const color=pos?css('--campo'):css('--ladrillo');
+    const act=actBuscar(f.nom);
+    let margenHa='';
+    if(act && act.ha && act.ha>0){
+      const mha=f.res/act.ha;
+      margenHa=`<div class="ta-det" style="margin-top:5px;font-weight:600;color:${mha>=0?css('--campo'):css('--ladrillo')}">${fmt(mha)} por hectárea <span style="color:var(--tinta-suave);font-weight:400">(${numAR(act.ha,false)} ha)</span></div>`;
+    }
     return `<div class="tira-act-card" style="border-left-color:${actColor(f.nom)}">
       <div class="ta-nom"><span style="width:9px;height:9px;border-radius:50%;background:${actColor(f.nom)};display:inline-block"></span>${esc(f.nom)}</div>
       <div class="ta-res" style="color:${color}">${fmt(f.res)}</div>
       <div class="ta-det">${f.n} mov · ingresos ${fmt(f.ing)} · egresos ${fmt(f.egr)}</div>
+      ${margenHa}
     </div>`;
   }).join('');
   el.innerHTML=`<div class="tira-act-tit"><span class="pin"></span>Resultado por actividad</div><div class="tira-act-grid">${cards}</div>`;
