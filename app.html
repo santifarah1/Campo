@@ -4788,6 +4788,10 @@ async function iniciar(){
   datos=datos.filter(x=>x&&typeof x==='object'&&x.fecha);
   if(datos.length!==antes)console.warn('Se descartaron',antes-datos.length,'registros inválidos');
   moneda=alm.getItem('campo_moneda')||'corriente';
+  // Recargar los datos del módulo de servicios DESPUÉS de que IndexedDB abrió.
+  // Si no, svData quedó con lo que había al cargar el script (vacío), porque
+  // svCargar() corre antes de que el almacén termine de iniciar.
+  svData=svCargar();
   cargarRubros();
   cargarActividades();
   llenarSelectsAct();
