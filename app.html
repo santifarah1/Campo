@@ -644,16 +644,12 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
         <div class="chart-box chico"><canvas id="ch-saldo"></canvas></div>
       </div>
       <div class="panel">
-        <h2><span class="pin"></span>Resultado por actividad</h2>
-        <div class="chart-box chico"><canvas id="ch-act"></canvas></div>
+        <h2><span class="pin"></span>Egresos por categoría</h2>
+        <div class="chart-box chico"><canvas id="ch-cat"></canvas></div>
       </div>
     </div>
 
     <div class="grid-2">
-      <div class="panel">
-        <h2><span class="pin"></span>Egresos por categoría</h2>
-        <div class="chart-box chico"><canvas id="ch-cat"></canvas></div>
-      </div>
       <div class="panel">
         <h2><span class="pin"></span>Comparación año contra año</h2>
         <div class="chart-box chico"><canvas id="ch-anios"></canvas></div>
@@ -948,25 +944,63 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
         <button class="btn btn-primario" onclick="svAbrirServicio()">+ Nuevo servicio</button>
       </div>
       <div id="sv-precios-lista" style="display:flex;flex-direction:column;gap:9px"></div>
+
+      <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--linea)">
+        <div class="tira-act-tit" style="margin-bottom:4px">⛽ Precios de gasoil</div>
+        <p class="mini-nota" style="margin-top:0;margin-bottom:12px;max-width:480px">Si tenés servicios cobrados en litros de gasoil, cargá acá el precio del litro de cada empresa. Actualizalo cuando cambie. La app usa el precio de acá para calcular esos servicios.</p>
+        <div id="sv-gasoil-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+      </div>
     </div>
   </div>
 </main>
 
 <!-- MODAL: nuevo/editar servicio -->
 <div class="modal-bg" id="sv-modal-servicio">
-  <div class="modal" style="max-width:420px">
+  <div class="modal" style="max-width:440px">
     <h3 id="sv-serv-tit" class="con-sub">Nuevo servicio</h3>
-    <p class="modal-sub">Cargá cada cosa que hacés con su precio (ej: un tacto, una vacuna). Después, al registrar un trabajo, la app multiplica sola por la cantidad.</p>
+    <p class="modal-sub">Cargá cada cosa que hacés. El precio puede ser fijo, o atado al kilo de carne / litro de gasoil (así se actualiza solo con el mercado).</p>
     <input type="hidden" id="sv-serv-id">
     <div class="campo">
       <label>Nombre del servicio</label>
-      <input type="text" id="sv-serv-nom" placeholder="Ej: Tacto, Vacuna brucelosis, Inseminación">
+      <input type="text" id="sv-serv-nom" placeholder="Ej: Tacto, Vacunación, Cosecha">
     </div>
     <div class="campo">
+      <label>¿Cómo se cobra?</label>
+      <select id="sv-serv-tipo" onchange="svServTipoUI()">
+        <option value="fijo">Precio fijo en pesos</option>
+        <option value="kilo">En kilos de carne (se actualiza solo)</option>
+        <option value="gasoil">En litros de gasoil (se actualiza solo)</option>
+      </select>
+    </div>
+    <!-- Fijo -->
+    <div class="campo" id="sv-serv-c-fijo">
       <label>Precio por unidad ($)</label>
       <input type="text" inputmode="decimal" id="sv-serv-precio" placeholder="Ej: 1.500">
-      <p class="mini-nota" id="sv-serv-eco" style="margin-top:6px"></p>
     </div>
+    <!-- Kilo -->
+    <div class="campo" id="sv-serv-c-kilo" style="display:none">
+      <label>Kilos de carne por unidad</label>
+      <input type="text" inputmode="decimal" id="sv-serv-kg" placeholder="Ej: 11" oninput="svServEco()">
+      <p class="mini-nota" style="margin-top:6px">Usa el precio del kilo vivo del Mercado Agroganadero (promedio). Se actualiza solo.</p>
+    </div>
+    <!-- Gasoil -->
+    <div id="sv-serv-c-gasoil" style="display:none">
+      <div class="campo">
+        <label>Litros de gasoil por unidad</label>
+        <input type="text" inputmode="decimal" id="sv-serv-lts" placeholder="Ej: 50" oninput="svServEco()">
+      </div>
+      <div class="campo">
+        <label>Empresa (qué precio usar)</label>
+        <select id="sv-serv-empresa" onchange="svServEco()">
+          <option value="Shell">Shell</option>
+          <option value="Puma">Puma</option>
+          <option value="Axion">Axion</option>
+          <option value="YPF">YPF</option>
+        </select>
+        <p class="mini-nota" style="margin-top:6px">El precio del litro lo cargás abajo, en "Precios de gasoil".</p>
+      </div>
+    </div>
+    <p class="mini-nota" id="sv-serv-eco" style="margin-top:2px;font-size:14px"></p>
     <div style="display:flex;gap:8px;margin-top:18px">
       <button class="btn btn-sec" style="flex:1" onclick="svCerrar('sv-modal-servicio')">Cancelar</button>
       <button class="btn btn-primario" style="flex:1" onclick="svGuardarServicio()">Guardar</button>
@@ -2360,7 +2394,7 @@ function render(){
   const pases=d.length-r.length;
   document.getElementById('k-cant-d').textContent=cats+' categorías'+(pases?` · ${pases} ${pases===1?'pase interno':'pases internos'}`:'');
 
-  chartMes(r);chartSaldo(r);chartAct(r);chartCat(r);chartAnios();
+  chartMes(r);chartSaldo(r);chartCat(r);chartAnios();
   llenarSelectRubro(d);chartRubro();
   ultimosMov();
   tiraActividades(r);
@@ -4816,9 +4850,12 @@ let svData = svCargar();
 function svCargar(){
   try{
     const d=JSON.parse(alm.getItem('campo_servicios')||'null');
-    if(d && d.servicios && d.clientes && d.trabajos) return d;
+    if(d && d.servicios && d.clientes && d.trabajos){
+      if(!d.gasoil) d.gasoil={Shell:null,Puma:null,Axion:null,YPF:null};
+      return d;
+    }
   }catch(_){}
-  return { servicios:[], clientes:[], trabajos:[] };
+  return { servicios:[], clientes:[], trabajos:[], gasoil:{Shell:null,Puma:null,Axion:null,YPF:null} };
 }
 function svGuardar(){
   alm.setItem('campo_servicios',JSON.stringify(svData));
@@ -4826,6 +4863,55 @@ function svGuardar(){
 }
 function svId(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function svMoney(n){ return '$'+numAR(n,true); }
+// Precio actual del kg vivo de hacienda (promedio general del MAG).
+// Si no hay datos cargados, devuelve null.
+function svPrecioKilo(){
+  if(typeof haciendaCache==='undefined'||!haciendaCache||!haciendaCache.categorias||!haciendaCache.categorias.length)return null;
+  const proms=haciendaCache.categorias.map(c=>c.prom).filter(x=>x>0);
+  if(!proms.length)return null;
+  return proms.reduce((a,b)=>a+b,0)/proms.length;
+}
+// Precio del litro de gasoil de una empresa (lo carga el usuario a mano).
+function svPrecioGasoil(empresa){
+  if(!svData.gasoil)return null;
+  return svData.gasoil[empresa]||null;
+}
+// Precio unitario ACTUAL de un servicio, según su tipo.
+// fijo -> precio en $ ; kilo -> kg × precio del kg hoy ; gasoil -> lts × precio litro empresa
+function svPrecioServicio(s){
+  if(!s)return 0;
+  if(s.tipo==='kilo'){
+    const pk=svPrecioKilo();
+    return pk?s.cantUnidad*pk:0;
+  }
+  if(s.tipo==='gasoil'){
+    const pg=svPrecioGasoil(s.empresa);
+    return pg?s.cantUnidad*pg:0;
+  }
+  return s.precio||0; // fijo
+}
+// Precio unitario de un TRABAJO ya registrado.
+// Fijo -> usa el precio congelado del día que se cargó (precioUnit).
+// Kilo/gasoil -> usa el precio ACTUAL (se actualiza solo, protege de inflación).
+function svPrecioUnitTrabajo(t){
+  const s=svData.servicios.find(x=>x.id===t.servId);
+  if(s && (s.tipo==='kilo'||s.tipo==='gasoil')){
+    return svPrecioServicio(s);
+  }
+  return t.precioUnit||0;
+}
+// Texto descriptivo del precio de un servicio (para la lista).
+function svTextoPrecio(s){
+  if(s.tipo==='kilo'){
+    const pk=svPrecioKilo();
+    return `${numAR(s.cantUnidad,true)} kg vivo` + (pk?` · hoy ${svMoney(s.cantUnidad*pk)}`:' · (sin precio de hacienda)');
+  }
+  if(s.tipo==='gasoil'){
+    const pg=svPrecioGasoil(s.empresa);
+    return `${numAR(s.cantUnidad,true)} lts gasoil ${esc(s.empresa||'')}` + (pg?` · hoy ${svMoney(s.cantUnidad*pg)}`:' · (cargá el precio)');
+  }
+  return svMoney(s.precio||0)+' fijo';
+}
 function svFecha(iso){
   if(!iso) return '';
   const p=(''+iso).split('-'); // yyyy-mm-dd
@@ -4883,8 +4969,28 @@ function svRenderPrecios(){
   cont.innerHTML=svData.servicios.map(s=>`
     <div class="fila-item" onclick="svAbrirServicio('${s.id}')" style="cursor:pointer">
       <div><b>${esc(s.nom)}</b></div>
-      <div style="font-weight:600">${svMoney(s.precio)} <span class="mini-nota">c/u</span></div>
+      <div style="font-weight:600;text-align:right;font-size:13.5px">${svTextoPrecio(s)}</div>
     </div>`).join('');
+  svRenderGasoil();
+}
+// Inputs para cargar el precio del litro de cada empresa de gasoil.
+function svRenderGasoil(){
+  const cont=document.getElementById('sv-gasoil-lista');
+  if(!cont)return;
+  if(!svData.gasoil) svData.gasoil={Shell:null,Puma:null,Axion:null,YPF:null};
+  const empresas=['Shell','Puma','Axion','YPF'];
+  cont.innerHTML=empresas.map(e=>`
+    <div class="campo" style="margin-bottom:0">
+      <label>${e} ($/litro)</label>
+      <input type="text" inputmode="decimal" value="${svData.gasoil[e]?numAR(svData.gasoil[e],true):''}" placeholder="Ej: 1.200" onchange="svGuardarGasoil('${e}',this.value)">
+    </div>`).join('');
+}
+function svGuardarGasoil(empresa,valor){
+  if(!svData.gasoil) svData.gasoil={};
+  const n=parseMontoAR(valor);
+  svData.gasoil[empresa]=(n&&n>0)?n:null;
+  svGuardar();
+  svRenderPrecios();
 }
 
 function svAbrirServicio(id){
@@ -4892,22 +4998,71 @@ function svAbrirServicio(id){
   document.getElementById('sv-serv-tit').textContent=s?'Editar servicio':'Nuevo servicio';
   document.getElementById('sv-serv-id').value=s?s.id:'';
   document.getElementById('sv-serv-nom').value=s?s.nom:'';
-  document.getElementById('sv-serv-precio').value=s?numAR(s.precio,true):'';
+  const tipo=s?(s.tipo||'fijo'):'fijo';
+  document.getElementById('sv-serv-tipo').value=tipo;
+  document.getElementById('sv-serv-precio').value=(s&&tipo==='fijo')?numAR(s.precio,true):'';
+  document.getElementById('sv-serv-kg').value=(s&&tipo==='kilo')?numAR(s.cantUnidad,true):'';
+  document.getElementById('sv-serv-lts').value=(s&&tipo==='gasoil')?numAR(s.cantUnidad,true):'';
+  document.getElementById('sv-serv-empresa').value=(s&&s.empresa)?s.empresa:'Shell';
   document.getElementById('sv-serv-eco').textContent='';
   document.getElementById('sv-serv-borrar').style.display=s?'inline-block':'none';
+  svServTipoUI();
   svAbrir('sv-modal-servicio');
+}
+// Muestra/oculta los campos según el tipo de precio elegido.
+function svServTipoUI(){
+  const t=document.getElementById('sv-serv-tipo').value;
+  document.getElementById('sv-serv-c-fijo').style.display=(t==='fijo')?'block':'none';
+  document.getElementById('sv-serv-c-kilo').style.display=(t==='kilo')?'block':'none';
+  document.getElementById('sv-serv-c-gasoil').style.display=(t==='gasoil')?'block':'none';
+  svServEco();
+}
+// Muestra en vivo cuánto vale hoy el servicio según lo que carga.
+function svServEco(){
+  const t=document.getElementById('sv-serv-tipo').value;
+  const eco=document.getElementById('sv-serv-eco');
+  if(t==='kilo'){
+    const kg=parseMontoAR(document.getElementById('sv-serv-kg').value);
+    const pk=svPrecioKilo();
+    if(kg>0 && pk) eco.innerHTML=`Hoy: ${numAR(kg,true)} kg × ${svMoney(pk)} = <b>${svMoney(kg*pk)}</b> <span style="color:var(--tinta-suave)">(precio del kg vivo del MAG)</span>`;
+    else if(kg>0 && !pk) eco.innerHTML='<span style="color:var(--ladrillo)">No hay precio de hacienda cargado todavía. El servicio va a calcular cuando la app tenga el precio del día.</span>';
+    else eco.textContent='';
+  }else if(t==='gasoil'){
+    const lts=parseMontoAR(document.getElementById('sv-serv-lts').value);
+    const emp=document.getElementById('sv-serv-empresa').value;
+    const pg=svPrecioGasoil(emp);
+    if(lts>0 && pg) eco.innerHTML=`Hoy: ${numAR(lts,true)} lts × ${svMoney(pg)} = <b>${svMoney(lts*pg)}</b> <span style="color:var(--tinta-suave)">(${emp})</span>`;
+    else if(lts>0 && !pg) eco.innerHTML=`<span style="color:var(--ladrillo)">Cargá el precio del litro de ${emp} abajo, en "Precios de gasoil".</span>`;
+    else eco.textContent='';
+  }else{
+    const p=parseMontoAR(document.getElementById('sv-serv-precio').value);
+    eco.textContent = p>0 ? 'Se guarda como: '+svMoney(p)+' por unidad' : '';
+  }
 }
 function svGuardarServicio(){
   const nom=document.getElementById('sv-serv-nom').value.trim();
-  const precio=parseMontoAR(document.getElementById('sv-serv-precio').value);
   if(!nom){ toast('Poné el nombre del servicio','error'); return; }
-  if(!precio||precio<=0){ toast('Poné un precio válido','error'); return; }
+  const tipo=document.getElementById('sv-serv-tipo').value;
+  let campos={nom,tipo};
+  if(tipo==='fijo'){
+    const precio=parseMontoAR(document.getElementById('sv-serv-precio').value);
+    if(!precio||precio<=0){ toast('Poné un precio válido','error'); return; }
+    campos.precio=precio; campos.cantUnidad=null; campos.empresa=null;
+  }else if(tipo==='kilo'){
+    const kg=parseMontoAR(document.getElementById('sv-serv-kg').value);
+    if(!kg||kg<=0){ toast('Poné cuántos kilos de carne','error'); return; }
+    campos.cantUnidad=kg; campos.precio=null; campos.empresa=null;
+  }else if(tipo==='gasoil'){
+    const lts=parseMontoAR(document.getElementById('sv-serv-lts').value);
+    if(!lts||lts<=0){ toast('Poné cuántos litros de gasoil','error'); return; }
+    campos.cantUnidad=lts; campos.precio=null; campos.empresa=document.getElementById('sv-serv-empresa').value;
+  }
   const id=document.getElementById('sv-serv-id').value;
   if(id){
     const s=svData.servicios.find(x=>x.id===id);
-    if(s){ s.nom=nom; s.precio=precio; }
+    if(s){ Object.assign(s,campos); }
   }else{
-    svData.servicios.push({id:svId('s'),nom,precio});
+    svData.servicios.push(Object.assign({id:svId('s')},campos));
   }
   svGuardar(); svCerrar('sv-modal-servicio'); svRender();
 }
@@ -4923,12 +5078,9 @@ async function svBorrarServicio(){
   svData.servicios=svData.servicios.filter(x=>x.id!==id);
   svGuardar(); svCerrar('sv-modal-servicio'); svRender();
 }
-// eco en vivo del precio mientras escribe
+// eco en vivo del precio fijo mientras escribe
 document.addEventListener('input',function(e){
-  if(e.target && e.target.id==='sv-serv-precio'){
-    const v=parseMontoAR(e.target.value);
-    document.getElementById('sv-serv-eco').textContent = v>0 ? 'Se guarda como: '+svMoney(v)+' por unidad' : '';
-  }
+  if(e.target && e.target.id==='sv-serv-precio'){ svServEco(); }
 });
 
 /* ===== CLIENTES ===== */
@@ -5015,7 +5167,7 @@ function svAgregarLinea(datos){
   const cont=document.getElementById('sv-tra-lineas');
   const idx=cont.children.length;
   const hoy=new Date().toISOString().slice(0,10);
-  const opts=svData.servicios.map(s=>`<option value="${s.id}">${esc(s.nom)} (${svMoney(s.precio)})</option>`).join('');
+  const opts=svData.servicios.map(s=>`<option value="${s.id}">${esc(s.nom)} (${svTextoPrecio(s)})</option>`).join('');
   const div=document.createElement('div');
   div.className='sv-linea-serv';
   div.innerHTML=`
@@ -5060,8 +5212,10 @@ function svEcoTrabajo(){
     const cant=parseInt((l.querySelector('.sv-l-cant').value||'').replace(/[^0-9]/g,''))||0;
     const tot=l.querySelector('.sv-linea-total');
     if(s && cant>0){
-      const sub=cant*s.precio; total+=sub;
-      tot.innerHTML=`${cant} × ${svMoney(s.precio)} = <b>${svMoney(sub)}</b>`;
+      const pu=svPrecioServicio(s);
+      const sub=cant*pu; total+=sub;
+      const nota=(s.tipo==='kilo'||s.tipo==='gasoil')?' <span style="color:var(--tinta-suave)">(precio de hoy)</span>':'';
+      tot.innerHTML=`${cant} × ${svMoney(pu)} = <b>${svMoney(sub)}</b>${nota}`;
     }else{
       tot.textContent='';
     }
@@ -5082,7 +5236,7 @@ function svGuardarTrabajo(){
     if(cant<=0){ toast('Poné una cantidad válida en todos los servicios','error'); return; }
     if(!fecha){ toast('Poné la fecha en todos los servicios','error'); return; }
     const s=svData.servicios.find(x=>x.id===servId);
-    aGuardar.push({servId,cant,fecha,precioUnit:s?s.precio:0});
+    aGuardar.push({servId,cant,fecha,precioUnit:s?svPrecioServicio(s):0});
   }
   if(!aGuardar.length){ toast('Agregá al menos un servicio','error'); return; }
   const id=document.getElementById('sv-tra-id').value;
@@ -5138,14 +5292,17 @@ function svRenderCobros(){
   let html='';
   Object.keys(porCli).forEach(cliId=>{
     const trabajos=porCli[cliId].slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-    const deuda=trabajos.filter(t=>!t.cobrado).reduce((a,t)=>a+t.cant*t.precioUnit,0);
+    const deuda=trabajos.filter(t=>!t.cobrado).reduce((a,t)=>a+t.cant*svPrecioUnitTrabajo(t),0);
     totalPorCobrar+=deuda;
     const filas=trabajos.map(t=>{
-      const monto=t.cant*t.precioUnit;
+      const pu=svPrecioUnitTrabajo(t);
+      const monto=t.cant*pu;
+      const s=svData.servicios.find(x=>x.id===t.servId);
+      const unidad=(s&&s.tipo==='kilo')?' <span style="color:var(--tinta-suave)">('+numAR(s.cantUnidad*t.cant,true)+' kg carne)</span>':(s&&s.tipo==='gasoil')?' <span style="color:var(--tinta-suave)">('+numAR(s.cantUnidad*t.cant,true)+' lts)</span>':'';
       return `<div class="sv-trab ${t.cobrado?'sv-cobrado':''}">
         <div style="flex:1">
-          <div>${svFecha(t.fecha)} · <b>${esc(svNomServicio(t.servId))}</b></div>
-          <div class="mini-nota">${t.cant} × ${svMoney(t.precioUnit)} = ${svMoney(monto)}${t.cobrado?' · <span style="color:var(--verde,#5C7A3D)">cobrado ✓</span>':''}</div>
+          <div>${svFecha(t.fecha)} · <b>${esc(svNomServicio(t.servId))}</b>${unidad}</div>
+          <div class="mini-nota">${t.cant} × ${svMoney(pu)} = ${svMoney(monto)}${t.cobrado?' · <span style="color:var(--verde,#5C7A3D)">cobrado ✓</span>':''}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button class="btn btn-sec btn-mini" onclick="svToggleCobrado('${t.id}')">${t.cobrado?'Marcar impago':'Cobré'}</button>
