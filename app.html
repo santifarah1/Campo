@@ -823,6 +823,19 @@ try{if(localStorage.getItem('campo_tema')==='1')document.body.classList.add('osc
     </div>
 
     <div class="panel" data-g="control">
+      <h2><span class="pin"></span>Cargar por WhatsApp</h2>
+      <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Podés cargar movimientos hablándole a un WhatsApp: le escribís "pagué 350 mil de gasoil para agricultura con Galicia", te muestra qué entendió, confirmás con <b>SÍ</b>, y cuando abrís la app acá aparecen solos. Poné tu número (el mismo con el que le escribís al bot).</p>
+      <div class="campo" style="max-width:320px">
+        <label>Mi número de WhatsApp</label>
+        <input type="text" inputmode="tel" id="wa-tel" placeholder="Ej: 5492920244050" onchange="guardarWaTel(this.value)">
+        <p class="mini-nota" style="margin-top:6px">Con código de país y de área, sin espacios ni signos. Ej: 5492920244050</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+        <button class="btn btn-sec" onclick="revisarColaWhats(false)">🔄 Buscar movimientos de WhatsApp ahora</button>
+      </div>
+    </div>
+
+    <div class="panel" data-g="control">
       <h2><span class="pin"></span>Copias de seguridad en archivo</h2>
       <p class="mini-nota" style="margin-top:-8px;margin-bottom:14px">Todo lo que cargás vive únicamente en esta computadora. Si se rompe, si la formatean o si se borran los datos del navegador, se pierde. Guardá una copia cada tanto y <b>mandátela por WhatsApp o subila a tu Drive</b>: si la dejás solo en esta misma PC, no te salva de nada.</p>
       <div id="estado-backup" style="margin-bottom:14px"></div>
@@ -3168,7 +3181,7 @@ const RESPALDO_MARCA='gestion-campo';
 // - campo_gemini_key / campo_groq_key: son credenciales y el archivo se comparte por WhatsApp/Drive.
 // - campo_backup*: control interno del aviso; si viajaran, restaurar una copia
 //   vieja haría saltar "hace X días" al instante.
-const NO_RESPALDAR=['campo_ipc','campo_tc','campo_gemini_key','campo_groq_key','campo_backup','campo_backup_snooze','campo_backup_primera'];
+const NO_RESPALDAR=['campo_ipc','campo_tc','campo_gemini_key','campo_groq_key','campo_backup','campo_backup_snooze','campo_backup_primera','campo_wa_tel'];
 
 // Junta dinámicamente todas las claves campo_* (menos la caché),
 // así una función nueva queda respaldada sola sin tocar esto.
@@ -4810,9 +4823,12 @@ async function iniciar(){
   if(!habilitada)return;
 
   document.getElementById('f-moneda').value=moneda;
+  {const t=alm.getItem('campo_wa_tel')||'';const el=document.getElementById('wa-tel');if(el)el.value=t;}
   // migrar datos de versiones anteriores (extraer cuenta del detalle) y unificar nombres
   if(migrarDatos())guardarLS();
   actualizarAnios();render();cargarDolar();cargarHacienda();cargarIndices();chequearBackup();chequearFechas();driveArranque();licBanner();
+  // Revisar si hay movimientos cargados por WhatsApp esperando en la cola.
+  revisarColaWhats(true);
 
   if(alm.recuperado){
     let f=alm.fechaRecuperado;
@@ -4921,6 +4937,72 @@ function svFecha(iso){
   const p=(''+iso).split('-'); // yyyy-mm-dd
   if(p.length===3) return p[2]+'/'+p[1]+'/'+p[0];
   return iso;
+}
+
+/* ============ CONEXIÓN CON WHATSAPP (cola de movimientos) ============ */
+const WA_WORKER_URL='https://gestion-campo-whatsapp.eliasfarah166.workers.dev';
+// Guarda el número de WhatsApp del usuario (para consultar su cola).
+function guardarWaTel(v){
+  const tel=(''+v).replace(/\D/g,'');
+  alm.setItem('campo_wa_tel',tel);
+  if(tel) toast('Número de WhatsApp guardado');
+}
+// Revisa la cola del worker y carga automáticamente los movimientos que
+// mandaste por WhatsApp (ya confirmados con SÍ en el chat). Se llama al abrir.
+async function revisarColaWhats(silencioso){
+  const tel=(alm.getItem('campo_wa_tel')||'').replace(/\D/g,'');
+  if(!tel){ if(!silencioso) toast('Primero cargá tu número de WhatsApp en Alertas y respaldo','error'); return; }
+  let lista;
+  try{
+    const r=await fetch(WA_WORKER_URL+'/cola/pendientes?telefono='+encodeURIComponent(tel));
+    if(!r.ok) throw new Error('status '+r.status);
+    const d=await r.json();
+    lista=d.movimientos||[];
+  }catch(e){
+    if(!silencioso) toast('No pude conectar con WhatsApp. Probá de nuevo en un rato.','error');
+    return;
+  }
+  if(!lista.length){ if(!silencioso) toast('No hay movimientos nuevos de WhatsApp'); return; }
+  // Convertir cada uno al formato de la app y agregarlo (evitando duplicados por externalId)
+  const yaCargados=new Set(datos.map(d=>d.waId).filter(Boolean));
+  const keysProcesadas=[];
+  let agregados=0;
+  lista.forEach(m=>{
+    keysProcesadas.push(m.key);
+    if(m.externalId && yaCargados.has(m.externalId)) return; // ya estaba
+    const obj={
+      id:Date.now()+''+Math.random().toString(36).slice(2,6),
+      waId:m.externalId||null,
+      tipo:m.tipo==='transfer'?'egreso':m.tipo,
+      fecha:m.fecha||new Date().toISOString().slice(0,10),
+      monto:Math.abs(Number(m.monto)||0),
+      cta:m.cta||'',
+      ctaDest:m.ctaDest||'',
+      prov:m.prov||'',
+      act:m.act||'',
+      cat:m.cat||'Sin categoría',
+      det:(m.det||'')+(m.det?' ':'')+'(cargado por WhatsApp)',
+      interno:m.tipo==='transfer',
+      financiero:false
+    };
+    datos.push(obj);
+    agregados++;
+  });
+  if(agregados>0){ guardarLS(); render();renderTabla();actualizarAnios(); }
+  // Avisar al worker que ya los procesamos para que los borre de la cola
+  if(keysProcesadas.length){
+    try{
+      await fetch(WA_WORKER_URL+'/cola/confirmar-recibido',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({keys:keysProcesadas})
+      });
+    }catch(_){}
+  }
+  if(agregados>0){
+    toast('Se '+(agregados===1?'cargó 1 movimiento':'cargaron '+agregados+' movimientos')+' desde WhatsApp ✓');
+  }else if(!silencioso){
+    toast('No hay movimientos nuevos de WhatsApp');
+  }
 }
 
 /* ---------- navegación entre sub-pestañas ---------- */
