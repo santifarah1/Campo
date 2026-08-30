@@ -4837,6 +4837,8 @@ async function iniciar(){
   actualizarAnios();render();cargarDolar();cargarHacienda();cargarIndices();chequearBackup();chequearFechas();driveArranque();licBanner();
   // Revisar si hay movimientos cargados por WhatsApp esperando en la cola.
   revisarColaWhats(true);
+  // Mandar la config real del campo al bot (para que interprete con tus datos).
+  sincronizarConfigWhats();
 
   if(alm.recuperado){
     let f=alm.fechaRecuperado;
@@ -4953,8 +4955,24 @@ const WA_WORKER_URL='https://gestion-campo-whatsapp.eliasfarah166.workers.dev';
 function guardarWaTel(v){
   const tel=(''+v).replace(/\D/g,'');
   alm.setItem('campo_wa_tel',tel);
-  if(tel) toast('Número de WhatsApp guardado');
+  if(tel){ toast('Número de WhatsApp guardado'); sincronizarConfigWhats(); }
 }
+// Manda al worker la config real del campo (actividades, cuentas, rubros)
+// para que la IA del bot de WhatsApp interprete con TUS datos, no genéricos.
+async function sincronizarConfigWhats(){
+  const tel=(alm.getItem('campo_wa_tel')||'').replace(/\D/g,'');
+  if(!tel) return;
+  try{
+    const acts=(typeof actividades!=='undefined'?actividades:[]).map(a=>a.e||a.n).filter(Boolean);
+    const cuentas=[...new Set((typeof datos!=='undefined'?datos:[]).map(d=>d.cta).filter(Boolean))];
+    const rbs=[...new Set([...(typeof rubros!=='undefined'?rubros:[]), ...(typeof datos!=='undefined'?datos:[]).map(d=>d.cat).filter(Boolean)])];
+    await fetch(WA_WORKER_URL+'/config',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telefono:tel,actividades:acts,cuentas:cuentas,rubros:rbs})
+    });
+  }catch(_){/* si falla, el bot usa la lista genérica; no rompe nada */}
+}
+
 // Revisa la cola del worker y carga automáticamente los movimientos que
 // mandaste por WhatsApp (ya confirmados con SÍ en el chat). Se llama al abrir.
 async function revisarColaWhats(silencioso){
