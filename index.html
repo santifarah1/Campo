@@ -1,870 +1,571 @@
 <!DOCTYPE html>
-<html lang="es-AR">
+<html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta charset="utf-8">
 <title>Gestión del Campo · Los números de tu campo, claros</title>
 <meta name="description" content="Aplicación para llevar las cuentas de un campo: cuánto entra, cuánto sale y cuánto deja cada actividad. Sin Excel, sin planillas rotas.">
 <meta property="og:title" content="Gestión del Campo">
 <meta property="og:description" content="Sabé qué está dejando realmente tu campo. Ingresos, gastos y resultado por actividad.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="cap-resumen.png">
+<meta property="og:url" content="https://gestioncampo.com/">
+<meta property="og:image" content="https://gestioncampo.com/cap-resumen.png">
 <meta name="theme-color" content="#F7F4EC">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%2322301B%22/%3E%3Cg fill=%22none%22 stroke=%22%23B6D45C%22 stroke-width=%222.6%22 stroke-linecap=%22round%22%3E%3Cpath d=%22M9 23V16%22/%3E%3Cpath d=%22M16 23V11%22/%3E%3Cpath d=%22M23 23v-4%22/%3E%3C/g%3E%3Cpath d=%22M7 26.5h18%22 stroke=%22%23F7F4EC%22 stroke-width=%221.6%22 stroke-linecap=%22round%22 opacity=%22.55%22/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%2322301B%22/%3E%3Cg fill=%22none%22 stroke=%22%23B6D45C%22 stroke-width=%222.6%22 stroke-linecap=%22round%22%3E%3Cpath d=%22M9 23V16%22/%3E%3Cpath d=%22M16 23V11%22/%3E%3Cpath d=%22M23 23v-4%22/%3E%3C/g%3E%3Cpath d=%22M7 26.5h18%22 stroke=%22%23F7F4EC%22 stroke-width=%221.6%22 stroke-linecap=%22round%22 opacity=%22.55%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   GESTIÓN DEL CAMPO — sistema visual
-   Paleta: crema cálido / verde bosque / oliva / lima apagado
-   Display: Bricolage Grotesque · Cuerpo: Inter · Datos: Plex Mono
-   Signature: líneas de lotes vistos desde arriba + etiquetas en mono
-   ============================================================ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-:root{
-  --crema:#F7F4EC;
-  --crema-2:#EFEADC;
-  --papel:#FEFDF9;
-  --bosque:#22301B;
-  --bosque-2:#2E4025;
-  --bosque-3:#1A2415;
-  --oliva:#5C7A3D;
-  --oliva-hondo:#47612D;
-  --lima:#B6D45C;
-  --tinta:#1D1B15;
-  --tinta-2:#5F5B4E;
-  --tinta-3:#918C7C;
-  --linea:#DDD6C4;
-  --linea-2:#C9C0A9;
-  --linea-osc:rgba(182,212,92,.20);
-  --claro-2:rgba(247,244,236,.72);
-  --claro-3:rgba(247,244,236,.46);
-
-  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
-  --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
-  --sp-9:96px;
-
-  --disp:"Bricolage Grotesque",system-ui,sans-serif;
-  --cuerpo:"Inter",system-ui,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,monospace;
-
-  --t-xs:12px; --t-sm:14px; --t-md:16.5px; --t-lg:19px;
-  --t-xl:25px; --t-2xl:34px; --t-3xl:clamp(38px,5vw,58px); --t-4xl:clamp(40px,5.5vw,70px);
-
-  --r-sm:8px; --r:12px; --r-lg:18px; --r-xl:26px;
-  --ancho:1240px;
-
-  --e1:0 1px 2px rgba(35,28,12,.05), 0 3px 10px rgba(35,28,12,.05);
-  --e2:0 2px 6px rgba(35,28,12,.06), 0 14px 40px rgba(35,28,12,.09);
-  --e3:0 30px 90px rgba(35,28,12,.17), 0 4px 14px rgba(35,28,12,.08);
-}
-
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{
-  font-family:var(--cuerpo);background:var(--crema);color:var(--tinta);
-  font-size:var(--t-md);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
-}
+body{background:#F7F4EC;color:#1D1B15;font-family:"Inter",system-ui,sans-serif;font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 img{max-width:100%;display:block}
-a{color:inherit}
-:focus-visible{outline:2.5px solid var(--oliva);outline-offset:3px;border-radius:4px}
-
-h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.032em;line-height:1.04}
-h1{font-size:var(--t-4xl)}
-h2{font-size:var(--t-3xl)}
-h3{font-size:var(--t-xl);letter-spacing:-.022em;line-height:1.15}
-p{max-width:62ch}
-
-.eti{
-  font-family:var(--mono);font-size:var(--t-xs);font-weight:500;
-  letter-spacing:.13em;text-transform:uppercase;color:var(--tinta-3);
-  display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4);
-}
-.eti::before{content:"";width:22px;height:1px;background:var(--linea-2);flex-shrink:0}
-.eti.sola::before{display:none}
-.osc .eti{color:rgba(182,212,92,.85)}
-.osc .eti::before{background:var(--linea-osc)}
-
-.marco{max-width:var(--ancho);margin:0 auto;padding-left:var(--sp-5);padding-right:var(--sp-5)}
-.bloque{padding-top:var(--sp-9);padding-bottom:var(--sp-9)}
-.osc{background:var(--bosque);color:var(--crema)}
-.osc h2,.osc h3{color:var(--papel)}
-.osc p{color:var(--claro-2)}
-
-.lotes{position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5}
-.lotes svg{width:100%;height:100%}
-.lotes path{fill:none;stroke:var(--linea-2);stroke-width:1;vector-effect:non-scaling-stroke}
-.osc .lotes path{stroke:rgba(182,212,92,.16)}
-
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
-  font-family:var(--cuerpo);font-size:var(--t-sm);font-weight:500;
-  padding:.85em 1.4em;border-radius:var(--r);border:1px solid transparent;
-  background:var(--papel);color:var(--tinta);cursor:pointer;text-decoration:none;
-  white-space:nowrap;min-height:46px;
-  transition:transform .16s cubic-bezier(.2,.7,.3,1),background .16s,box-shadow .16s,border-color .16s;
-}
-.btn:hover{transform:translateY(-1.5px)}
-.btn-pri{background:var(--bosque);color:var(--papel);box-shadow:var(--e1)}
-.btn-pri:hover{background:var(--bosque-2);box-shadow:var(--e2)}
-.btn-sec{background:transparent;border-color:var(--linea-2);color:var(--tinta)}
-.btn-sec:hover{background:var(--papel);border-color:var(--tinta-3)}
-.btn-gr{font-size:var(--t-md);padding:1em 1.7em;min-height:54px}
-.osc .btn-pri{background:var(--lima);color:var(--bosque-3);font-weight:600}
-.osc .btn-pri:hover{background:#C6E070}
-.osc .btn-sec{border-color:rgba(247,244,236,.28);color:var(--crema)}
-.osc .btn-sec:hover{background:rgba(247,244,236,.09);border-color:rgba(247,244,236,.5)}
-.btn svg{width:17px;height:17px;flex-shrink:0}
-
-/* ===== HEADER ===== */
-.tope{
-  position:sticky;top:0;z-index:60;
-  background:rgba(247,244,236,.86);backdrop-filter:blur(14px) saturate(1.4);
-  border-bottom:1px solid transparent;transition:border-color .25s,background .25s;
-}
-.tope.pegado{border-bottom-color:var(--linea);background:rgba(247,244,236,.96)}
-.tope .marco{display:flex;align-items:center;gap:var(--sp-5);height:70px}
-.logo{display:flex;align-items:center;gap:var(--sp-3);text-decoration:none;flex-shrink:0}
-.logo .sig{width:34px;height:34px;border-radius:9px;background:var(--bosque);
-  display:grid;place-items:center;flex-shrink:0}
-.logo .sig svg{width:19px;height:19px}
-.logo b{font-family:var(--disp);font-weight:600;font-size:16px;letter-spacing:-.025em}
-.nav{display:flex;gap:var(--sp-6);margin-left:var(--sp-7)}
-.nav a{font-size:var(--t-sm);color:var(--tinta-2);text-decoration:none;font-weight:450;
-  position:relative;padding:4px 0;transition:color .16s}
-.nav a::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1.5px;
-  background:var(--oliva);transition:right .22s cubic-bezier(.2,.7,.3,1)}
-.nav a:hover{color:var(--tinta)}
-.nav a:hover::after{right:0}
-.tope .der{margin-left:auto;display:flex;align-items:center;gap:var(--sp-3)}
-.tope .der .btn{min-height:40px;padding:.6em 1.15em}
-
-/* ===== HERO ===== */
-.hero{position:relative;overflow:hidden;padding-top:var(--sp-8);padding-bottom:var(--sp-9)}
-.hero-grid{position:relative;z-index:1;display:grid;
-  grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:var(--sp-8);align-items:center}
-.hero h1{margin-bottom:var(--sp-5)}
-.hero h1 .sub{display:block;color:var(--oliva-hondo)}
-.hero .entrada{font-size:var(--t-lg);color:var(--tinta-2);max-width:44ch;
-  margin-bottom:var(--sp-6);line-height:1.5}
-.hero-cta{display:flex;gap:var(--sp-3);flex-wrap:wrap;margin-bottom:var(--sp-5)}
-.hero-pie{font-family:var(--mono);font-size:var(--t-xs);color:var(--tinta-3);
-  display:flex;gap:var(--sp-4);flex-wrap:wrap;align-items:center}
-.hero-pie span{display:flex;align-items:center;gap:7px}
-.hero-pie svg{width:13px;height:13px;color:var(--oliva)}
-
-.escena{position:relative;padding:var(--sp-5) 0;padding-left:var(--sp-7)}
-.ventana{border-radius:var(--r-lg);overflow:hidden;background:var(--papel);
-  border:1px solid var(--linea);box-shadow:var(--e3)}
-.ventana .barra{display:flex;align-items:center;gap:6px;padding:9px 13px;
-  background:var(--crema-2);border-bottom:1px solid var(--linea)}
-.ventana .barra i{width:9px;height:9px;border-radius:50%;background:var(--linea-2);display:block}
-.ventana .barra .url{margin-left:8px;font-family:var(--mono);font-size:11px;color:var(--tinta-3);
-  background:var(--papel);border-radius:20px;padding:3px 12px;border:1px solid var(--linea)}
-.ventana img{width:100%}
-.v-frente{position:relative;z-index:2}
-.v-fondo{position:absolute;top:-26px;right:-30px;width:56%;z-index:1;opacity:.62;filter:saturate(.85)}
-.v-fondo .ventana{box-shadow:var(--e2)}
-
-.metrica{position:absolute;z-index:3;background:var(--papel);border:1px solid var(--linea);
-  border-radius:var(--r);padding:13px 16px;box-shadow:var(--e2);
-  animation:flotar 7s ease-in-out infinite}
-.metrica .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--tinta-3);display:block;margin-bottom:5px}
-.metrica .v{font-family:var(--disp);font-size:22px;font-weight:600;letter-spacing:-.03em;
-  line-height:1;font-variant-numeric:tabular-nums;display:block}
-.metrica .n{font-size:11.5px;color:var(--tinta-2);margin-top:4px;display:block}
-.m-res{bottom:8%;left:-11%;animation-delay:-1s}
-.m-res .v{color:var(--oliva-hondo)}
-.m-act{top:22%;left:-13%;animation-delay:-3.5s}
-.m-ven{bottom:-2%;right:-4%;animation-delay:-5s;display:flex;align-items:center;gap:10px}
-.m-ven .pt{width:8px;height:8px;border-radius:50%;background:#C9843F;flex-shrink:0}
-.m-ven .t{font-size:13px;font-weight:500;line-height:1.25}
-.m-ven .t em{font-style:normal;color:var(--tinta-3);font-size:11.5px;display:block;font-family:var(--mono)}
-.barrita{height:5px;border-radius:3px;background:var(--crema-2);margin-top:8px;overflow:hidden;width:96px}
-.barrita i{display:block;height:100%;border-radius:3px;background:var(--oliva)}
+a{color:#47612D;text-decoration:none}
+a:hover{color:#22301B}
+:focus-visible{outline:2.5px solid #5C7A3D;outline-offset:3px;border-radius:4px}
+summary::-webkit-details-marker{display:none}
 @keyframes flotar{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-
-/* ===== FLUJO ===== */
-.flujo{border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);background:var(--crema-2)}
-.flujo .marco{padding-top:var(--sp-8);padding-bottom:var(--sp-8)}
-.flujo-top{display:flex;justify-content:space-between;align-items:flex-end;
-  gap:var(--sp-6);margin-bottom:var(--sp-7);flex-wrap:wrap}
-.flujo h2{font-size:var(--t-2xl);max-width:16ch}
-.flujo-top p{font-size:var(--t-sm);color:var(--tinta-2);max-width:38ch}
-.cadena{display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch}
-.paso{position:relative;padding:0 var(--sp-5)}
-.paso:first-child{padding-left:0}
-.paso:last-child{padding-right:0}
-.paso+.paso{border-left:1px solid var(--linea-2)}
-.paso .num{font-family:var(--mono);font-size:11px;color:var(--tinta-3);
-  letter-spacing:.1em;display:block;margin-bottom:var(--sp-3)}
-.paso .ic{width:26px;height:26px;color:var(--oliva-hondo);margin-bottom:var(--sp-3)}
-.paso h3{font-size:var(--t-lg);margin-bottom:6px}
-.paso p{font-size:var(--t-sm);color:var(--tinta-2)}
-
-/* ===== PROBLEMA ===== */
-.frase{font-family:var(--disp);font-weight:600;letter-spacing:-.035em;line-height:1.06;
-  font-size:clamp(30px,4.4vw,52px);max-width:19ch;margin-bottom:var(--sp-8)}
-.frase em{font-style:normal;color:var(--tinta-3)}
-.dolores{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-7)}
-.dolor{padding-top:var(--sp-5);border-top:1.5px solid var(--tinta)}
-.dolor .ic{width:24px;height:24px;color:var(--oliva-hondo);margin-bottom:var(--sp-4)}
-.dolor h3{font-size:var(--t-lg);margin-bottom:var(--sp-2)}
-.dolor p{font-size:var(--t-sm);color:var(--tinta-2)}
-
-/* ===== SHOWCASE ===== */
-.duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-8);align-items:center}
-.duo.inv .texto{order:2}
-.texto h2{margin-bottom:var(--sp-4);font-size:var(--t-2xl)}
-.texto>p{font-size:var(--t-lg);color:var(--tinta-2);line-height:1.5;margin-bottom:var(--sp-5)}
-.osc .texto>p{color:var(--claro-2)}
-.lista{list-style:none;display:grid;gap:var(--sp-3)}
-.lista li{display:flex;gap:var(--sp-3);font-size:var(--t-sm);color:var(--tinta-2);align-items:flex-start}
-.lista svg{width:17px;height:17px;color:var(--oliva);flex-shrink:0;margin-top:2px}
-.osc .lista li{color:var(--claro-2)}
-.osc .lista svg{color:var(--lima)}
-
-.entender{position:relative;overflow:hidden}
-.entender .ventana{border-color:rgba(247,244,236,.14)}
-.entender .ventana .barra{background:#1A2415;border-bottom-color:rgba(247,244,236,.1)}
-.entender .ventana .barra i{background:rgba(247,244,236,.2)}
-.margenes{display:grid;gap:var(--sp-4);margin-top:var(--sp-6)}
-.margen{display:grid;grid-template-columns:1fr auto;gap:var(--sp-3);align-items:baseline}
-.margen .n{font-size:var(--t-sm);color:var(--crema);font-weight:500}
-.margen .p{font-family:var(--mono);font-size:var(--t-sm);color:var(--lima)}
-.margen .bar{grid-column:1/-1;height:4px;border-radius:2px;
-  background:rgba(247,244,236,.11);overflow:hidden}
-.margen .bar i{display:block;height:100%;background:var(--lima);border-radius:2px;
-  transform-origin:left;transform:scaleX(0);transition:transform 1.1s cubic-bezier(.2,.7,.3,1)}
-.visible .margen .bar i{transform:scaleX(1)}
-
-/* ===== GASTOS ===== */
-.gastos{background:var(--crema-2);border-top:1px solid var(--linea);border-bottom:1px solid var(--linea)}
-.gastos-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
-  gap:var(--sp-8);align-items:center}
-.ranking{display:grid;gap:var(--sp-5)}
-.fila{display:grid;grid-template-columns:1fr auto;gap:var(--sp-4);align-items:baseline;
-  padding-bottom:var(--sp-3);border-bottom:1px solid var(--linea)}
-.fila .r{font-family:var(--mono);font-size:11px;color:var(--tinta-3);margin-right:10px}
-.fila .n{font-size:var(--t-lg);font-weight:500}
-.fila .m{font-family:var(--disp);font-size:var(--t-lg);font-weight:600;
-  letter-spacing:-.025em;font-variant-numeric:tabular-nums}
-.fila .bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--crema);
-  overflow:hidden;margin-top:var(--sp-2)}
-.fila .bar i{display:block;height:100%;background:var(--oliva);border-radius:3px;
-  transform-origin:left;transform:scaleX(0);transition:transform 1s cubic-bezier(.2,.7,.3,1)}
-.visible .fila .bar i{transform:scaleX(1)}
-.fila:nth-child(1) .bar i{transition-delay:.05s}
-.fila:nth-child(2) .bar i{transition-delay:.13s;background:#6E8A4A}
-.fila:nth-child(3) .bar i{transition-delay:.21s;background:#82995C}
-.fila:nth-child(4) .bar i{transition-delay:.29s;background:#96A870}
-
-/* ===== SEGURIDAD ===== */
-.seguridad{background:var(--bosque-3);position:relative;overflow:hidden}
-.seg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
-  gap:var(--sp-8);align-items:start}
-.seg-item{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-4);
-  padding:var(--sp-5) 0;border-top:1px solid rgba(247,244,236,.13)}
-.seg-item:last-child{border-bottom:1px solid rgba(247,244,236,.13)}
-.seg-item .ic{width:22px;height:22px;color:var(--lima);margin-top:3px}
-.seg-item h3{font-size:var(--t-lg);margin-bottom:5px}
-.seg-item p{font-size:var(--t-sm)}
-
-/* ===== PRECIO ===== */
-.precio-caja{background:var(--papel);border:1px solid var(--linea);border-radius:var(--r-xl);
-  box-shadow:var(--e2);overflow:hidden;display:grid;grid-template-columns:1.05fr .95fr}
-.precio-izq{padding:var(--sp-8);border-right:1px solid var(--linea)}
-.cinta{display:inline-flex;align-items:center;gap:8px;background:var(--bosque);color:var(--lima);
-  font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;
-  padding:7px 14px;border-radius:20px;margin-bottom:var(--sp-5)}
-.cinta svg{width:13px;height:13px}
-.numero{display:flex;align-items:baseline;gap:var(--sp-3);margin-bottom:var(--sp-3)}
-.numero .v{font-family:var(--disp);font-size:clamp(46px,6.6vw,72px);font-weight:600;
-  letter-spacing:-.045em;line-height:.9;font-variant-numeric:tabular-nums}
-.numero .u{font-family:var(--mono);font-size:var(--t-sm);color:var(--tinta-3)}
-.precio-izq>p{font-size:var(--t-sm);color:var(--tinta-2);margin-bottom:var(--sp-6)}
-.precio-der{padding:var(--sp-8);display:flex;flex-direction:column;
-  justify-content:center;background:var(--crema)}
-.incluye{list-style:none;display:grid;gap:var(--sp-3)}
-.incluye li{display:flex;gap:var(--sp-3);font-size:var(--t-sm);align-items:flex-start;color:var(--tinta-2)}
-.incluye svg{width:16px;height:16px;color:var(--oliva);flex-shrink:0;margin-top:2px}
-.precio-acc{display:flex;flex-direction:column;gap:var(--sp-3)}
-.precio-nota{font-family:var(--mono);font-size:11px;color:var(--tinta-3);
-  margin-top:var(--sp-4);line-height:1.5}
-
-/* ===== CIERRE ===== */
-.cierre{position:relative;overflow:hidden;padding-top:var(--sp-9);padding-bottom:0}
-.cierre .marco{position:relative;z-index:2;text-align:center}
-.cierre h2{font-size:var(--t-3xl);margin:0 auto var(--sp-5);max-width:15ch}
-.cierre h2 em{font-style:normal;color:var(--lima)}
-.cierre p{margin:0 auto var(--sp-6);max-width:50ch;font-size:var(--t-lg)}
-.cierre-cta{display:flex;gap:var(--sp-3);justify-content:center;
-  flex-wrap:wrap;margin-bottom:var(--sp-7)}
-.asomo{position:relative;max-width:900px;margin:0 auto;
-  border-radius:var(--r-lg) var(--r-lg) 0 0;overflow:hidden;
-  border:1px solid rgba(247,244,236,.16);border-bottom:none;box-shadow:0 -20px 70px rgba(0,0,0,.3)}
-.asomo .fundido{position:absolute;left:0;right:0;bottom:0;height:120px;
-  background:linear-gradient(to bottom,rgba(34,48,27,0),var(--bosque))}
-
-/* ===== FOOTER ===== */
-.pie{background:var(--bosque-3);color:var(--claro-3);
-  padding-top:var(--sp-8);padding-bottom:var(--sp-6);border-top:1px solid rgba(247,244,236,.1)}
-.pie-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:var(--sp-7);margin-bottom:var(--sp-7)}
-.pie .logo b{color:var(--papel)}
-.pie .logo .sig{background:var(--bosque)}
-.pie .desc{font-size:var(--t-sm);margin-top:var(--sp-4);max-width:34ch;color:var(--claro-3)}
-.pie h4{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  color:rgba(182,212,92,.8);margin-bottom:var(--sp-4);font-weight:500}
-.pie ul{list-style:none;display:grid;gap:var(--sp-3)}
-.pie ul a{font-size:var(--t-sm);text-decoration:none;color:var(--claro-2);transition:color .16s}
-.pie ul a:hover{color:var(--lima)}
-.pie-base{border-top:1px solid rgba(247,244,236,.1);padding-top:var(--sp-5);
-  display:flex;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;
-  font-family:var(--mono);font-size:11px;letter-spacing:.05em}
-
-/* ===== REVELADO ===== */
-.rev{opacity:0;transform:translateY(22px);
-  transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
-.rev.visible{opacity:1;transform:none}
-.rev.d1{transition-delay:.08s} .rev.d2{transition-delay:.16s} .rev.d3{transition-delay:.24s}
-
-/* Animación de entrada del hero al cargar (para que no se vea estático en PC) */
-@keyframes heroEntra{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-.hero-anim{opacity:0;animation:heroEntra .7s cubic-bezier(.2,.7,.3,1) forwards}
-.hero-anim.h1{animation-delay:.05s}
-.hero-anim.h2{animation-delay:.15s}
-.hero-anim.h3{animation-delay:.25s}
-.hero-anim.h4{animation-delay:.35s}
-.hero-anim.h5{animation-delay:.45s}
-.hero-anim.h6{animation-delay:.3s}
-
-/* ===== RESPONSIVE ===== */
-@media(max-width:1080px){
-  .nav{display:none}
-  .escena{padding-left:0}
-  .hero-grid{grid-template-columns:1fr;gap:var(--sp-8)}
-  .v-fondo{display:none}
-  .m-act{top:6%;left:auto;right:-2%}
-  .m-res{left:-2%;bottom:6%}
-  .gastos-grid{grid-template-columns:1fr;gap:var(--sp-7)}
-  .seg-grid{grid-template-columns:1fr;gap:var(--sp-7)}
-  .precio-caja{grid-template-columns:1fr}
-  .precio-izq{border-right:none;border-bottom:1px solid var(--linea)}
-}
-@media(max-width:860px){
-  :root{--sp-9:72px}
-  .duo{grid-template-columns:1fr;gap:var(--sp-6)}
-  .duo.inv .texto{order:0}
-  .cadena{grid-template-columns:1fr 1fr;gap:var(--sp-6) 0}
-  .paso{padding:0 var(--sp-4)}
-  .paso:nth-child(odd){padding-left:0;border-left:none}
-  .paso:nth-child(3),.paso:nth-child(4){padding-top:var(--sp-6);border-top:1px solid var(--linea-2)}
-  .dolores{grid-template-columns:1fr;gap:var(--sp-6)}
-  .pie-grid{grid-template-columns:1fr 1fr;gap:var(--sp-6)}
-  .pie-grid>div:first-child{grid-column:1/-1}
-}
-@media(max-width:560px){
-  :root{--sp-9:60px}
-  .marco{padding-left:var(--sp-4);padding-right:var(--sp-4)}
-  /* en celular: logo compacto y botones chicos, sin que se apilen */
-  .logo b{display:none}
-  .tope .marco{height:62px}
-  .tope .der{gap:var(--sp-2)}
-  .tope .der .btn{font-size:13px;padding:.5em .85em;min-height:36px}
-  .hero{padding-top:var(--sp-6)}
-  .hero-pie{gap:var(--sp-2);flex-direction:column;align-items:flex-start}
-  .metrica{padding:10px 13px}
-  .metrica .v{font-size:18px}
-  .m-act,.m-ven{display:none}
-  .m-res{left:-6px;bottom:-16px}
-  .hero-cta .btn{flex:1;min-width:150px}
-  .precio-izq,.precio-der{padding:var(--sp-6)}
-  .pie-grid{grid-template-columns:1fr}
-  .flujo-top{flex-direction:column;align-items:flex-start;gap:var(--sp-4)}
-}
-
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
-    transition-duration:.001ms!important;scroll-behavior:auto!important}
-  .rev{opacity:1;transform:none}
-  .hero-anim{opacity:1;animation:none}
-  .margen .bar i,.fila .bar i{transform:scaleX(1)}
-}
+@keyframes crecer{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-width:1080px){.nav-desk{display:none!important}.v-fondo{display:none!important}}
+@media(max-width:760px){.m-flota{display:none!important}.solo-desk{display:none!important}}
+@media(min-width:761px){.solo-mob{display:none!important}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important}}
 </style>
-</head>
-<body>
+</helmet>
 
-<header class="tope" id="tope">
-  <div class="marco">
-    <a class="logo" href="#inicio" aria-label="Gestión del Campo, inicio">
-      <span class="sig" aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none">
-          <g stroke="#B6D45C" stroke-width="2.6" stroke-linecap="round">
-            <path d="M9 23V16"/><path d="M16 23V11"/><path d="M23 23v-4"/>
-          </g>
-          <path d="M7 26.5h18" stroke="#F7F4EC" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+<header style="position:sticky;top:0;z-index:60;background:rgba(247,244,236,.94);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid #DDD6C4">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:24px;height:70px">
+    <a href="#inicio" style="display:flex;align-items:center;gap:12px;text-decoration:none;flex-shrink:0;color:#1D1B15">
+      <span style="width:34px;height:34px;border-radius:9px;background:#22301B;display:grid;place-items:center;flex-shrink:0">
+        <svg viewBox="0 0 32 32" fill="none" style="width:19px;height:19px">
+          <g stroke="#B6D45C" stroke-width="2.6" stroke-linecap="round"><path d="M9 23V16"></path><path d="M16 23V11"></path><path d="M23 23v-4"></path></g>
+          <path d="M7 26.5h18" stroke="#F7F4EC" stroke-width="1.6" stroke-linecap="round" opacity=".55"></path>
         </svg>
       </span>
-      <b>Gestión del Campo</b>
+      <b style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;font-size:16px;letter-spacing:-.025em">Gestión del Campo</b>
     </a>
-    <nav class="nav" aria-label="Secciones">
-      <a href="#producto">Producto</a>
-      <a href="#como">Cómo funciona</a>
-      <a href="#seguridad">Seguridad</a>
-      <a href="#precio">Precio</a>
+    <nav class="nav-desk" aria-label="Secciones" style="display:flex;gap:32px;margin-left:40px">
+      <a href="#producto" style="font-size:14px;color:#5F5B4E;font-weight:450" style-hover="color:#1D1B15">Producto</a>
+      <a href="#como" style="font-size:14px;color:#5F5B4E;font-weight:450" style-hover="color:#1D1B15">Cómo funciona</a>
+      <a href="#quien" style="font-size:14px;color:#5F5B4E;font-weight:450" style-hover="color:#1D1B15">Quién lo hace</a>
+      <a href="#preguntas" style="font-size:14px;color:#5F5B4E;font-weight:450" style-hover="color:#1D1B15">Preguntas</a>
+      <a href="#precio" style="font-size:14px;color:#5F5B4E;font-weight:450" style-hover="color:#1D1B15">Precio</a>
     </nav>
-    <div class="der">
-      <a class="btn btn-sec" href="app.html">Entrar</a>
-      <a class="btn btn-pri" href="#precio">Pedir una cuenta</a>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+      <a href="app.html" style="display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;padding:.6em 1.15em;min-height:40px;border-radius:12px;border:1px solid #C9C0A9;color:#1D1B15;background:transparent;white-space:nowrap" style-hover="background:#FEFDF9;border-color:#7A7566">Entrar</a>
+      <a href="{{ waPrincipal }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;padding:.6em 1.15em;min-height:40px;border-radius:12px;background:#22301B;color:#FEFDF9;white-space:nowrap;box-shadow:0 1px 2px rgba(35,28,12,.05),0 3px 10px rgba(35,28,12,.05)" style-hover="background:#2E4025">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;flex-shrink:0"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"></path></svg>
+        Escribime
+      </a>
     </div>
   </div>
 </header>
 
-<section class="hero" id="inicio">
-  <div class="lotes" aria-hidden="true">
-    <svg viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid slice">
-      <path d="M-50 210 L520 150 L1010 235 L1460 170"/>
-      <path d="M-50 400 L430 355 L980 430 L1460 380"/>
-      <path d="M-50 600 L560 560 L1030 640 L1460 590"/>
-      <path d="M250 -20 L215 830"/>
-      <path d="M700 -20 L735 830"/>
-      <path d="M1120 -20 L1085 830"/>
-      <path d="M480 150 L455 830" opacity=".55"/>
-      <path d="M930 -20 L950 640" opacity=".55"/>
+<section id="inicio" style="position:relative;overflow:hidden;padding:64px 0 clamp(60px,8vw,96px)">
+  <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5">
+    <svg viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">
+      <g fill="none" stroke="#C9C0A9" stroke-width="1" vector-effect="non-scaling-stroke">
+        <path d="M-50 210 L520 150 L1010 235 L1460 170"></path>
+        <path d="M-50 400 L430 355 L980 430 L1460 380"></path>
+        <path d="M-50 600 L560 560 L1030 640 L1460 590"></path>
+        <path d="M250 -20 L215 830"></path><path d="M700 -20 L735 830"></path><path d="M1120 -20 L1085 830"></path>
+      </g>
     </svg>
   </div>
-  <div class="marco hero-grid">
+  <div style="position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:64px;align-items:center">
     <div>
-      <p class="eti hero-anim h1">Gestión financiera para el campo</p>
-      <h1 class="hero-anim h2">Sabé qué está dejando <span class="sub">realmente tu campo.</span></h1>
-      <p class="entrada hero-anim h3">Ingresos, gastos, cuentas y resultado por actividad. Sin fórmulas rotas, sin perder horas peleando con Excel.</p>
-      <div class="hero-cta hero-anim h4">
-        <a class="btn btn-pri btn-gr" href="#precio">Pedir una cuenta</a>
-        <a class="btn btn-sec btn-gr" href="#como">Ver cómo funciona</a>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Gestión financiera para el campo</p>
+      <h1 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(40px,5.5vw,70px);margin-bottom:24px">Sabé qué está dejando <span style="display:block;color:#47612D">realmente tu campo.</span></h1>
+      <p style="font-size:19px;color:#5F5B4E;max-width:44ch;margin-bottom:32px;line-height:1.5">Ingresos, gastos, cuentas y resultado por actividad. Sin fórmulas rotas, sin perder horas peleando con Excel.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">
+        <a href="{{ waPrincipal }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:16.5px;font-weight:500;padding:1em 1.7em;min-height:54px;border-radius:12px;background:#22301B;color:#FEFDF9;box-shadow:0 2px 6px rgba(35,28,12,.06),0 14px 40px rgba(35,28,12,.09)" style-hover="background:#2E4025">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"></path></svg>
+          Escribime y probala un mes
+        </a>
+        <a href="#como" style="display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:500;padding:1em 1.7em;min-height:54px;border-radius:12px;border:1px solid #C9C0A9;color:#1D1B15" style-hover="background:#FEFDF9;border-color:#7A7566">Ver cómo funciona</a>
       </div>
-      <div class="hero-pie hero-anim h5">
-        <span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          Primer mes sin cargo
-        </span>
-        <span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-          Tus datos quedan en tu computadora
-        </span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6E6959;display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+        <span style="display:flex;align-items:center;gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M20 6 9 17l-5-5"></path></svg>Primer mes sin cargo</span>
+        <span style="display:flex;align-items:center;gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>Tus datos quedan en tu computadora</span>
       </div>
     </div>
 
-    <div class="escena hero-anim h6">
-      <div class="v-fondo" aria-hidden="true">
-        <div class="ventana"><img src="cap-movimientos.png" alt="" loading="lazy"></div>
-      </div>
-      <div class="v-frente">
-        <div class="ventana">
-          <div class="barra" aria-hidden="true">
-            <i></i><i></i><i></i>
-            <span class="url">gestioncampo.com</span>
-          </div>
-          <img src="cap-resumen.png" alt="Pantalla de resumen de Gestión del Campo con ingresos, egresos y resultado del ejercicio">
+    <div style="position:relative;padding:24px 0">
+      <div class="v-fondo" aria-hidden="true" style="position:absolute;top:-26px;right:-30px;width:56%;z-index:1;opacity:.62;filter:saturate(.85)">
+        <div style="border-radius:18px;overflow:hidden;background:#FEFDF9;border:1px solid #DDD6C4;box-shadow:0 2px 6px rgba(35,28,12,.06),0 14px 40px rgba(35,28,12,.09)">
+          <img src="cap-movimientos.png" alt="" loading="lazy" style="width:100%">
         </div>
       </div>
-      <div class="metrica m-act" aria-hidden="true">
-        <span class="k">Cría / invernada</span>
-        <span class="v">52%</span>
-        <span class="n">del resultado</span>
-        <div class="barrita"><i style="width:52%"></i></div>
+      <div style="position:relative;z-index:2">
+        <div style="border-radius:18px;overflow:hidden;background:#FEFDF9;border:1px solid #DDD6C4;box-shadow:0 30px 90px rgba(35,28,12,.17),0 4px 14px rgba(35,28,12,.08)">
+          <div aria-hidden="true" style="display:flex;align-items:center;gap:6px;padding:9px 13px;background:#EFEADC;border-bottom:1px solid #DDD6C4">
+            <i style="width:9px;height:9px;border-radius:50%;background:#C9C0A9;display:block"></i>
+            <i style="width:9px;height:9px;border-radius:50%;background:#C9C0A9;display:block"></i>
+            <i style="width:9px;height:9px;border-radius:50%;background:#C9C0A9;display:block"></i>
+            <span style="margin-left:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;background:#FEFDF9;border-radius:20px;padding:3px 12px;border:1px solid #DDD6C4">gestioncampo.com</span>
+          </div>
+          <img src="cap-resumen.png" alt="Pantalla de resumen con ingresos, egresos y resultado del ejercicio" style="width:100%">
+        </div>
       </div>
-      <div class="metrica m-res" aria-hidden="true">
-        <span class="k">Resultado del ejercicio</span>
-        <span class="v">+$47.030.000</span>
-        <span class="n">8 meses cargados</span>
+      <div class="m-flota" aria-hidden="true" style="position:absolute;z-index:3;top:22%;left:-13%;background:#FEFDF9;border:1px solid #DDD6C4;border-radius:12px;padding:13px 16px;box-shadow:0 2px 6px rgba(35,28,12,.06),0 14px 40px rgba(35,28,12,.09);animation:flotar 7s ease-in-out infinite -3.5s">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#7A7566;display:block;margin-bottom:5px">Cría / invernada</span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:600;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;display:block">52%</span>
+        <span style="font-size:11.5px;color:#5F5B4E;margin-top:4px;display:block">del resultado</span>
+        <div style="height:5px;border-radius:3px;background:#EFEADC;margin-top:8px;overflow:hidden;width:96px"><i style="display:block;height:100%;width:52%;border-radius:3px;background:#5C7A3D"></i></div>
       </div>
-      <div class="metrica m-ven" aria-hidden="true">
-        <span class="pt"></span>
-        <span class="t">3 vencimientos próximos<em>los siguientes 15 días</em></span>
+      <div class="m-flota" aria-hidden="true" style="position:absolute;z-index:3;bottom:8%;left:-11%;background:#FEFDF9;border:1px solid #DDD6C4;border-radius:12px;padding:13px 16px;box-shadow:0 2px 6px rgba(35,28,12,.06),0 14px 40px rgba(35,28,12,.09);animation:flotar 7s ease-in-out infinite -1s">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#7A7566;display:block;margin-bottom:5px">Resultado del ejercicio</span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:600;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;display:block;color:#47612D">+$47.030.000</span>
+        <span style="font-size:11.5px;color:#5F5B4E;margin-top:4px;display:block">8 meses cargados</span>
       </div>
     </div>
   </div>
 </section>
 
-<section class="flujo" id="como">
-  <div class="marco">
-    <div class="flujo-top rev">
+<section id="como" style="border-top:1px solid #DDD6C4;border-bottom:1px solid #DDD6C4;background:#EFEADC">
+  <div style="max-width:1240px;margin:0 auto;padding:64px 24px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:32px;margin-bottom:48px;flex-wrap:wrap">
       <div>
-        <p class="eti">Cómo funciona</p>
-        <h2>Una carga. Todo conectado.</h2>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Cómo funciona</p>
+        <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,40px);max-width:16ch">Una carga. Todo conectado.</h2>
       </div>
-      <p>Anotás un movimiento una sola vez y la app lo usa en todos lados: en la actividad, en el saldo de la cuenta y en el resultado del año.</p>
+      <p style="font-size:15px;color:#5F5B4E;max-width:38ch">Anotás un movimiento una sola vez y la app lo usa en todos lados: en la actividad, en el saldo de la cuenta y en el resultado del año.</p>
     </div>
-    <div class="cadena rev d1">
-      <div class="paso">
-        <span class="num">01</span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9.5" opacity=".35"/></svg>
-        <h3>Cargás</h3>
-        <p>Fecha, monto, rubro y cuenta. Nada más.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:32px 0">
+      <div style="padding:0 24px 0 0">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:12px">01</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;margin-bottom:12px"><path d="M12 5v14M5 12h14"></path><circle cx="12" cy="12" r="9.5" opacity=".35"></circle></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:6px">Cargás</h3>
+        <p style="font-size:15px;color:#5F5B4E">Fecha, monto, rubro y cuenta. Nada más.</p>
       </div>
-      <div class="paso">
-        <span class="num">02</span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h6v6H4zM14 6h6v6h-6zM4 16h6v4H4zM14 16h6v4h-6z"/></svg>
-        <h3>Se imputa</h3>
-        <p>A la actividad que corresponde: hacienda, agricultura, lo que hagas.</p>
+      <div style="padding:0 24px;border-left:1px solid #C9C0A9">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:12px">02</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;margin-bottom:12px"><path d="M4 6h6v6H4zM14 6h6v6h-6zM4 16h6v4H4zM14 16h6v4h-6z"></path></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:6px">Se imputa</h3>
+        <p style="font-size:15px;color:#5F5B4E">A la actividad que corresponde: hacienda, agricultura, lo que hagas.</p>
       </div>
-      <div class="paso">
-        <span class="num">03</span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
-        <h3>Mueve la cuenta</h3>
-        <p>El saldo de cada banco y caja se actualiza solo.</p>
+      <div style="padding:0 24px;border-left:1px solid #C9C0A9">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:12px">03</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;margin-bottom:12px"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18M8 15h4"></path></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:6px">Mueve la cuenta</h3>
+        <p style="font-size:15px;color:#5F5B4E">El saldo de cada banco y caja se actualiza solo.</p>
       </div>
-      <div class="paso">
-        <span class="num">04</span>
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
-        <h3>Sale el resultado</h3>
-        <p>Margen por actividad y cierre del ejercicio, al día.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="bloque">
-  <div class="marco">
-    <p class="eti rev">El problema</p>
-    <h2 class="frase rev">Tener plata en la cuenta no significa <em>saber si el campo está ganando plata.</em></h2>
-    <div class="dolores">
-      <div class="dolor rev">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 1-1 1.7v.5"/><path d="M12 17.5h.01"/><circle cx="12" cy="12" r="9.5"/></svg>
-        <h3>No sabés qué te deja cada cosa</h3>
-        <p>Sabés cuánta plata hay en el banco, pero no si la ganó la hacienda, la agricultura, o si en alguna estás perdiendo.</p>
-      </div>
-      <div class="dolor rev d1">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="m9 12 3 3M12 12l-3 3"/></svg>
-        <h3>La planilla se rompe sola</h3>
-        <p>Una fórmula mal copiada y los números dejan de cerrar. Nadie se da cuenta hasta que ya es tarde.</p>
-      </div>
-      <div class="dolor rev d2">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-        <h3>Cerrar el año es un padecimiento</h3>
-        <p>Juntar facturas, sumar a mano y tratar de acordarse qué era ese gasto de marzo.</p>
+      <div style="padding:0 0 0 24px;border-left:1px solid #C9C0A9">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:12px">04</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;margin-bottom:12px"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"></path></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:6px">Sale el resultado</h3>
+        <p style="font-size:15px;color:#5F5B4E">Margen por actividad y cierre del ejercicio, al día.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="bloque" id="producto">
-  <div class="marco duo">
-    <div class="texto rev">
-      <p class="eti">Cargar</p>
-      <h2>Anotás una vez y listo.</h2>
-      <p>Fecha, cuánto, de qué es y de qué cuenta salió. La app se encarga del resto.</p>
-      <ul class="lista">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Los rubros los armás vos: gasoil, sanidad, venta de novillos, lo que uses</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Importás la planilla que ya venías llevando, no arrancás de cero</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Le sacás una foto a la factura y carga los datos sola</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Buscador para encontrar cualquier movimiento al toque</li>
+<section style="padding:clamp(60px,8vw,96px) 0">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px">
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>El problema</p>
+    <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.035em;line-height:1.06;font-size:clamp(30px,4.4vw,52px);max-width:19ch;margin-bottom:64px">Tener plata en la cuenta no significa <em style="font-style:normal;color:#7A7566">saber si el campo está ganando plata.</em></h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:48px">
+      <div style="padding-top:24px;border-top:1.5px solid #1D1B15">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;margin-bottom:16px"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 1-1 1.7v.5"></path><path d="M12 17.5h.01"></path><circle cx="12" cy="12" r="9.5"></circle></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:8px">No sabés qué te deja cada cosa</h3>
+        <p style="font-size:15px;color:#5F5B4E">Sabés cuánta plata hay en el banco, pero no si la ganó la hacienda, la agricultura, o si en alguna estás perdiendo.</p>
+      </div>
+      <div style="padding-top:24px;border-top:1.5px solid #1D1B15">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;margin-bottom:16px"><path d="M14 3v5h5"></path><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="m9 12 3 3M12 12l-3 3"></path></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:8px">La planilla se rompe sola</h3>
+        <p style="font-size:15px;color:#5F5B4E">Una fórmula mal copiada y los números dejan de cerrar. Nadie se da cuenta hasta que ya es tarde.</p>
+      </div>
+      <div style="padding-top:24px;border-top:1.5px solid #1D1B15">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#47612D" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;margin-bottom:16px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:8px">Cerrar el año es un padecimiento</h3>
+        <p style="font-size:15px;color:#5F5B4E">Juntar facturas, sumar a mano y tratar de acordarse qué era ese gasto de marzo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="producto" style="padding:clamp(60px,8vw,96px) 0">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:64px;align-items:center">
+    <div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Cargar</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,40px);margin-bottom:16px">Anotás una vez y listo.</h2>
+      <p style="font-size:19px;color:#5F5B4E;line-height:1.5;margin-bottom:24px">Fecha, cuánto, de qué es y de qué cuenta salió. La app se encarga del resto.</p>
+      <ul style="list-style:none;display:grid;gap:12px">
+        <li style="display:flex;gap:12px;font-size:15px;color:#5F5B4E;align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Los rubros los armás vos: gasoil, sanidad, venta de novillos, lo que uses</li>
+        <li style="display:flex;gap:12px;font-size:15px;color:#5F5B4E;align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Importás la planilla que ya venías llevando, no arrancás de cero</li>
+        <li style="display:flex;gap:12px;font-size:15px;color:#5F5B4E;align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Le sacás una foto a la factura y carga los datos sola</li>
+        <li style="display:flex;gap:12px;font-size:15px;color:#5F5B4E;align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Buscador para encontrar cualquier movimiento al toque</li>
       </ul>
     </div>
-    <div class="rev d1">
-      <div class="ventana">
+    <div>
+      <div style="border-radius:18px;overflow:hidden;background:#FEFDF9;border:1px solid #DDD6C4;box-shadow:0 2px 6px rgba(35,28,12,.06),0 14px 40px rgba(35,28,12,.09)">
         <img src="cap-movimientos.png" alt="Listado de movimientos cargados, con rubro, cuenta, actividad y monto" loading="lazy">
       </div>
     </div>
   </div>
 </section>
 
-<section class="bloque osc entender">
-  <div class="lotes" aria-hidden="true">
-    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
-      <path d="M-50 180 L600 130 L1460 215"/>
-      <path d="M-50 460 L520 505 L1460 420"/>
-      <path d="M380 -20 L350 730"/>
-      <path d="M880 -20 L910 730"/>
+<section style="padding:clamp(60px,8vw,96px) 0;background:#22301B;color:#F7F4EC;position:relative;overflow:hidden">
+  <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;opacity:.5">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">
+      <g fill="none" stroke="rgba(182,212,92,.16)" stroke-width="1" vector-effect="non-scaling-stroke">
+        <path d="M-50 180 L600 130 L1460 215"></path><path d="M-50 460 L520 505 L1460 420"></path>
+        <path d="M380 -20 L350 730"></path><path d="M880 -20 L910 730"></path>
+      </g>
     </svg>
   </div>
-  <div class="marco duo inv" style="position:relative;z-index:1">
-    <div class="texto rev">
-      <p class="eti">Entender</p>
-      <h2>Cuánto deja cada actividad.</h2>
-      <p>Acá está lo que ninguna planilla te da fácil: el margen de cada parte del campo, por separado y con los costos de estructura aparte.</p>
-      <div class="margenes">
-        <div class="margen">
-          <span class="n">Cría / invernada</span><span class="p">margen 79%</span>
-          <span class="bar"><i style="width:79%"></i></span>
-        </div>
-        <div class="margen">
-          <span class="n">Agricultura</span><span class="p">margen 72%</span>
-          <span class="bar"><i style="width:72%"></i></span>
-        </div>
-        <div class="margen">
-          <span class="n">Maquinaria propia</span><span class="p">$38.400 / ha</span>
-          <span class="bar"><i style="width:34%"></i></span>
-        </div>
-      </div>
-      <ul class="lista" style="margin-top:var(--sp-6)">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Las actividades las definís vos: tambo, huerta, colmenas, monte</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>El maíz propio que consume la hacienda se computa como corresponde</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Costo por hectárea de tu maquinaria, para comparar contra un contratista</li>
-      </ul>
-    </div>
-    <div class="rev d1">
-      <div class="ventana">
+  <div style="position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:64px;align-items:center">
+    <div>
+      <div style="border-radius:18px;overflow:hidden;background:#1A2415;border:1px solid rgba(247,244,236,.14);box-shadow:0 30px 90px rgba(0,0,0,.25)">
         <img src="cap-resultado.png" alt="Márgenes por actividad calculados por la app, con ingresos y costos directos de cada una" loading="lazy">
       </div>
     </div>
-  </div>
-</section>
-
-<section class="bloque">
-  <div class="marco">
-    <div class="rev" style="max-width:720px;margin-bottom:var(--sp-7)">
-      <p class="eti">Controlar</p>
-      <h2 style="margin-bottom:var(--sp-4);font-size:var(--t-2xl)">Sabé dónde está cada peso.</h2>
-      <p style="font-size:var(--t-lg);color:var(--tinta-2);line-height:1.5">Saldos de cada cuenta, lo que está a plazo, quién te debe y a quién le debés. Y en qué proveedores se concentra tu gasto.</p>
-    </div>
-    <div class="rev d1">
-      <div class="ventana">
-        <img src="cap-clientes.png" alt="Clientes, proveedores y concentración de gastos por proveedor" loading="lazy">
+    <div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:rgba(182,212,92,.85);display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:rgba(182,212,92,.3);flex-shrink:0;display:block"></span>Entender</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,40px);color:#FEFDF9;margin-bottom:16px">Cuánto deja cada actividad.</h2>
+      <p style="font-size:19px;color:rgba(247,244,236,.72);line-height:1.5;margin-bottom:32px">Acá está lo que ninguna planilla te da fácil: el margen de cada parte del campo, por separado y con los costos de estructura aparte.</p>
+      <div style="display:grid;gap:16px">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline">
+          <span style="font-size:15px;color:#F7F4EC;font-weight:500">Cría / invernada</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#B6D45C;font-variant-numeric:tabular-nums">margen 79%</span>
+          <span style="grid-column:1/-1;height:4px;border-radius:2px;background:rgba(247,244,236,.11);overflow:hidden"><i style="display:block;height:100%;width:79%;background:#B6D45C;border-radius:2px;transform-origin:left;animation:crecer 1.1s cubic-bezier(.2,.7,.3,1) both"></i></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline">
+          <span style="font-size:15px;color:#F7F4EC;font-weight:500">Agricultura</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#B6D45C;font-variant-numeric:tabular-nums">margen 72%</span>
+          <span style="grid-column:1/-1;height:4px;border-radius:2px;background:rgba(247,244,236,.11);overflow:hidden"><i style="display:block;height:100%;width:72%;background:#B6D45C;border-radius:2px;transform-origin:left;animation:crecer 1.1s cubic-bezier(.2,.7,.3,1) .1s both"></i></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:baseline">
+          <span style="font-size:15px;color:#F7F4EC;font-weight:500">Maquinaria propia</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#B6D45C;font-variant-numeric:tabular-nums">$38.400 / ha</span>
+          <span style="grid-column:1/-1;height:4px;border-radius:2px;background:rgba(247,244,236,.11);overflow:hidden"><i style="display:block;height:100%;width:34%;background:#B6D45C;border-radius:2px;transform-origin:left;animation:crecer 1.1s cubic-bezier(.2,.7,.3,1) .2s both"></i></span>
+        </div>
       </div>
-    </div>
-    <div class="cadena rev d2" style="margin-top:var(--sp-7)">
-      <div class="paso">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
-        <h3>Saldos al día</h3>
-        <p>Cada banco y cada caja, siempre actualizado.</p>
-      </div>
-      <div class="paso">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>
-        <h3>Vencimientos</h3>
-        <p>Avisos de pagos y cobros antes de que se pasen.</p>
-      </div>
-      <div class="paso">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h10M7 12h10M7 16h5"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
-        <h3>Pases internos</h3>
-        <p>Mover plata entre tus cuentas no ensucia los resultados.</p>
-      </div>
-      <div class="paso">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7M12 21V3M21 17V7"/></svg>
-        <h3>Pesos de hoy</h3>
-        <p>Todo ajustado por inflación si querés compararlo.</p>
-      </div>
+      <ul style="list-style:none;display:grid;gap:12px;margin-top:32px">
+        <li style="display:flex;gap:12px;font-size:15px;color:rgba(247,244,236,.72);align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#B6D45C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Las actividades las definís vos: tambo, huerta, colmenas, monte</li>
+        <li style="display:flex;gap:12px;font-size:15px;color:rgba(247,244,236,.72);align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#B6D45C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>El maíz propio que consume la hacienda se computa como corresponde</li>
+        <li style="display:flex;gap:12px;font-size:15px;color:rgba(247,244,236,.72);align-items:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="#B6D45C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Costo por hectárea de tu maquinaria, para comparar contra un contratista</li>
+      </ul>
     </div>
   </div>
 </section>
 
-<section class="bloque gastos">
-  <div class="marco gastos-grid">
-    <div class="rev">
-      <p class="eti">La pregunta de siempre</p>
-      <h2 style="font-size:var(--t-2xl);margin-bottom:var(--sp-4)">¿En qué estoy gastando más?</h2>
-      <p style="font-size:var(--t-sm);color:var(--tinta-2)">La app no solo guarda movimientos: los ordena. Vas a ver en dos segundos dónde se te está yendo la plata, de mayor a menor, en el período que elijas.</p>
+<section style="padding:clamp(60px,8vw,96px) 0;background:#EFEADC;border-top:1px solid #DDD6C4;border-bottom:1px solid #DDD6C4">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:64px;align-items:center">
+    <div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>La pregunta de siempre</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,40px);margin-bottom:16px">¿En qué estoy gastando más?</h2>
+      <p style="font-size:15px;color:#5F5B4E">La app no solo guarda movimientos: los ordena. Vas a ver en dos segundos dónde se te está yendo la plata, de mayor a menor, en el período que elijas.</p>
     </div>
-    <div class="ranking rev d1">
-      <div class="fila">
-        <span><span class="r">01</span><span class="n">Gasoil</span></span>
-        <span class="m">$16.800.000</span>
-        <span class="bar"><i style="width:100%"></i></span>
+    <div style="display:grid;gap:24px">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:baseline;padding-bottom:12px;border-bottom:1px solid #DDD6C4">
+        <span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;margin-right:10px">01</span><span style="font-size:19px;font-weight:500">Gasoil</span></span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums">$16.800.000</span>
+        <span style="grid-column:1/-1;height:6px;border-radius:3px;background:#F7F4EC;overflow:hidden;margin-top:8px"><i style="display:block;height:100%;width:100%;background:#5C7A3D;border-radius:3px;transform-origin:left;animation:crecer 1s cubic-bezier(.2,.7,.3,1) both"></i></span>
       </div>
-      <div class="fila">
-        <span><span class="r">02</span><span class="n">Fertilizante</span></span>
-        <span class="m">$9.400.000</span>
-        <span class="bar"><i style="width:56%"></i></span>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:baseline;padding-bottom:12px;border-bottom:1px solid #DDD6C4">
+        <span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;margin-right:10px">02</span><span style="font-size:19px;font-weight:500">Fertilizante</span></span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums">$9.400.000</span>
+        <span style="grid-column:1/-1;height:6px;border-radius:3px;background:#F7F4EC;overflow:hidden;margin-top:8px"><i style="display:block;height:100%;width:56%;background:#6E8A4A;border-radius:3px;transform-origin:left;animation:crecer 1s cubic-bezier(.2,.7,.3,1) .08s both"></i></span>
       </div>
-      <div class="fila">
-        <span><span class="r">03</span><span class="n">Semilla</span></span>
-        <span class="m">$7.800.000</span>
-        <span class="bar"><i style="width:46%"></i></span>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:baseline;padding-bottom:12px;border-bottom:1px solid #DDD6C4">
+        <span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;margin-right:10px">03</span><span style="font-size:19px;font-weight:500">Semilla</span></span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums">$7.800.000</span>
+        <span style="grid-column:1/-1;height:6px;border-radius:3px;background:#F7F4EC;overflow:hidden;margin-top:8px"><i style="display:block;height:100%;width:46%;background:#82995C;border-radius:3px;transform-origin:left;animation:crecer 1s cubic-bezier(.2,.7,.3,1) .16s both"></i></span>
       </div>
-      <div class="fila">
-        <span><span class="r">04</span><span class="n">Sanidad animal</span></span>
-        <span class="m">$4.240.000</span>
-        <span class="bar"><i style="width:25%"></i></span>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:baseline;padding-bottom:12px;border-bottom:1px solid #DDD6C4">
+        <span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;margin-right:10px">04</span><span style="font-size:19px;font-weight:500">Sanidad animal</span></span>
+        <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:19px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums">$4.240.000</span>
+        <span style="grid-column:1/-1;height:6px;border-radius:3px;background:#F7F4EC;overflow:hidden;margin-top:8px"><i style="display:block;height:100%;width:25%;background:#96A870;border-radius:3px;transform-origin:left;animation:crecer 1s cubic-bezier(.2,.7,.3,1) .24s both"></i></span>
       </div>
     </div>
   </div>
 </section>
 
-<section class="bloque osc seguridad" id="seguridad">
-  <div class="lotes" aria-hidden="true">
-    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
-      <path d="M-50 250 L700 195 L1460 280"/>
-      <path d="M-50 520 L640 570 L1460 490"/>
-      <path d="M520 -20 L490 730"/>
-      <path d="M1020 -20 L1050 730"/>
+<section id="quien" style="padding:clamp(60px,8vw,96px) 0">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px">
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Quién está atrás</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:56px;align-items:start;margin-top:8px">
+      <div>
+        <span style="display:inline-flex;align-items:center;background:#22301B;color:#B6D45C;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;margin-bottom:24px">Hecho por un productor</span>
+        <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,48px)">Soy Santi. Esto lo hice para mi viejo.</h2>
+      </div>
+      <div>
+        <p style="font-size:19px;color:#5F5B4E;line-height:1.55;margin-bottom:20px">Mi papá llevaba las cuentas del campo como se llevan casi todas: una planilla que se iba complicando y un montón de cosas en la cabeza. Hice esta app para simplificarle eso.</p>
+        <p style="font-size:19px;color:#5F5B4E;line-height:1.55;margin-bottom:28px">Así que no es un sistema pensado desde una oficina: está armado sobre las cuentas de un campo de verdad, y lo sigo cambiando con lo que me piden los que la usan.</p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding-top:24px;border-top:1px solid #DDD6C4">
+          <div>
+            <div style="font-size:16.5px;font-weight:600">Santiago Elías Farah</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6E6959;margin-top:2px">Argentina · atiendo yo el WhatsApp</div>
+          </div>
+          <a href="{{ waPrincipal }}" target="_blank" rel="noopener" style="margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:500;padding:.75em 1.3em;min-height:46px;border-radius:12px;border:1px solid #C9C0A9;color:#1D1B15" style-hover="background:#FEFDF9;border-color:#7A7566">Preguntame lo que quieras</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section id="seguridad" style="padding:clamp(60px,8vw,96px) 0;background:#1A2415;color:#F7F4EC;position:relative;overflow:hidden">
+  <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;opacity:.5">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">
+      <g fill="none" stroke="rgba(182,212,92,.16)" stroke-width="1" vector-effect="non-scaling-stroke">
+        <path d="M-50 250 L700 195 L1460 280"></path><path d="M-50 520 L640 570 L1460 490"></path>
+        <path d="M520 -20 L490 730"></path><path d="M1020 -20 L1050 730"></path>
+      </g>
     </svg>
   </div>
-  <div class="marco seg-grid" style="position:relative;z-index:1">
-    <div class="rev">
-      <p class="eti">Seguridad</p>
-      <h2 style="margin-bottom:var(--sp-4)">Tus números son tuyos.</h2>
-      <p style="font-size:var(--t-lg);line-height:1.5">Los datos financieros de un campo no deberían depender de que una empresa decida qué hacer con ellos. Por eso acá no viven en un servidor nuestro.</p>
+  <div style="position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:64px;align-items:start">
+    <div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:rgba(182,212,92,.85);display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:rgba(182,212,92,.3);flex-shrink:0;display:block"></span>Seguridad</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,44px);color:#FEFDF9;margin-bottom:16px">Tus números son tuyos.</h2>
+      <p style="font-size:19px;color:rgba(247,244,236,.72);line-height:1.5">Los datos financieros de un campo no deberían depender de que una empresa decida qué hacer con ellos. Por eso acá no viven en un servidor nuestro.</p>
     </div>
-    <div class="rev d1">
-      <div class="seg-item">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    <div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;padding:24px 0;border-top:1px solid rgba(247,244,236,.13)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#B6D45C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;margin-top:3px"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
         <div>
-          <h3>Guardado en tu computadora</h3>
-          <p>Los movimientos no viajan a ningún servidor nuestro. No los vemos, no los guardamos y no podemos dárselos a nadie.</p>
+          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;color:#FEFDF9;margin-bottom:5px">Guardado en tu computadora</h3>
+          <p style="font-size:15px;color:rgba(247,244,236,.72)">Los movimientos no viajan a ningún servidor nuestro. No los vemos, no los guardamos y no podemos dárselos a nadie.</p>
         </div>
       </div>
-      <div class="seg-item">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97 6 6 0 0 0-11.6-1.6A4.2 4.2 0 0 0 6.5 19z"/><path d="M12 12v5M9.5 14.5 12 12l2.5 2.5"/></svg>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;padding:24px 0;border-top:1px solid rgba(247,244,236,.13)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#B6D45C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;margin-top:3px"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97 6 6 0 0 0-11.6-1.6A4.2 4.2 0 0 0 6.5 19z"></path><path d="M12 12v5M9.5 14.5 12 12l2.5 2.5"></path></svg>
         <div>
-          <h3>Respaldo en tu propio Drive</h3>
-          <p>La copia se sube sola a tu cuenta de Google. Si se rompe la máquina, entrás desde otra y recuperás todo.</p>
+          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;color:#FEFDF9;margin-bottom:5px">Respaldo en tu propio Drive</h3>
+          <p style="font-size:15px;color:rgba(247,244,236,.72)">La copia se sube sola a tu cuenta de Google. Si se rompe la máquina, entrás desde otra y recuperás todo.</p>
         </div>
       </div>
-      <div class="seg-item">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;padding:24px 0;border-top:1px solid rgba(247,244,236,.13);border-bottom:1px solid rgba(247,244,236,.13)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#B6D45C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;margin-top:3px"><path d="M12 3v12M8 11l4 4 4-4"></path><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></svg>
         <div>
-          <h3>Te los llevás cuando quieras</h3>
-          <p>Bajás todo en un archivo con un botón. Si algún día dejás de usarla, tus datos se van con vos.</p>
+          <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;color:#FEFDF9;margin-bottom:5px">Te los llevás cuando quieras</h3>
+          <p style="font-size:15px;color:rgba(247,244,236,.72)">Bajás todo en un archivo con un botón. Si algún día dejás de usarla, tus datos se van con vos.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="bloque" id="precio">
-  <div class="marco">
-    <div class="rev" style="margin-bottom:var(--sp-7)">
-      <p class="eti">Precio</p>
-      <h2 style="font-size:var(--t-2xl)">Un precio. Todo incluido.</h2>
+<section id="empezar" style="padding:clamp(60px,8vw,96px) 0">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px">
+    <div style="max-width:720px;margin-bottom:48px">
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Pasar de tu planilla</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,44px);margin-bottom:16px">No arrancás de cero. Y no tardás una semana.</h2>
+      <p style="font-size:19px;color:#5F5B4E;line-height:1.5">Lo que ya tenés cargado en Excel entra a la app. Esto es todo lo que hay que hacer.</p>
     </div>
-    <div class="precio-caja rev d1">
-      <div class="precio-izq">
-        <span class="cinta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 15 9l7 .5-5.4 4.6 1.7 6.9L12 17.3 5.7 21l1.7-6.9L2 9.5 9 9z"/></svg>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px">
+      <div style="background:#FEFDF9;border:1px solid #DDD6C4;border-radius:18px;padding:28px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:16px">PASO 01 · 5 MINUTOS</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:8px">Me escribís</h3>
+        <p style="font-size:15px;color:#5F5B4E">Te doy una cuenta y la clave por WhatsApp. No hay formulario ni tarjeta.</p>
+      </div>
+      <div style="background:#FEFDF9;border:1px solid #DDD6C4;border-radius:18px;padding:28px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:16px">PASO 02 · UNA TARDE</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:8px">Entra tu planilla</h3>
+        <p style="font-size:15px;color:#5F5B4E">Importás el Excel que venías llevando. Si viene desordenado, lo miramos juntos.</p>
+      </div>
+      <div style="background:#FEFDF9;border:1px solid #DDD6C4;border-radius:18px;padding:28px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7A7566;letter-spacing:.1em;display:block;margin-bottom:16px">PASO 03 · UN RATO</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;margin-bottom:8px">Armás tus actividades</h3>
+        <p style="font-size:15px;color:#5F5B4E">Decís qué hace tu campo y a qué actividad va cada rubro. Una sola vez.</p>
+      </div>
+      <div style="background:#22301B;border:1px solid #22301B;border-radius:18px;padding:28px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(182,212,92,.85);letter-spacing:.1em;display:block;margin-bottom:16px">LISTO</span>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.022em;line-height:1.15;color:#FEFDF9;margin-bottom:8px">Ves el resultado</h3>
+        <p style="font-size:15px;color:rgba(247,244,236,.78)">El mismo día ya tenés el margen de cada actividad del año que cargaste.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="precio" style="padding:clamp(60px,8vw,96px) 0;background:#EFEADC;border-top:1px solid #DDD6C4">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px">
+    <div style="margin-bottom:48px">
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Precio</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,40px)">Un precio. Todo incluido.</h2>
+    </div>
+    <div style="background:#FEFDF9;border:1px solid #DDD6C4;border-radius:26px;box-shadow:0 2px 6px rgba(35,28,12,.06),0 14px 40px rgba(35,28,12,.09);overflow:hidden;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))">
+      <div style="padding:clamp(28px,4vw,56px)">
+        <span style="display:inline-flex;align-items:center;gap:8px;background:#22301B;color:#B6D45C;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.11em;text-transform:uppercase;padding:7px 14px;border-radius:20px;margin-bottom:24px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M12 2 15 9l7 .5-5.4 4.6 1.7 6.9L12 17.3 5.7 21l1.7-6.9L2 9.5 9 9z"></path></svg>
           Primer mes sin cargo
         </span>
-        <div class="numero">
-          <span class="v">$35.000</span>
-          <span class="u">/ mes</span>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+          <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(46px,6.6vw,72px);font-weight:600;letter-spacing:-.045em;line-height:.9;font-variant-numeric:tabular-nums">$35.000</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#6E6959">/ mes</span>
         </div>
-        <p>Escribime y te doy una cuenta para probarla 30 días con los números reales de tu campo. Si no te sirve, no pagás nada y te llevás tus datos.</p>
-        <div class="precio-acc">
-          <a class="btn btn-pri btn-gr" href="https://wa.me/5492920244050?text=Hola%20Santiago%21%20Vi%20Gesti%C3%B3n%20del%20Campo%20y%20me%20interesa.%20%C2%BFMe%20cont%C3%A1s%20c%C3%B3mo%20es%20y%20c%C3%B3mo%20la%20puedo%20probar%3F" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"/></svg>
+        <p style="font-size:16.5px;color:#5F5B4E;margin-bottom:20px;max-width:40ch">Lo que gastás en un par de tambores de gasoil, para saber qué te está dejando todo lo demás.</p>
+        <p style="font-size:15px;color:#5F5B4E;margin-bottom:32px;max-width:44ch">Escribime y te doy una cuenta para probarla 30 días con los números reales de tu campo. Si no te sirve, no pagás nada y te llevás tus datos.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <a href="{{ waPrecio }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:16.5px;font-weight:500;padding:1em 1.7em;min-height:54px;border-radius:12px;background:#22301B;color:#FEFDF9;box-shadow:0 1px 2px rgba(35,28,12,.05),0 3px 10px rgba(35,28,12,.05)" style-hover="background:#2E4025">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"></path></svg>
             Escribime por WhatsApp
           </a>
-          <a class="btn btn-sec btn-gr" href="app.html">Ya tengo cuenta, entrar</a>
+          <a href="app.html" style="display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:500;padding:1em 1.7em;min-height:54px;border-radius:12px;border:1px solid #C9C0A9;color:#1D1B15" style-hover="background:#F7F4EC;border-color:#7A7566">Ya tengo cuenta, entrar</a>
         </div>
-        <p class="precio-nota">Se paga por transferencia, mes a mes. Se da de baja cuando quieras, sin permanencia ni penalidad.</p>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6959;margin-top:16px;line-height:1.6">Se paga por transferencia, mes a mes. Se da de baja cuando quieras, sin permanencia ni penalidad.</p>
       </div>
-      <div class="precio-der">
-        <p class="eti sola">Incluye</p>
-        <ul class="incluye">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Todas las funciones, sin versiones recortadas</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Movimientos ilimitados y todos los años que quieras</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Respaldo automático en tu Google Drive</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Importación de la planilla que ya venís usando</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Te ayudo a arrancar por WhatsApp</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Actualizaciones incluidas, sin costo extra</li>
+      <div style="padding:clamp(28px,4vw,56px);display:flex;flex-direction:column;justify-content:center;background:#F7F4EC;border-left:1px solid #DDD6C4">
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;margin-bottom:16px">Incluye</p>
+        <ul style="list-style:none;display:grid;gap:14px">
+          <li style="display:flex;gap:12px;font-size:15px;align-items:flex-start;color:#5F5B4E"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Todas las funciones, sin versiones recortadas</li>
+          <li style="display:flex;gap:12px;font-size:15px;align-items:flex-start;color:#5F5B4E"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Movimientos ilimitados y todos los años que quieras</li>
+          <li style="display:flex;gap:12px;font-size:15px;align-items:flex-start;color:#5F5B4E"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Respaldo automático en tu Google Drive</li>
+          <li style="display:flex;gap:12px;font-size:15px;align-items:flex-start;color:#5F5B4E"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Importación de la planilla que ya venís usando</li>
+          <li style="display:flex;gap:12px;font-size:15px;align-items:flex-start;color:#5F5B4E"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Te ayudo a arrancar por WhatsApp, hablando conmigo</li>
+          <li style="display:flex;gap:12px;font-size:15px;align-items:flex-start;color:#5F5B4E"><svg viewBox="0 0 24 24" fill="none" stroke="#5C7A3D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"></path></svg>Actualizaciones incluidas, sin costo extra</li>
         </ul>
       </div>
     </div>
   </div>
 </section>
 
-<section class="cierre osc">
-  <div class="lotes" aria-hidden="true">
-    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice">
-      <path d="M-50 160 L680 110 L1460 190"/>
-      <path d="M-50 420 L560 465 L1460 390"/>
-      <path d="M300 -20 L270 730"/>
-      <path d="M1100 -20 L1130 730"/>
+<section id="preguntas" style="padding:clamp(60px,8vw,96px) 0;background:#EFEADC;border-bottom:1px solid #DDD6C4">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:56px;align-items:start">
+    <div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:#7A7566;display:flex;align-items:center;gap:12px;margin-bottom:16px"><span style="width:22px;height:1px;background:#C9C0A9;flex-shrink:0;display:block"></span>Preguntas</p>
+      <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(30px,4vw,44px);margin-bottom:16px">Lo que siempre me preguntan.</h2>
+      <p style="font-size:16.5px;color:#5F5B4E;margin-bottom:24px">Si te queda alguna duda dando vueltas, escribime y te la contesto yo.</p>
+      <a href="{{ waPreguntas }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:500;padding:.8em 1.4em;min-height:48px;border-radius:12px;border:1px solid #C9C0A9;color:#1D1B15" style-hover="background:#FEFDF9;border-color:#7A7566">Tengo otra pregunta</a>
+    </div>
+    <div style="display:grid;gap:0">
+      <details style="border-top:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Cuánto tardo en pasar lo que tengo en Excel?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">Una tarde para un año entero, si la planilla está más o menos ordenada. La importás desde la app y ella acomoda fechas, montos y rubros. Si viene hecha un lío, mandámela por WhatsApp y la vemos juntos antes de que cargues nada.</p>
+      </details>
+      <details style="border-top:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Se usa desde el celular?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">Hoy está pensada para la computadora: es donde se cargan y se miran los números cómodos. Del celular podés entrar a ver, pero para trabajar conviene la máquina.</p>
+      </details>
+      <details style="border-top:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Anda sin internet?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">Sí. Los datos están en tu computadora, así que podés cargar igual sin señal. Lo único que espera a que vuelva internet es el respaldo en Drive y la cotización del dólar.</p>
+      </details>
+      <details style="border-top:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Se lo puedo pasar a mi contador?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">Sí. Bajás todo en un archivo con un botón y se lo mandás. La app no reemplaza al contador: le llega el año ordenado en vez de una caja con facturas.</p>
+      </details>
+      <details style="border-top:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Y si se rompe la computadora?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">La copia se sube sola a tu propia cuenta de Google Drive. Entrás desde otra máquina con tu clave, recuperás el respaldo y seguís donde estabas.</p>
+      </details>
+      <details style="border-top:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Sirve si arriendo, o si mi campo no es ganadero?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">Las actividades las definís vos: hacienda, agricultura, tambo, monte, campo arrendado. La app no asume qué hacés, calcula el margen de lo que le cargues.</p>
+      </details>
+      <details style="border-top:1px solid #C9C0A9;border-bottom:1px solid #C9C0A9;padding:20px 0">
+        <summary style="display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em">¿Qué pasa si dejo de pagar?<span style="font-family:'IBM Plex Mono',monospace;color:#5C7A3D;flex-shrink:0">+</span></summary>
+        <p style="font-size:15.5px;color:#5F5B4E;margin-top:12px;max-width:60ch">Me avisás y listo, no hay permanencia ni penalidad. Tus datos no los tengo yo: siguen en tu computadora y te los llevás en un archivo cuando quieras.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section style="padding:clamp(60px,8vw,96px) 0 0;background:#22301B;color:#F7F4EC;position:relative;overflow:hidden">
+  <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;opacity:.5">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">
+      <g fill="none" stroke="rgba(182,212,92,.16)" stroke-width="1" vector-effect="non-scaling-stroke">
+        <path d="M-50 160 L680 110 L1460 190"></path><path d="M-50 420 L560 465 L1460 390"></path>
+        <path d="M300 -20 L270 730"></path><path d="M1100 -20 L1130 730"></path>
+      </g>
     </svg>
   </div>
-  <div class="marco">
-    <h2 class="rev">Tu campo ya genera los números. <em>Ahora entendelos.</em></h2>
-    <p class="rev d1">Probá Gestión del Campo con tus propios datos y empezá a ver qué está dejando realmente cada actividad.</p>
-    <div class="cierre-cta rev d2">
-      <a class="btn btn-pri btn-gr" href="https://wa.me/5492920244050?text=Hola%20Santiago%21%20Vi%20Gesti%C3%B3n%20del%20Campo%20y%20quer%C3%ADa%20saber%20m%C3%A1s.%20%C2%BFC%C3%B3mo%20la%20puedo%20probar%20con%20los%20n%C3%BAmeros%20de%20mi%20campo%3F" target="_blank" rel="noopener">Pedir una cuenta</a>
-      <a class="btn btn-sec btn-gr" href="#precio">Ver el precio</a>
+  <div style="position:relative;z-index:2;max-width:1240px;margin:0 auto;padding:0 24px;text-align:center">
+    <h2 style="font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:600;letter-spacing:-.032em;line-height:1.04;font-size:clamp(38px,5vw,58px);color:#FEFDF9;margin:0 auto 24px;max-width:15ch">Tu campo ya genera los números. <em style="font-style:normal;color:#B6D45C">Ahora entendelos.</em></h2>
+    <p style="margin:0 auto 32px;max-width:50ch;font-size:19px;color:rgba(247,244,236,.72)">Escribime y en un rato tenés una cuenta andando con los números de tu campo. El primer mes no se paga.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px">
+      <a href="{{ waCierre }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:16.5px;font-weight:600;padding:1em 1.7em;min-height:54px;border-radius:12px;background:#B6D45C;color:#1A2415" style-hover="background:#C6E070">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"></path></svg>
+        Pedir una cuenta
+      </a>
+      <a href="#preguntas" style="display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:500;padding:1em 1.7em;min-height:54px;border-radius:12px;border:1px solid rgba(247,244,236,.28);color:#F7F4EC" style-hover="background:rgba(247,244,236,.09);border-color:rgba(247,244,236,.5)">Leer las preguntas</a>
     </div>
-    <div class="asomo rev d3" aria-hidden="true">
+    <div aria-hidden="true" style="position:relative;max-width:900px;margin:0 auto;border-radius:18px 18px 0 0;overflow:hidden;border:1px solid rgba(247,244,236,.16);border-bottom:none;box-shadow:0 -20px 70px rgba(0,0,0,.3)">
       <img src="cap-resumen.png" alt="" loading="lazy">
-      <span class="fundido"></span>
+      <span style="position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom,rgba(34,48,27,0),#22301B)"></span>
     </div>
   </div>
 </section>
 
-<footer class="pie">
-  <div class="marco">
-    <div class="pie-grid">
+<footer style="background:#1A2415;color:rgba(247,244,236,.62);padding:64px 0 32px;border-top:1px solid rgba(247,244,236,.1)">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:48px;margin-bottom:48px">
       <div>
-        <a class="logo" href="#inicio">
-          <span class="sig" aria-hidden="true">
-            <svg viewBox="0 0 32 32" fill="none">
-              <g stroke="#B6D45C" stroke-width="2.6" stroke-linecap="round">
-                <path d="M9 23V16"/><path d="M16 23V11"/><path d="M23 23v-4"/>
-              </g>
-              <path d="M7 26.5h18" stroke="#F7F4EC" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+        <a href="#inicio" style="display:flex;align-items:center;gap:12px;text-decoration:none">
+          <span style="width:34px;height:34px;border-radius:9px;background:#22301B;display:grid;place-items:center;flex-shrink:0">
+            <svg viewBox="0 0 32 32" fill="none" style="width:19px;height:19px">
+              <g stroke="#B6D45C" stroke-width="2.6" stroke-linecap="round"><path d="M9 23V16"></path><path d="M16 23V11"></path><path d="M23 23v-4"></path></g>
+              <path d="M7 26.5h18" stroke="#F7F4EC" stroke-width="1.6" stroke-linecap="round" opacity=".55"></path>
             </svg>
           </span>
-          <b>Gestión del Campo</b>
+          <b style="font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:16px;letter-spacing:-.025em;color:#FEFDF9">Gestión del Campo</b>
         </a>
-        <p class="desc">Las cuentas de tu campo, claras. Hecho en Argentina para productores argentinos.</p>
+        <p style="font-size:15px;margin-top:16px;max-width:34ch">Las cuentas de tu campo, claras. Hecho en Argentina para productores argentinos.</p>
       </div>
       <div>
-        <h4>Producto</h4>
-        <ul>
-          <li><a href="#producto">Qué hace</a></li>
-          <li><a href="#como">Cómo funciona</a></li>
-          <li><a href="#seguridad">Seguridad</a></li>
-          <li><a href="#precio">Precio</a></li>
+        <h4 style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(182,212,92,.8);margin-bottom:16px;font-weight:500">Producto</h4>
+        <ul style="list-style:none;display:grid;gap:12px">
+          <li><a href="#producto" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Qué hace</a></li>
+          <li><a href="#como" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Cómo funciona</a></li>
+          <li><a href="#empezar" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Pasar tu planilla</a></li>
+          <li><a href="#precio" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Precio</a></li>
         </ul>
       </div>
       <div>
-        <h4>Cuenta</h4>
-        <ul>
-          <li><a href="app.html">Entrar a la app</a></li>
-          <li><a href="privacidad.html">Privacidad</a></li>
-          <li><a href="terminos.html">Términos</a></li>
-          <li><a href="https://wa.me/5492920244050?text=Hola%20Santiago%21%20Te%20escribo%20por%20Gesti%C3%B3n%20del%20Campo." target="_blank" rel="noopener">Contacto</a></li>
+        <h4 style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(182,212,92,.8);margin-bottom:16px;font-weight:500">Confianza</h4>
+        <ul style="list-style:none;display:grid;gap:12px">
+          <li><a href="#quien" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Quién lo hace</a></li>
+          <li><a href="#seguridad" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Seguridad</a></li>
+          <li><a href="#preguntas" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Preguntas</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(182,212,92,.8);margin-bottom:16px;font-weight:500">Cuenta</h4>
+        <ul style="list-style:none;display:grid;gap:12px">
+          <li><a href="app.html" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Entrar a la app</a></li>
+          <li><a href="privacidad.html" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Privacidad</a></li>
+          <li><a href="terminos.html" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Términos</a></li>
+          <li><a href="{{ waPie }}" target="_blank" rel="noopener" style="font-size:15px;color:rgba(247,244,236,.72)" style-hover="color:#B6D45C">Contacto</a></li>
         </ul>
       </div>
     </div>
-    <div class="pie-base">
+    <div style="border-top:1px solid rgba(247,244,236,.1);padding-top:24px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em">
       <span>© 2026 Gestión del Campo</span>
       <span>Santiago Elías Farah · Argentina</span>
     </div>
   </div>
+  <div style="height:60px" class="solo-mob"></div>
 </footer>
 
-<script>
-(function(){
-  var tope=document.getElementById('tope');
-  var onScroll=function(){ tope.classList.toggle('pegado', window.scrollY>8) };
-  onScroll(); window.addEventListener('scroll',onScroll,{passive:true});
+<div class="solo-mob" style="position:fixed;left:0;right:0;bottom:0;z-index:70;background:rgba(247,244,236,.96);backdrop-filter:blur(14px);border-top:1px solid #DDD6C4;padding:10px 16px;display:flex;gap:10px;align-items:center">
+  <a href="app.html" style="display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;padding:.7em 1.1em;min-height:48px;border-radius:12px;border:1px solid #C9C0A9;color:#1D1B15;flex-shrink:0">Entrar</a>
+  <a href="{{ waBarra }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;padding:.7em 1.1em;min-height:48px;border-radius:12px;background:#22301B;color:#FEFDF9;flex:1">
+    <svg viewBox="0 0 24 24" fill="currentColor" style="width:17px;height:17px;flex-shrink:0"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-2.9.85.87-2.83-.2-.31A8.2 8.2 0 1 1 12 20.2zm4.5-5.8c-.3-.15-1.75-.86-2-.96-.27-.1-.47-.15-.66.15-.2.29-.76.95-.93 1.15-.17.2-.34.22-.63.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.53.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.9-2.19-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.51.07-.78.36s-1.02 1-1.02 2.43 1.05 2.82 1.2 3.02c.14.2 2.05 3.14 4.97 4.4.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.09 1.75-.72 2-1.41.24-.7.24-1.29.17-1.41-.07-.13-.27-.2-.56-.35z"></path></svg>
+    Escribime y probala un mes
+  </a>
+</div>
 
-  var elems=Array.prototype.slice.call(document.querySelectorAll('.rev'));
-  if(!('IntersectionObserver' in window)){
-    elems.forEach(function(e){e.classList.add('visible')}); return;
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;telefono&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;5492920244050&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contacto&quot;}}">
+class Component extends DCLogic {
+  wa(msg) {
+    const tel = (this.props.telefono ?? '5492920244050').replace(/[^\d]/g, '');
+    return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(msg);
   }
-
-  // Revela los que YA están en pantalla al cargar, de forma escalonada,
-  // así en pantallas grandes (PC) también se ve la animación de entrada
-  // en vez de aparecer todo seco de una.
-  function enPantalla(el){
-    var r=el.getBoundingClientRect();
-    var h=window.innerHeight||document.documentElement.clientHeight;
-    return r.top < h*0.92 && r.bottom > 0;
+  renderVals() {
+    return {
+      waPrincipal: this.wa('Hola Santi! Vi Gestión del Campo y me interesa. ¿Me contás cómo es y cómo la puedo probar?'),
+      waPrecio: this.wa('Hola Santi! Vi el precio de Gestión del Campo y quiero probarla un mes con los números de mi campo.'),
+      waPreguntas: this.wa('Hola Santi! Tengo una pregunta sobre Gestión del Campo: '),
+      waCierre: this.wa('Hola Santi! Quiero pedir una cuenta de Gestión del Campo para probarla con los números de mi campo.'),
+      waBarra: this.wa('Hola Santi! Vi Gestión del Campo y quiero probarla un mes.'),
+      waPie: this.wa('Hola Santi! Te escribo por Gestión del Campo.')
+    };
   }
-  var yaVisibles=elems.filter(enPantalla);
-  var restantes=elems.filter(function(e){return yaVisibles.indexOf(e)===-1});
-
-  yaVisibles.forEach(function(e,i){
-    setTimeout(function(){ e.classList.add('visible'); }, 90*i + 60);
-  });
-
-  // Los que están más abajo, se revelan al hacer scroll.
-  var io=new IntersectionObserver(function(entradas){
-    entradas.forEach(function(e){
-      if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target) }
-    });
-  },{rootMargin:'0px 0px -12% 0px',threshold:.12});
-  restantes.forEach(function(e){io.observe(e)});
-})();
+}
 </script>
 </body>
 </html>
